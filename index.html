@@ -1,59 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>الشيخ | الشيك | السكور</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>الشيخ | لعبة المجلس أونلاين</title>
 <style>
-:root{
-  --bg:#efe4cf; --card:#fffdf8; --ink:#241a14; --muted:#7d6e63;
-  --maroon:#6f2632; --maroon2:#521a23; --gold:#c89b3c; --gold2:#e8cb82;
-  --green:#2f5d53; --danger:#a53b32; --line:#deceb2; --shadow:0 7px 22px rgba(36,26,20,.15);
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);font-family:'Tajawal',sans-serif;color:var(--ink)}
-body{min-height:100vh;background-image:radial-gradient(circle at 15% 5%,rgba(200,155,60,.12),transparent 34%),radial-gradient(circle at 85% 95%,rgba(111,38,50,.08),transparent 35%)}
-#app{width:min(100%,520px);margin:auto;min-height:100vh;padding:0 14px 32px}
-.topbar{height:10px;background:repeating-linear-gradient(135deg,var(--maroon) 0 8px,var(--gold) 8px 16px);border-radius:0 0 10px 10px}
-header{text-align:center;padding:20px 0 8px}
-header h1{margin:0;color:var(--maroon2);font-size:30px;font-weight:900}
-header p{margin:4px 0 0;color:var(--muted);font-size:13px}
-.panel{background:rgba(255,253,248,.78);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;box-shadow:0 2px 8px rgba(36,26,20,.05)}
-.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
-label{font-size:13px;font-weight:700;display:block;margin-bottom:6px}
-input{width:100%;padding:13px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-family:inherit;font-size:15px;outline:none}
+:root{--bg:#f3ead8;--card:#fffaf0;--ink:#281d17;--muted:#817268;--maroon:#6d2633;--gold:#d0a13b;--line:#dfcfb3;--green:#2f6558;--danger:#a33d36}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(#f5ecd9,#eee1c7);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;color:var(--ink);min-height:100vh}
+.wrap{width:min(100%,560px);margin:auto;padding:0 14px 30px}.stripe{height:10px;background:repeating-linear-gradient(135deg,var(--maroon) 0 8px,var(--gold) 8px 16px);border-radius:0 0 10px 10px}
+header{text-align:center;padding:22px 0 10px}header h1{margin:0;color:var(--maroon);font-size:34px}header p{margin:5px 0;color:var(--muted)}
+.panel{background:rgba(255,250,240,.95);border:1px solid var(--line);border-radius:18px;padding:17px;margin:14px 0;box-shadow:0 3px 12px rgba(40,29,23,.06)}
+label{font-weight:800;font-size:14px;display:block;margin:0 0 7px}
+input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:13px;background:#fff;font-size:16px;text-align:right;outline:none}
 input:focus{border-color:var(--gold)}
-button{font-family:inherit;border:none;border-radius:13px;padding:13px 15px;font-weight:800;font-size:15px;cursor:pointer}
-.btn{background:var(--maroon);color:#fff}.btn.gold{background:var(--gold);color:var(--ink)}.btn.light{background:var(--card);color:var(--ink);border:1px solid var(--line)}.btn.green{background:var(--green);color:#fff}.btn.danger{background:var(--danger);color:#fff}
-.btn:active{transform:scale(.98)}
-.small{font-size:13px;padding:9px 11px}
-.code{font-size:34px;font-weight:900;letter-spacing:7px;color:var(--maroon2);background:var(--card);border:2px dashed var(--gold);border-radius:14px;text-align:center;padding:13px;margin:12px 0}
-.list{list-style:none;padding:0;margin:10px 0}.list li{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin:7px 0}
-.msg{background:var(--gold2);border-radius:12px;padding:10px 12px;margin-top:12px;font-size:13px;font-weight:700}
-.err{color:var(--danger);font-size:13px;margin-top:8px}
-.hint{font-size:12px;color:var(--muted);line-height:1.75}
-.hand{display:flex;gap:8px;overflow-x:auto;padding:4px 1px}
-.card{width:54px;height:76px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex:0 0 auto;box-shadow:var(--shadow);user-select:none}
-.face{background:var(--card);border:1px solid var(--line)}.red{color:#b1252d}.black{color:#181512}
-.back{background:repeating-linear-gradient(135deg,var(--maroon) 0 7px,var(--maroon2) 7px 14px);border:2px solid var(--gold)}
-.tap{cursor:pointer}.tap:active{transform:scale(.95)}
-.pit{width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,#3a2a1f 0%,#211813 74%);border:6px solid var(--gold);margin:12px auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
-.pit .label{color:#f6e9d1;font-size:11px;opacity:.8}
-.player{margin:12px 0}.pname{font-weight:800;font-size:14px;margin:0 0 6px}.tag{font-size:11px;border-radius:20px;padding:3px 8px;background:var(--gold);margin-inline-start:5px}.me{color:var(--green);font-size:11px;margin-inline-start:5px}
-.score{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0}.winner{box-shadow:0 0 0 2px var(--gold) inset}
-.sep{height:1px;background:var(--line);margin:14px 0}
-.rules h3{margin:12px 0 6px;font-size:15px}.rules ul{margin:0;padding-right:20px}.rules li{margin:5px 0;font-size:13px;line-height:1.65}
-.center{text-align:center}
+button{border:0;border-radius:13px;padding:13px 14px;font:inherit;font-weight:800;cursor:pointer}
+.btn{width:100%;background:var(--gold);color:#201912}.btn.alt{background:#fff;border:1px solid var(--line)}.btn.danger{background:var(--danger);color:#fff}.btn.green{background:var(--green);color:#fff}
+.row{display:flex;gap:8px}.row>*{flex:1}.gap{height:8px}.err{color:var(--danger);font-size:13px;margin-top:8px}.ok{color:var(--green);font-size:13px;margin-top:8px}
+.code{font-size:32px;letter-spacing:6px;font-weight:900;text-align:center;padding:14px;border:2px dashed var(--gold);border-radius:14px;background:#fff;margin:10px 0}
+.players{list-style:none;padding:0;margin:10px 0}.players li{padding:11px 12px;background:#fff;border:1px solid var(--line);border-radius:12px;margin:7px 0}
+.small{font-size:12px;color:var(--muted);line-height:1.7}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;background:#ead7a7;font-size:11px;margin-inline-start:6px}
+.chat{height:260px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}.chat p{margin:0 0 8px;font-size:14px}.chat b{color:var(--maroon)}
+.quick{display:flex;gap:6px;overflow:auto;margin-bottom:8px}.quick button{white-space:nowrap;background:#efe2c8;padding:9px 11px}
+.hidden{display:none}.status{text-align:center;font-size:13px;color:var(--muted);margin-top:6px}
 </style>
 </head>
 <body>
-<div id="app"></div>
-<script>
+<div class="wrap">
+  <div class="stripe"></div>
+  <header><h1>الشيخ</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header>
+  <main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getDatabase, ref, get, set, update, onValue, push, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",
   authDomain: "al-sheikh-game.firebaseapp.com",
@@ -63,262 +46,141 @@ const firebaseConfig = {
   messagingSenderId: "739452149085",
   appId: "1:739452149085:web:778619aa18fed1c698dcb4"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
-const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-const SUITS=[{s:'♠',red:false},{s:'♥',red:true},{s:'♦',red:true},{s:'♣',red:false}];
+const fb = initializeApp(firebaseConfig);
+const auth = getAuth(fb);
+const db = getDatabase(fb);
+const app = document.getElementById("app");
 
-function buildDeck(){
-  const d=[];
-  for(const r of RANKS){
-    for(const su of SUITS){
-      let value;
-      if(r==='A') value=1;
-      else if(r==='10') value=su.red?0:10;
-      else if(['J','Q','K'].includes(r)) value=10;
-      else value=Number(r);
-      d.push({rank:r,suit:su.s,red:su.red,value});
-    }
+let uid=null, roomCode=localStorage.getItem("sheikh_room")||"", myName=localStorage.getItem("sheikh_name")||"";
+let unsubRoom=null, unsubChat=null, currentRoom=null;
+
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+function randomCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
+async function ensureAuth(){
+  if(auth.currentUser){uid=auth.currentUser.uid;return}
+  await signInAnonymously(auth);
+}
+function home(msg=""){
+  if(unsubRoom){unsubRoom();unsubRoom=null} if(unsubChat){unsubChat();unsubChat=null}
+  app.innerHTML=`
+  <div class="panel">
+    <label>اسم اللاعب</label>
+    <input id="name" maxlength="20" value="${esc(myName)}" placeholder="مثال: أحمد">
+    <div class="gap"></div>
+    <button id="create" class="btn">إنشاء غرفة</button>
+    <div id="err" class="err">${esc(msg)}</div>
+  </div>
+  <div class="panel">
+    <label>دخول غرفة موجودة</label>
+    <input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة">
+    <div class="gap"></div>
+    <button id="join" class="btn alt">دخول</button>
+  </div>
+  <div class="panel small">
+    تم تفعيل تسجيل الدخول المجهول تلقائياً. كل جهاز يحصل على هوية مستقلة في Firebase.
+  </div>`;
+  document.getElementById("create").onclick=createRoom;
+  document.getElementById("join").onclick=joinRoom;
+}
+async function createRoom(){
+  const n=document.getElementById("name").value.trim();
+  if(!n){document.getElementById("err").textContent="اكتب اسم اللاعب أولاً";return}
+  try{
+    await ensureAuth(); uid=auth.currentUser.uid;
+    let c=randomCode();
+    for(let i=0;i<4;i++){const s=await get(ref(db,`rooms/${c}/public`)); if(!s.exists())break; c=randomCode()}
+    const data={hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0}}};
+    await set(ref(db,`rooms/${c}/public`),data);
+    myName=n;roomCode=c;
+    localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);
+    subscribe(c);
+  }catch(e){
+    console.error(e);
+    document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ غير معروف");
   }
-  d.push({rank:'JOKER',suit:'ملون',red:true,value:20,power:'clear2'});
-  d.push({rank:'JOKER',suit:'أسود',red:false,value:20,power:'clear1'});
-  shuffle(d); return d;
 }
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
-function label(c){return c.rank==='JOKER'?(c.red?'🃏 ملون':'🃏 أسود'):(c.rank+c.suit)}
-function isPower(c){return ['J','Q','K','JOKER'].includes(c.rank)}
-function uid(){return 'p_'+Math.random().toString(36).slice(2,10)}
-function roomCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=chars[Math.floor(Math.random()*chars.length)];return s}
-
-let code=null,myId=null,room=null,roomRef=null;
-let state={screen:'home',error:''};
-let peekDone=false,kabasMine=false,jokerPick=null,jackOwn=null,jackTarget=null;
-
-function players(){
-  if(!room?.players)return [];
-  return Object.entries(room.players).map(([id,p])=>({id,...p})).sort((a,b)=>a.order-b.order);
-}
-function update(obj){return roomRef?.update(obj)}
-
-function createRoom(){
-  const name=document.getElementById('name').value.trim();
-  if(!name){state.error='اكتب اسمك أولاً';render();return}
-  code=roomCode(); myId=uid();
-  db.ref('rooms/'+code).set({hostId:myId,status:'lobby',createdAt:Date.now(),players:{[myId]:{name,order:0}}}).then(subscribe);
-}
-function joinRoom(){
-  const name=document.getElementById('name').value.trim();
-  const c=document.getElementById('join').value.trim().toUpperCase();
-  if(!name){state.error='اكتب اسمك أولاً';render();return}
-  if(!c){state.error='اكتب كود الغرفة';render();return}
-  db.ref('rooms/'+c).once('value').then(s=>{
-    if(!s.exists()){state.error='الغرفة غير موجودة';render();return}
-    const v=s.val();
-    if(v.status!=='lobby'){state.error='الجولة بدأت بالفعل';render();return}
-    code=c;myId=uid();
-    const order=Object.keys(v.players||{}).length;
-    db.ref('rooms/'+code+'/players/'+myId).set({name,order}).then(subscribe);
-  });
-}
-function subscribe(){
-  state.screen='room';
-  roomRef=db.ref('rooms/'+code);
-  roomRef.on('value',s=>{room=s.val(); if(room)render()});
-}
-function startGame(){
-  const ps=players(); if(ps.length<2)return;
-  const deck=buildDeck(), up={};
-  ps.forEach(p=>up['players/'+p.id+'/hand']=[deck.pop(),deck.pop(),deck.pop(),deck.pop()]);
-  const first=deck.pop();
-  Object.assign(up,{deck,discard:[first],turnOrder:ps.map(p=>p.id),currentPlayerId:ps[0].id,status:'playing',turnSub:'idle',drawnCard:null,msg:'',checkCallerId:null,finalQueue:[],kabas:{active:false,resolverId:null}});
-  update(up);
-}
-
-function drawCard(){
-  let deck=(room.deck||[]).slice(),discard=(room.discard||[]).slice();
-  if(!deck.length){
-    const top=discard.pop();
-    deck=discard; discard=[top]; shuffle(deck);
+async function joinRoom(){
+  const n=document.getElementById("name").value.trim();
+  const c=document.getElementById("code").value.trim().toUpperCase();
+  if(!n||!c){document.getElementById("err").textContent="اكتب الاسم وكود الغرفة";return}
+  try{
+    await ensureAuth(); uid=auth.currentUser.uid;
+    const snap=await get(ref(db,`rooms/${c}/public`));
+    if(!snap.exists()) throw new Error("الغرفة غير موجودة");
+    const room=snap.val();
+    const players=room.players||{};
+    if(room.status!=="lobby" && !players[uid]) throw new Error("اللعبة بدأت");
+    const order=players[uid]?.order ?? Object.keys(players).length;
+    await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:players[uid]?.cardCount||0});
+    myName=n;roomCode=c;
+    localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);
+    subscribe(c);
+  }catch(e){
+    console.error(e);
+    document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة";
   }
-  const c=deck.pop();
-  update({deck,discard,drawnCard:c,turnSub:'drawn',msg:''});
 }
-function replaceSlot(i){
-  const h=room.players[myId].hand.slice(),old=h[i];
-  h[i]=room.drawnCard;
-  update({['players/'+myId+'/hand']:h,discard:room.discard.concat([old]),drawnCard:null,turnSub:'idle'}).then(openKabas);
+function subscribe(c){
+  if(unsubRoom)unsubRoom();
+  unsubRoom=onValue(ref(db,`rooms/${c}/public`),s=>{
+    if(!s.exists()){home("الغرفة غير موجودة أو تم حذفها");return}
+    currentRoom=s.val(); renderLobby();
+  },e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));
+  if(unsubChat)unsubChat();
+  unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(50)),s=>renderChat(s.val()||{}));
 }
-function discardDrawn(){
-  const c=room.drawnCard,discard=room.discard.concat([c]);
-  if(c.rank==='JOKER'){
-    update({discard,drawnCard:null,turnSub:c.power==='clear2'?'joker2':'joker1',msg:c.power==='clear2'?'اختر ورقتين تمسحهن':'اختر ورقة تمسحها'}); return;
-  }
-  if(c.rank==='K'){
-    let deck=room.deck.slice();
-    if(deck.length<2){update({msg:'السحبة لا تكفي، انتهِ من الدور'});return}
-    const cards=[deck.pop(),deck.pop()];
-    update({discard,deck,drawnCard:null,kingCards:cards,turnSub:'king',msg:'اختر الأفضل من الورقتين'});return;
-  }
-  if(c.rank==='Q'){update({discard,drawnCard:null,turnSub:'queen',msg:'اختر ورقة من أوراقك لرؤيتها'});return}
-  if(c.rank==='J'){update({discard,drawnCard:null,turnSub:'jackOwn',msg:'اختر ورقة من أوراقك للمبادلة'});return}
-  update({discard,drawnCard:null,turnSub:'idle'}).then(openKabas);
+function renderLobby(){
+  const r=currentRoom||{}, ps=Object.entries(r.players||{}).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+  app.innerHTML=`
+  <div class="panel">
+    <div class="small" style="text-align:center">كود الغرفة</div>
+    <div class="code">${esc(roomCode)}</div>
+    <ul class="players">${ps.map(([id,p])=>`<li>${esc(p.name)}${id===uid?' <span class="badge">أنت</span>':''}${id===r.hostId?' 👑':''}</li>`).join("")}</ul>
+    <div class="row">
+      <button id="copy" class="btn alt">نسخ الكود</button>
+      <button id="leave" class="btn danger">خروج</button>
+    </div>
+    <div class="status">${ps.length} لاعب</div>
+  </div>
+  <div class="panel">
+    <b>شات الغرفة</b>
+    <div id="chatBox" class="chat"></div>
+    <div class="quick">
+      ${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}
+    </div>
+    <div class="row">
+      <input id="chatInput" maxlength="120" placeholder="اكتب رسالة...">
+      <button id="send" class="btn" style="flex:0 0 90px">إرسال</button>
+    </div>
+  </div>
+  <div class="panel small">
+    الاتصال والغرف والشات يعملون على Firebase. مرحلة اللعب الكاملة نركبها بعد ما نتأكد أن دخول لاعبين من جهازين مختلفين شغال بدون مشاكل.
+  </div>`;
+  document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);alert("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};
+  document.getElementById("leave").onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};
+  document.getElementById("send").onclick=()=>sendChat();
+  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));
 }
-function jokerClear(i){
-  const h=room.players[myId].hand.slice();
-  if(room.turnSub==='joker1'){
-    const rem=h.splice(i,1)[0];
-    update({['players/'+myId+'/hand']:h,discard:room.discard.concat([rem]),turnSub:'idle'}).then(openKabas);return;
-  }
-  if(jokerPick===null){jokerPick=i;update({msg:'اختر الورقة الثانية'});return}
-  const idx=[jokerPick,i].filter((v,k,a)=>a.indexOf(v)===k).sort((a,b)=>b-a);
-  if(idx.length<2){update({msg:'اختر ورقة ثانية مختلفة'});return}
-  const removed=[];idx.forEach(x=>removed.push(h.splice(x,1)[0]));jokerPick=null;
-  update({['players/'+myId+'/hand']:h,discard:room.discard.concat(removed),turnSub:'idle'}).then(openKabas);
+async function sendChat(forced){
+  const inp=document.getElementById("chatInput");
+  const text=(forced||(inp?.value||"")).trim().slice(0,120); if(!text)return;
+  try{
+    await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid,name:myName,text,ts:Date.now()});
+    if(inp)inp.value="";
+  }catch(e){alert("تعذر إرسال الرسالة: "+(e.code||e.message))}
 }
-function kingChoose(i){
-  const chosen=room.kingCards[i],other=room.kingCards[1-i];
-  update({discard:room.discard.concat([other]),kingCards:null,drawnCard:chosen,turnSub:'kingPlace',msg:'بدّلها مع ورقة عندك أو ارمها'});
-}
-function kingThrowBoth(){update({discard:room.discard.concat(room.kingCards),kingCards:null,turnSub:'idle'}).then(openKabas)}
-function kingDiscard(){update({discard:room.discard.concat([room.drawnCard]),drawnCard:null,turnSub:'idle'}).then(openKabas)}
-function queenSee(i){
-  const c=room.players[myId].hand[i];
-  update({msg:'ورقتك رقم '+(i+1)+' هي '+label(c),turnSub:'queenSeen'});
-}
-function queenDone(){update({turnSub:'idle'}).then(openKabas)}
-function jackOwnPick(i){jackOwn=i;update({turnSub:'jackPlayer',msg:'اختر اللاعب'})}
-function jackPlayerPick(pid){jackTarget=pid;update({turnSub:'jackCard',msg:'اختر ورقة من اللاعب'})}
-function jackCardPick(i){
-  const a=room.players[myId].hand.slice(),b=room.players[jackTarget].hand.slice();
-  const t=a[jackOwn];a[jackOwn]=b[i];b[i]=t;
-  const up={turnSub:'idle'};up['players/'+myId+'/hand']=a;up['players/'+jackTarget+'/hand']=b;
-  jackOwn=null;jackTarget=null;update(up).then(openKabas);
-}
-function openKabas(){update({kabas:{active:true,resolverId:null},msg:'فرصة كبس: إذا عندك نفس الرقم اضغط أنا أكبس'})}
-function claimKabas(){
-  db.ref('rooms/'+code+'/kabas/resolverId').transaction(v=>v===null?myId:undefined,(e,ok,s)=>{if(ok&&s.val()===myId){kabasMine=true;render()}});
-}
-function kabasSlot(i){
-  const h=room.players[myId].hand.slice(),top=room.discard.at(-1),c=h[i],up={};
-  if(c.rank===top.rank){
-    h.splice(i,1);up['players/'+myId+'/hand']=h;up.discard=room.discard.concat([c]);up.msg=room.players[myId].name+' كبس صح وتخلص من ورقة ✅';
-  }else{
-    let deck=room.deck.slice(),penalty;
-    if(deck.length){penalty=deck.pop();up.deck=deck}else penalty=room.discard[0];
-    h.push(penalty);up['players/'+myId+'/hand']=h;up.msg='كبس خاطئ — ورقة عقوبة';
-  }
-  up.kabas={active:true,resolverId:null};kabasMine=false;update(up);
-}
-function finishKabas(){kabasMine=false;advance({kabas:{active:false,resolverId:null}})}
-function advance(extra={}){
-  const up={turnSub:'idle',msg:'',...extra};
-  if(room.checkCallerId){
-    const q=(room.finalQueue||[]).slice();
-    if(!q.length)up.status='ended';
-    else{up.currentPlayerId=q.shift();up.finalQueue=q}
-  }else{
-    const o=room.turnOrder,i=o.indexOf(room.currentPlayerId);up.currentPlayerId=o[(i+1)%o.length];
-  }
-  update(up);
-}
-function callCheck(){
-  const o=room.turnOrder,i=o.indexOf(myId),q=[];
-  for(let k=1;k<o.length;k++)q.push(o[(i+k)%o.length]);
-  const up={checkCallerId:myId,finalQueue:q,msg:room.players[myId].name+' قال شيك/سكور — لكل لاعب دور أخير',turnSub:'idle'};
-  if(!q.length)up.status='ended'; else{up.currentPlayerId=q.shift();up.finalQueue=q}
-  update(up);
-}
-function playAgain(){
-  const ps=players(),up={};
-  ps.forEach(p=>up['players/'+p.id+'/hand']=null);
-  Object.assign(up,{status:'lobby',deck:null,discard:null,currentPlayerId:null,turnSub:null,drawnCard:null,kingCards:null,msg:null,checkCallerId:null,finalQueue:null,kabas:null});
-  peekDone=false;update(up);
-}
-function face(c,click='',arg=''){
-  return `<div class="card face ${c.red?'red':'black'} ${click?'tap':''}" ${click?`onclick="${click}(${JSON.stringify(arg)})"`:''}>${label(c)}</div>`;
-}
-function back(click='',i=0){return `<div class="card back ${click?'tap':''}" ${click?`onclick="${click}(${i})"`:''}></div>`}
-
-function rulesHTML(){
-return `<div class="panel rules">
-<h3>القيم</h3><ul>
-<li>10 الأحمر = 0</li><li>10 الأسود = 10</li><li>A = 1</li><li>2 إلى 9 بقيمتها</li>
-</ul>
-<h3>القوى</h3><ul>
-<li>الجوكر الملون: يمسح ورقتين</li><li>الجوكر الأسود: يمسح ورقة</li>
-<li>الشايب K: يسحب ورقتين وتختار الأفضل</li><li>البنت Q: تشوف ورقة من أوراقك</li><li>الولد J: تبدل ورقة مع لاعب آخر</li>
-</ul>
-<h3>النهاية</h3><ul><li>تقول شيك/سكور في دورك، ثم بقية اللاعبين لهم دور أخير، والأقل نقاط يفوز.</li></ul>
-</div>`;
+function renderChat(obj){
+  const box=document.getElementById("chatBox"); if(!box)return;
+  const arr=Object.values(obj).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  box.innerHTML=arr.map(m=>`<p><b>${esc(m.name)}:</b> ${esc(m.text)}</p>`).join("");
+  box.scrollTop=box.scrollHeight;
 }
 
-function render(){
- const app=document.getElementById('app');
- let h=`<div class="topbar"></div><header><h1>الشيخ</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header>`;
- if(state.screen==='home'){
-   h+=`<div class="panel"><label>اسم اللاعب</label><input id="name" placeholder="مثال: أحمد"><div class="row" style="margin-top:10px"><button class="btn gold" onclick="createRoom()">إنشاء غرفة</button></div></div>
-   <div class="panel"><label>دخول غرفة موجودة</label><input id="join" placeholder="كود الغرفة" maxlength="5"><button class="btn light" style="width:100%;margin-top:10px" onclick="joinRoom()">دخول</button>${state.error?`<div class="err">${state.error}</div>`:''}</div>${rulesHTML()}`;
-   app.innerHTML=h;return;
- }
- if(!room){app.innerHTML=h+'<div class="panel center">جاري الاتصال...</div>';return}
- const ps=players();
- if(room.status==='lobby'){
-   h+=`<div class="panel center"><div class="hint">شارك الكود مع اللاعبين</div><div class="code">${code}</div><ul class="list">${ps.map(p=>`<li>${p.name}${p.id===myId?' — أنت':''}${p.id===room.hostId?' 👑':''}</li>`).join('')}</ul>`;
-   if(room.hostId===myId)h+=ps.length>=2?`<button class="btn gold" style="width:100%" onclick="startGame()">ابدأ اللعبة</button>`:`<div class="hint">بانتظار لاعب ثاني على الأقل</div>`;
-   else h+=`<div class="hint">بانتظار المضيف يبدأ اللعبة</div>`;
-   h+='</div>'+rulesHTML();app.innerHTML=h;return;
- }
- if(room.status==='ended'){
-   const scores=ps.map(p=>({name:p.name,total:(p.hand||[]).reduce((s,c)=>s+c.value,0),hand:p.hand||[]})).sort((a,b)=>a.total-b.total);
-   h+=`<div class="panel"><h2 class="center">النتائج النهائية</h2>${scores.map((s,i)=>`<div class="score ${i===0?'winner':''}"><b>${i===0?'🏆 ':''}${s.name}</b> — ${s.total} نقطة<div class="hand" style="margin-top:7px">${s.hand.map(c=>face(c)).join('')}</div></div>`).join('')}`;
-   if(room.hostId===myId)h+=`<button class="btn gold" style="width:100%" onclick="playAgain()">جولة جديدة</button>`;
-   h+='</div>';app.innerHTML=h;return;
- }
- const me=room.players[myId],hand=me.hand||[],top=room.discard.at(-1);
- if(!peekDone){
-   h+=`<div class="panel center"><h2>احفظ أول ورقتين</h2><div class="hand" style="justify-content:center">${hand.map((c,i)=>i<2?face(c):back()).join('')}</div><button class="btn" style="width:100%;margin-top:12px" onclick="peekDone=true;render()">تم، أخفِ الأوراق</button></div>`;
-   app.innerHTML=h;return;
- }
- if(room.msg)h+=`<div class="msg">${room.msg}</div>`;
- h+=`<div class="pit"><div class="label">ورقة الوسط</div>${face(top)}</div>`;
- h+=`<div class="panel">${ps.map(p=>`<div class="player"><p class="pname">${p.name}${p.id===myId?'<span class="me">أنت</span>':''}${p.id===room.currentPlayerId&&!room.kabas?.active?'<span class="tag">دوره الآن</span>':''}</p><div class="hand">${(p.hand||[]).map(()=>back()).join('')}</div></div>`).join('')}</div>`;
- const myTurn=room.currentPlayerId===myId;
- h+=`<div class="panel">`;
- if(room.kabas?.active){
-   if(!kabasMine){
-     h+=`<div class="hint">إذا عندك نفس رقم ورقة الوسط وتعرف مكانه، تقدر تكبس.</div><div class="row" style="margin-top:10px"><button class="btn light" onclick="claimKabas()">أنا أكبس</button>${myTurn?'<button class="btn" onclick="finishKabas()">التالي</button>':''}</div>`;
-   }else{
-     h+=`<div class="hint">اختر الورقة اللي تطابق الوسط:</div><div class="hand">${hand.map((c,i)=>back('kabasSlot',i)).join('')}</div>`;
-   }
- }else if(!myTurn){
-   h+=`<div class="center hint">بانتظار دور ${room.players[room.currentPlayerId].name}...</div>`;
- }else if(room.turnSub==='idle'){
-   h+=`<div class="row"><button class="btn" onclick="drawCard()">اسحب ورقة</button>${!room.checkCallerId?'<button class="btn light" onclick="callCheck()">شيك / سكور</button>':''}</div>`;
- }else if(room.turnSub==='drawn'){
-   h+=`<div class="hint">الورقة المسحوبة:</div><div class="hand">${face(room.drawnCard)}</div><div class="hint" style="margin-top:10px">بدّلها مع إحدى أوراقك:</div><div class="hand">${hand.map((c,i)=>back('replaceSlot',i)).join('')}</div><button class="btn light" style="width:100%;margin-top:10px" onclick="discardDrawn()">ارمها في الوسط${isPower(room.drawnCard)?' واستخدم قوتها':''}</button>`;
- }else if(room.turnSub==='joker1'||room.turnSub==='joker2'){
-   h+=`<div class="hint">${room.turnSub==='joker2'?'اختر ورقتين للمسح':'اختر ورقة للمسح'}</div><div class="hand">${hand.map((c,i)=>back('jokerClear',i)).join('')}</div>`;
- }else if(room.turnSub==='king'){
-   h+=`<div class="hint">اختر الأفضل من الورقتين:</div><div class="hand">${room.kingCards.map((c,i)=>face(c,'kingChoose',i)).join('')}</div><button class="btn light" style="width:100%;margin-top:10px" onclick="kingThrowBoth()">ارمِ الاثنتين</button>`;
- }else if(room.turnSub==='kingPlace'){
-   h+=`<div class="hint">بدّلها مع ورقة عندك أو ارمها:</div><div class="hand">${hand.map((c,i)=>back('replaceSlot',i)).join('')}</div><button class="btn light" style="width:100%;margin-top:10px" onclick="kingDiscard()">ارمها</button>`;
- }else if(room.turnSub==='queen'){
-   h+=`<div class="hint">اختر ورقة من أوراقك لرؤيتها:</div><div class="hand">${hand.map((c,i)=>back('queenSee',i)).join('')}</div>`;
- }else if(room.turnSub==='queenSeen'){
-   h+=`<button class="btn" style="width:100%" onclick="queenDone()">تم</button>`;
- }else if(room.turnSub==='jackOwn'){
-   h+=`<div class="hint">اختر ورقة من أوراقك للمبادلة:</div><div class="hand">${hand.map((c,i)=>back('jackOwnPick',i)).join('')}</div>`;
- }else if(room.turnSub==='jackPlayer'){
-   h+=`<div class="hint">اختر اللاعب:</div><div class="row">${ps.filter(p=>p.id!==myId).map(p=>`<button class="btn light small" onclick="jackPlayerPick('${p.id}')">${p.name}</button>`).join('')}</div>`;
- }else if(room.turnSub==='jackCard'){
-   const other=room.players[jackTarget]?.hand||[];
-   h+=`<div class="hint">اختر ورقة من اللاعب:</div><div class="hand">${other.map((c,i)=>back('jackCardPick',i)).join('')}</div>`;
- }
- h+='</div>';
- app.innerHTML=h;
-}
-render();
+onAuthStateChanged(auth,u=>{
+  if(u){uid=u.uid; if(roomCode)subscribe(roomCode); else home()}
+});
+ensureAuth().catch(e=>home("فشل تسجيل الدخول المجهول: "+(e.code||e.message)));
 </script>
 </body>
 </html>
