@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>الشيخ | لعبة أونلاين</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --ink:#241a14; --sand:#f1e6d2; --sand-dark:#e4d5b8;
+    --maroon:#7a2e3a; --maroon-dark:#5c2029;
+    --gold:#c89b3c; --gold-light:#e9c976; --teal:#2f5d53;
+    --card-bg:#fffdf8; --danger:#a3392f;
+    --shadow: 0 4px 14px rgba(36,26,20,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--sand);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(200,155,60,0.10), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(122,46,58,0.08), transparent 45%);
+    color:var(--ink); font-family:'Tajawal', sans-serif;
+    min-height:100vh; display:flex; justify-content:center;
+  }
+  #root{width:100%;max-width:480px;min-height:100vh;padding:0 16px 40px;}
+  .zigzag{
+    height:10px;
+    background:
+      linear-gradient(135deg, var(--maroon) 25%, transparent 25%) 0 0,
+      linear-gradient(-135deg, var(--maroon) 25%, transparent 25%) 0 0;
+    background-size:14px 14px; background-color:var(--gold); margin-bottom:22px;
+  }
+  header{padding:22px 0 0;text-align:center;}
+  header h1{font-size:30px;font-weight:900;margin:0;letter-spacing:1px;color:var(--maroon-dark);}
+  header p{margin:4px 0 0;font-size:13px;color:var(--ink);opacity:0.65;}
+  .panel{background:rgba(255,253,248,0.6);border:1px solid var(--sand-dark);border-radius:18px;padding:18px;margin-top:18px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:15px;font-weight:700;border:none;border-radius:14px;padding:13px 18px;background:var(--maroon);color:var(--sand);cursor:pointer;transition:transform .12s ease;width:100%;}
+  .btn:active{transform:scale(0.97);}
+  .btn.secondary{background:var(--card-bg);color:var(--ink);border:1.5px solid var(--sand-dark);}
+  .btn.gold{background:var(--gold);color:var(--ink);}
+  .btn.small{width:auto;padding:9px 14px;font-size:13px;border-radius:11px;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .btn-row .btn{flex:1;min-width:110px;}
+  input[type=text]{
+    width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border-radius:12px;
+    border:1.5px solid var(--sand-dark);background:var(--card-bg);color:var(--ink);margin-top:8px;
+  }
+  .card{width:48px;height:68px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;box-shadow:var(--shadow);flex-shrink:0;}
+  .card.face{background:var(--card-bg);border:1px solid var(--sand-dark);}
+  .card.face.red{color:var(--danger);}
+  .card.face.black{color:var(--ink);}
+  .card.back{background:repeating-linear-gradient(135deg, var(--maroon) 0 6px, var(--maroon-dark) 6px 12px);border:2px solid var(--gold);}
+  .card.tappable{cursor:pointer;}
+  .card.tappable:active{transform:scale(0.94);}
+  .hand{display:flex;gap:8px;overflow-x:auto;padding:4px 2px;}
+  .player-block{margin-top:14px;}
+  .player-name{font-size:14px;font-weight:700;margin:0 0 6px;display:flex;align-items:center;gap:6px;}
+  .turn-tag{font-size:11px;font-weight:700;background:var(--gold);color:var(--ink);padding:2px 8px;border-radius:20px;}
+  .me-tag{font-size:11px;font-weight:700;color:var(--teal);}
+  .pit{display:flex;flex-direction:column;align-items:center;gap:8px;background:radial-gradient(circle, #3a2a1f 0%, #241a14 75%);border-radius:50%;width:150px;height:150px;margin:6px auto 4px;border:6px solid var(--gold);justify-content:center;}
+  .pit .label{color:var(--sand);font-size:11px;opacity:0.8;}
+  .msg{background:var(--gold-light);color:var(--ink);font-size:13px;font-weight:500;padding:10px 14px;border-radius:12px;margin-bottom:12px;}
+  .choose-label{font-size:13px;color:var(--ink);opacity:0.75;margin:10px 0 6px;}
+  .gate-screen{text-align:center;padding:30px 10px;}
+  .gate-screen h2{font-size:20px;margin-bottom:6px;}
+  .gate-screen p{font-size:13px;opacity:0.7;margin-bottom:20px;}
+  .code-box{font-size:34px;font-weight:900;letter-spacing:8px;text-align:center;background:var(--card-bg);border:2px dashed var(--gold);border-radius:14px;padding:14px;margin:14px 0;color:var(--maroon-dark);}
+  .result-row{background:var(--card-bg);border:1px solid var(--sand-dark);border-radius:14px;padding:12px 14px;margin-bottom:10px;}
+  .result-row.winner{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-light) inset;}
+  .result-row .rname{font-weight:700;font-size:15px;margin:0 0 6px;}
+  .result-row .rhand{display:flex;gap:6px;flex-wrap:wrap;font-size:13px;}
+  .lobby-list{list-style:none;padding:0;margin:14px 0;}
+  .lobby-list li{background:var(--card-bg);border:1px solid var(--sand-dark);border-radius:12px;padding:10px 14px;margin-bottom:8px;font-weight:500;font-size:14px;}
+  .err{color:var(--danger);font-size:13px;margin-top:6px;}
+  .rules-note{font-size:12px;opacity:0.6;text-align:center;margin-top:22px;line-height:1.8;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",
+  authDomain: "al-sheikh-game.firebaseapp.com",
+  databaseURL: "https://al-sheikh-game-default-rtdb.firebaseio.com",
+  projectId: "al-sheikh-game",
+  storageBucket: "al-sheikh-game.firebasestorage.app",
+  messagingSenderId: "739452149085",
+  appId: "1:739452149085:web:778619aa18fed1c698dcb4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const SUITS=[{s:'♠',red:false},{s:'♥',red:true},{s:'♦',red:true},{s:'♣',red:false}];
+function buildDeck(){
+  let d=[];
+  RANKS.forEach(r=>SUITS.forEach(su=>{
+    let val;
+    if(r==='A')val=1; else if(r==='10')val=su.red?0:10;
+    else if(r==='J'||r==='Q'||r==='K')val=10; else val=Number(r);
+    d.push({rank:r,suit:su.s,red:su.red,value:val});
+  }));
+  d.push({rank:'JOKER',suit:'ملون',red:true,value:20,power:'clear2'});
+  d.push({rank:'JOKER',suit:'أسود',red:false,value:20,power:'clear1'});
+  for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+  return d;
+}
+function isPowerCard(c){return c.rank==='K'||c.rank==='Q'||c.rank==='J'||c.rank==='JOKER';}
+function cardLabel(c){return c.rank==='JOKER'?'🂠':(c.rank+c.suit);}
+function genId(){return 'p_'+Math.random().toString(36).slice(2,10);}
+function genCode(){const L='ابجدهوزحطكمنس';let c='';for(let i=0;i<4;i++)c+=L[Math.floor(Math.random()*L.length)];return c;}
+
+let view={screen:'landing',name:'',joinCode:'',err:''};
+let code=null, myId=null, room=null, roomRef=null;
+let localPeeked=false, kabasClaimedByMe=false;
+
+function playersArr(){
+  if(!room||!room.players)return [];
+  return Object.keys(room.players).map(id=>({id,...room.players[id]})).sort((a,b)=>a.order-b.order);
+}
+function dbUpdate(obj){ if(roomRef) roomRef.update(obj); }
+
+function createRoom(){
+  const name=document.getElementById('nameInput').value.trim();
+  if(!name){view.err='اكتب اسمك أولاً';render();return;}
+  code=genCode(); myId=genId();
+  localStorage.setItem('sheikh_pid_'+code, myId);
+  db.ref('rooms/'+code).set({
+    hostId:myId, status:'lobby', createdAt:Date.now(),
+    players:{[myId]:{name, order:0}}
+  }).then(subscribe);
+}
+function joinRoom(){
+  const name=document.getElementById('nameInput').value.trim();
+  const c=document.getElementById('codeInput').value.trim();
+  if(!name){view.err='اكتب اسمك أولاً';render();return;}
+  if(!c){view.err='اكتب كود الغرفة';render();return;}
+  db.ref('rooms/'+c).once('value').then(snap=>{
+    if(!snap.exists()){view.err='ما فيه غرفة بهذا الكود';render();return;}
+    const val=snap.val();
+    if(val.status!=='lobby'){view.err='اللعبة بدأت في هذي الغرفة';render();return;}
+    code=c; myId=genId();
+    localStorage.setItem('sheikh_pid_'+code, myId);
+    const order=Object.keys(val.players||{}).length;
+    db.ref('rooms/'+code+'/players/'+myId).set({name, order}).then(subscribe);
+  });
+}
+function subscribe(){
+  roomRef=db.ref('rooms/'+code);
+  roomRef.on('value', snap=>{
+    room=snap.val();
+    if(room) render();
+  });
+}
+function startGame(){
+  const arr=playersArr();
+  if(arr.length<2)return;
+  const deck=buildDeck();
+  const players={};
+  arr.forEach(p=>{ players['players/'+p.id+'/hand']=[deck.pop(),deck.pop(),deck.pop(),deck.pop()]; });
+  const discard=[deck.pop()];
+  const turnOrder=arr.map(p=>p.id);
+  dbUpdate(Object.assign({}, players, {
+    deck, discard, turnOrder, currentPlayerId:turnOrder[0],
+    status:'playing', turnSub:'idle', drawnCard:null, msg:'',
+    sheikhCallerId:null, finalQueue:[], kabas:{active:false,resolverId:null}
+  }));
+}
+function drawCard(){
+  let deck=room.deck.slice(); let discard=room.discard.slice();
+  if(deck.length===0){ const top=discard.pop(); deck=discard; discard=[top];
+    for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];} }
+  const card=deck.pop();
+  dbUpdate({deck,discard,drawnCard:card,turnSub:'drawn',msg:''});
+}
+function swapIn(slot){
+  const hand=room.players[myId].hand.slice();
+  const old=hand[slot]; hand[slot]=room.drawnCard;
+  const discard=room.discard.concat([old]);
+  dbUpdate({['players/'+myId+'/hand']:hand, discard, drawnCard:null, turnSub:'idle'});
+  openKabas();
+}
+function discardDirect(){
+  const c=room.drawnCard; let discard=room.discard.concat([c]);
+  if(c.rank==='JOKER'){
+    dbUpdate({discard, drawnCard:null, turnSub:c.power==='clear2'?'joker-clear2':'joker-clear1',
+      msg:c.power==='clear2'?'اختر ورقتين من أوراقك للتخلص منهما':'اختر ورقة واحدة للتخلص منها'});
+    return;
+  }
+  if(c.rank==='K'){
+    let deck=room.deck.slice(); const kingCards=[deck.pop(),deck.pop()];
+    dbUpdate({discard, deck, drawnCard:null, kingCards, turnSub:'king-choose', msg:'اختر الأفضل من الورقتين'});
+    return;
+  }
+  if(c.rank==='Q'){ dbUpdate({discard,drawnCard:null,turnSub:'queen-view',msg:'اختر ورقة من أوراقك لرؤيتها'}); return; }
+  if(c.rank==='J'){ dbUpdate({discard,drawnCard:null,turnSub:'jack-pick-own',msg:'اختر ورقة من أوراقك للمبادلة'}); return; }
+  dbUpdate({discard,drawnCard:null,turnSub:'idle'}); openKabas();
+}
+let jokerFirstPick=null;
+function jokerClearPick(slot){
+  const hand=room.players[myId].hand.slice();
+  if(room.turnSub==='joker-clear1'){
+    const removed=hand.splice(slot,1)[0];
+    dbUpdate({['players/'+myId+'/hand']:hand, discard:room.discard.concat([removed]), turnSub:'idle'});
+    openKabas(); return;
+  }
+  if(jokerFirstPick===null){ jokerFirstPick=slot; dbUpdate({msg:'اختر ورقة ثانية'}); return; }
+  const idxs=[jokerFirstPick,slot].sort((a,b)=>b-a);
+  let removed=[];
+  idxs.forEach(i=>{ removed.push(hand[i]); hand.splice(i,1); });
+  jokerFirstPick=null;
+  dbUpdate({['players/'+myId+'/hand']:hand, discard:room.discard.concat(removed), turnSub:'idle'});
+  openKabas();
+}
+function kingPick(which){
+  const chosen=room.kingCards[which]; const other=room.kingCards[1-which];
+  dbUpdate({discard:room.discard.concat([other]), kingCards:null, drawnCard:chosen, turnSub:'king-place', msg:'اختر مكانها أو ارمها'});
+}
+function kingDiscardBoth(){
+  dbUpdate({discard:room.discard.concat(room.kingCards), kingCards:null, turnSub:'idle'});
+  openKabas();
+}
+function discardKingFinal(){
+  dbUpdate({discard:room.discard.concat([room.drawnCard]), drawnCard:null, turnSub:'idle'});
+  openKabas();
+}
+function queenView(slot){
+  const val=room.players[myId].hand[slot];
+  dbUpdate({msg:'ورقتك في المكان '+(slot+1)+' هي: '+cardLabel(val), turnSub:'queen-shown'});
+}
+function queenDone(){ dbUpdate({turnSub:'idle'}); openKabas(); }
+let jackOwnSlot=null, jackTargetPlayer=null;
+function jackPickOwn(slot){ jackOwnSlot=slot; dbUpdate({turnSub:'jack-pick-target-player', msg:'اختر اللاعب الآخر'}); }
+function jackPickTargetPlayer(pid){ jackTargetPlayer=pid; dbUpdate({turnSub:'jack-pick-target-card', msg:'اختر ورقته'}); }
+function jackPickTargetCard(slot){
+  const myHand=room.players[myId].hand.slice();
+  const targetId=jackTargetPlayer;
+  const otherHand=room.players[targetId].hand.slice();
+  const tmp=myHand[jackOwnSlot]; myHand[jackOwnSlot]=otherHand[slot]; otherHand[slot]=tmp;
+  jackOwnSlot=null; jackTargetPlayer=null;
+  const updates={turnSub:'idle'};
+  updates['players/'+myId+'/hand']=myHand;
+  updates['players/'+targetId+'/hand']=otherHand;
+  dbUpdate(updates);
+  openKabas();
+}
+function openKabas(){ dbUpdate({kabas:{active:true,resolverId:null}}); }
+function tryClaimKabas(){
+  db.ref('rooms/'+code+'/kabas/resolverId').transaction(cur=> cur===null ? myId : undefined, (err,committed,snap)=>{
+    if(committed && snap.val()===myId){ kabasClaimedByMe=true; render(); }
+  });
+}
+function kabasSlot(slot){
+  const hand=room.players[myId].hand.slice();
+  const top=room.discard[room.discard.length-1];
+  const card=hand[slot];
+  let updates={};
+  if(card.rank===top.rank){
+    hand.splice(slot,1);
+    updates['players/'+myId+'/hand']=hand;
+    updates.discard=room.discard.concat([card]);
+    updates.msg=room.players[myId].name+' طابق بنجاح وتخلص من ورقة 🎉';
+  }else{
+    let deck=room.deck.slice();
+    let penalty;
+    if(deck.length){ penalty=deck.pop(); updates.deck=deck; }
+    else { penalty=room.discard[0]; }
+    hand.push(penalty);
+    updates['players/'+myId+'/hand']=hand;
+    updates.msg='مطابقة خاطئة، '+room.players[myId].name+' ياخذ ورقة عقوبة';
+  }
+  updates.kabas={active:true,resolverId:null};
+  kabasClaimedByMe=false;
+  dbUpdate(updates);
+}
+function endKabas(){
+  kabasClaimedByMe=false;
+  advanceTurn({kabas:{active:false,resolverId:null}});
+}
+function advanceTurn(extra){
+  let updates=Object.assign({turnSub:'idle', msg:''}, extra||{});
+  if(room.sheikhCallerId){
+    if(!room.finalQueue || room.finalQueue.length===0){ updates.status='ended'; }
+    else { updates.currentPlayerId=room.finalQueue[0]; updates.finalQueue=room.finalQueue.slice(1); }
+  }else{
+    const order=room.turnOrder; const idx=order.indexOf(room.currentPlayerId);
+    updates.currentPlayerId=order[(idx+1)%order.length];
+  }
+  dbUpdate(updates);
+}
+function callSheikh(){
+  const order=room.turnOrder; const idx=order.indexOf(myId);
+  const finalQueue=[]; for(let i=1;i<order.length;i++) finalQueue.push(order[(idx+i)%order.length]);
+  dbUpdate({sheikhCallerId:myId, finalQueue, msg:room.players[myId].name+' قال شيك! جولة أخيرة للجميع'});
+  advanceTurnAfterSheikh(finalQueue);
+}
+function advanceTurnAfterSheikh(finalQueue){
+  const updates={turnSub:'idle', msg:room.players[myId].name+' قال شيك! جولة أخيرة للجميع'};
+  if(finalQueue.length===0){ updates.status='ended'; }
+  else { updates.currentPlayerId=finalQueue[0]; updates.finalQueue=finalQueue.slice(1); }
+  dbUpdate(updates);
+}
+function playAgain(){
+  const arr=playersArr(); const players={};
+  arr.forEach(p=>{ players['players/'+p.id+'/hand']=null; });
+  dbUpdate(Object.assign({}, players, {status:'lobby', deck:null, discard:null, currentPlayerId:null,
+    turnSub:null, drawnCard:null, kingCards:null, msg:null, sheikhCallerId:null, finalQueue:null, kabas:null}));
+}
+
+function cardHTML(c,extraClass,onclickName,arg){
+  const cls='card face '+(c.red?'red':'black')+(extraClass?(' '+extraClass):'');
+  const click=onclickName?(' onclick="'+onclickName+'(\''+arg+'\')"'):'';
+  return '<div class="'+cls+'"'+click+'>'+cardLabel(c)+'</div>';
+}
+function backHTML(onclickName,idx){
+  return '<div class="card back tappable" onclick="'+onclickName+'('+idx+')"></div>';
+}
+
+function render(){
+  const root=document.getElementById('root');
+  let h='<div class="zigzag"></div><header><h1>الشيخ</h1><p>لعبة أونلاين بين الجوالات</p></header>';
+
+  if(view.screen==='landing'){
+    h+='<div class="panel">';
+    h+='<p style="font-weight:700;font-size:15px;margin:0 0 4px;">اسمك</p>';
+    h+='<input type="text" id="nameInput" placeholder="مثال: أحمد" value="'+view.name+'">';
+    h+='<button class="btn gold" style="margin-top:14px;" onclick="createRoom()">إنشاء غرفة جديدة</button>';
+    h+='</div>';
+    h+='<div class="panel">';
+    h+='<p style="font-weight:700;font-size:15px;margin:0 0 4px;">أو ادخل لغرفة موجودة</p>';
+    h+='<input type="text" id="codeInput" placeholder="كود الغرفة" value="'+view.joinCode+'">';
+    h+='<button class="btn secondary" style="margin-top:10px;" onclick="joinRoom()">دخول</button>';
+    h+='</div>';
+    if(view.err) h+='<p class="err">'+view.err+'</p>';
+    h+='<p class="rules-note">10 الأحمر = صفر · 10 الأسود = 10 · الآس = 1<br>الجوكر يمسح أوراق · الشايب يبدّل · البنت تكشف · الولد يسرق</p>';
+    root.innerHTML=h; return;
+  }
+
+  if(!room){root.innerHTML=h+'<p style="text-align:center;">...جاري الاتصال</p>';return;}
+  const players=playersArr();
+
+  if(room.status==='lobby'){
+    h+='<div class="panel" style="text-align:center;">';
+    h+='<p style="font-size:13px;opacity:0.7;">شارك هذا الكود مع اللاعبين</p>';
+    h+='<div class="code-box">'+code+'</div>';
+    h+='<p class="choose-label">اللاعبون في الغرفة:</p>';
+    h+='<ul class="lobby-list">'+players.map(p=>'<li>'+p.name+(p.id===myId?' (أنت)':'')+(p.id===room.hostId?' 👑':'')+'</li>').join('')+'</ul>';
+    if(room.hostId===myId){
+      if(players.length>=2) h+='<button class="btn gold" onclick="startGame()">ابدأ اللعبة</button>';
+      else h+='<p style="font-size:13px;opacity:0.6;">بانتظار لاعب واحد على الأقل ينضم</p>';
+    }else{
+      h+='<p style="font-size:13px;opacity:0.6;">بانتظار المضيف يبدأ اللعبة</p>';
+    }
+    h+='</div>';
+    root.innerHTML=h; return;
+  }
+
+  if(room.status==='ended'){
+    const scores=players.map(p=>({name:p.name,total:(p.hand||[]).reduce((s,c)=>s+c.value,0),hand:p.hand||[]}));
+    scores.sort((a,b)=>a.total-b.total);
+    h+='<div class="panel">';
+    h+='<p style="font-weight:900;font-size:19px;margin:0 0 12px;text-align:center;">النتائج النهائية</p>';
+    scores.forEach((s,i)=>{
+      h+='<div class="result-row'+(i===0?' winner':'')+'"><p class="rname">'+(i===0?'🏆 ':'')+s.name+' — '+s.total+' نقطة</p>';
+      h+='<div class="rhand">'+s.hand.map(c=>'<span style="'+(c.red?'color:var(--danger)':'color:var(--ink)')+'">'+cardLabel(c)+'</span>').join('&nbsp;&nbsp;')+'</div></div>';
+    });
+    if(room.hostId===myId) h+='<button class="btn gold" onclick="playAgain()">لعبة جديدة بنفس اللاعبين</button>';
+    else h+='<p style="font-size:13px;opacity:0.6;text-align:center;">بانتظار المضيف يبدأ جولة جديدة</p>';
+    h+='</div>';
+    root.innerHTML=h; return;
+  }
+
+  // playing
+  const myHand=room.players[myId].hand||[];
+  if(!localPeeked){
+    h+='<div class="panel gate-screen">';
+    h+='<h2>هاتان بطاقتاك، احفظهما</h2>';
+    h+='<div class="hand" style="justify-content:center;">'+
+      myHand.map((c,i)=> i<2 ? cardHTML(c) : '<div class="card back"></div>').join('')+'</div>';
+    h+='<button class="btn" style="margin-top:14px;" onclick="localPeeked=true;render();">تم، إخفاء</button>';
+    h+='</div>';
+    root.innerHTML=h; return;
+  }
+
+  const top=room.discard[room.discard.length-1];
+  if(room.msg) h+='<div class="msg">'+room.msg+'</div>';
+  h+='<div class="pit"><div class="label">الوسط</div>'+cardHTML(top)+'</div>';
+
+  h+='<div class="panel">';
+  players.forEach(p=>{
+    const isTurn=p.id===room.currentPlayerId && !room.kabas.active;
+    h+='<div class="player-block"><p class="player-name">'+p.name+
+      (p.id===myId?' <span class="me-tag">(أنت)</span>':'')+
+      (isTurn?' <span class="turn-tag">دوره الآن</span>':'')+
+      '</p><div class="hand">'+(p.hand||[]).map(()=>'<div class="card back"></div>').join('')+'</div></div>';
+  });
+  h+='</div>';
+
+  h+='<div class="panel">';
+  const iAmCurrent = room.currentPlayerId===myId;
+
+  if(room.kabas && room.kabas.active){
+    if(!kabasClaimedByMe){
+      h+='<p class="choose-label">أحد عنده مطابقة مع '+cardLabel(top)+'؟</p>';
+      h+='<div class="btn-row"><button class="btn secondary" onclick="tryClaimKabas()">أنا أكبس!</button>';
+      if(iAmCurrent) h+='<button class="btn" onclick="endKabas()">لا أحد، التالي</button>';
+      h+='</div>';
+    }else{
+      h+='<p class="choose-label">اختر ورقة من يدك للمطابقة:</p>';
+      h+='<div class="hand">'+myHand.map((c,i)=>backHTML('kabasSlot',i)).join('')+'</div>';
+    }
+  }
+  else if(!iAmCurrent){
+    h+='<p style="text-align:center;font-size:14px;opacity:0.7;">بانتظار دور '+room.players[room.currentPlayerId].name+'...</p>';
+  }
+  else if(room.turnSub==='idle'){
+    h+='<div class="btn-row"><button class="btn" onclick="drawCard()">اسحب ورقة</button>';
+    if(!room.sheikhCallerId) h+='<button class="btn secondary" onclick="callSheikh()">قول شيك</button>';
+    h+='</div>';
+  }
+  else if(room.turnSub==='drawn'){
+    h+='<p class="choose-label">سحبت:</p><div class="hand">'+cardHTML(room.drawnCard)+'</div>';
+    h+='<p class="choose-label">بدّلها بإحدى أوراقك:</p><div class="hand">'+myHand.map((c,i)=>backHTML('swapIn',i)).join('')+'</div>';
+    h+='<button class="btn secondary" style="margin-top:10px;" onclick="discardDirect()">ارمها في الوسط'+(isPowerCard(room.drawnCard)?' (استخدم قوتها)':'')+'</button>';
+  }
+  else if(room.turnSub==='king-choose'){
+    h+='<p class="choose-label">اختر الأفضل بينهما:</p><div class="hand">'+room.kingCards.map((c,i)=>cardHTML(c,'tappable','kingPick',i)).join('')+'</div>';
+    h+='<button class="btn secondary" style="margin-top:10px;" onclick="kingDiscardBoth()">ارمِ الاثنتين</button>';
+  }
+  else if(room.turnSub==='king-place'){
+    h+='<p class="choose-label">بدّلها بإحدى أوراقك أو ارمها:</p><div class="hand">'+myHand.map((c,i)=>backHTML('swapIn',i)).join('')+'</div>';
+    h+='<button class="btn secondary" style="margin-top:10px;" onclick="discardKingFinal()">ارمها</button>';
+  }
+  else if(room.turnSub==='joker-clear2'||room.turnSub==='joker-clear1'){
+    h+='<p class="choose-label">'+(room.turnSub==='joker-clear2'?'اختر ورقتين للتخلص منهما:':'اختر ورقة للتخلص منها:')+'</p>';
+    h+='<div class="hand">'+myHand.map((c,i)=>backHTML('jokerClearPick',i)).join('')+'</div>';
+  }
+  else if(room.turnSub==='queen-view'){
+    h+='<p class="choose-label">اختر ورقة لرؤيتها:</p><div class="hand">'+myHand.map((c,i)=>backHTML('queenView',i)).join('')+'</div>';
+  }
+  else if(room.turnSub==='queen-shown'){
+    h+='<button class="btn" onclick="queenDone()">تم</button>';
+  }
+  else if(room.turnSub==='jack-pick-own'){
+    h+='<p class="choose-label">اختر ورقة من أوراقك للمبادلة:</p><div class="hand">'+myHand.map((c,i)=>backHTML('jackPickOwn',i)).join('')+'</div>';
+  }
+  else if(room.turnSub==='jack-pick-target-player'){
+    h+='<p class="choose-label">اختر اللاعب الآخر:</p><div class="btn-row">';
+    players.forEach(p=>{ if(p.id!==myId) h+='<button class="btn secondary small" onclick="jackPickTargetPlayer(\''+p.id+'\')">'+p.name+'</button>'; });
+    h+='</div>';
+  }
+  else if(room.turnSub==='jack-pick-target-card'){
+    const otherHand=room.players[jackTargetPlayer].hand;
+    h+='<p class="choose-label">اختر ورقة '+room.players[jackTargetPlayer].name+':</p>';
+    h+='<div class="hand">'+otherHand.map((c,i)=>backHTML('jackPickTargetCard',i)).join('')+'</div>';
+  }
+  h+='</div>';
+  root.innerHTML=h;
+}
+
+const urlParams=new URLSearchParams(window.location.search);
+if(urlParams.get('room')) view.joinCode=urlParams.get('room').toUpperCase();
+render();
+</script>
+</body>
+</html>
