@@ -530,6 +530,30 @@ body:has(.lobbyShell) #app{margin:0!important}
 .resultMiniCard.joker .rmRank{font-size:18px!important;color:#7c1730!important}
 .resultMiniCard.joker .rmSuit{font-size:20px!important}
 </style>
+
+<style id="final-card-face-clean-v4">
+/* وجه ورق موحّد وواضح داخل اللعب */
+.cardFace{background:#fffdf7!important;border:2px solid #c79a45!important;border-radius:12px!important;box-shadow:0 4px 12px rgba(0,0,0,.28),inset 0 0 0 2px #f3dfae!important;overflow:hidden!important}
+.cardFace .faceCardInner{inset:4px!important;background:#fffdf7!important;border:1px solid rgba(183,132,47,.48)!important;border-radius:8px!important}
+.cardFace .faceCorner{font-family:Georgia,serif!important;font-weight:900!important}.cardFace .faceRank{font-size:19px!important}.cardFace .faceSuitSmall{font-size:14px!important}
+.cardFace .faceCenter.faceCourt{gap:1px!important}.cardFace .faceCourtArt{font:900 34px/1 Georgia,serif!important;color:inherit!important}.cardFace .faceCourt .faceSuitBig{font-size:27px!important}.cardFace .faceCourtName{font:900 7px/1.1 Arial,sans-serif!important;letter-spacing:.7px!important;color:#9a7131!important}
+.cardFace .aceArt,.cardFace .pipArt{background:none!important}.cardFace .aceArt span{font-size:42px!important}.cardFace .pipArt .pipMain{font-size:38px!important}.cardFace .pipArt b{font-size:16px!important}
+.cardFace.red{color:#b01824!important}.cardFace.black{color:#15110f!important}
+
+/* === compact rules icon + modal === */
+.rulesIconBtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:48px;min-height:44px;border:1px solid #b9893f;border-radius:10px;background:rgba(20,12,8,.92);color:#f6d883;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.rulesIconBtn small{font-size:9px;color:#fff;font-weight:700}
+.rulesModalBack{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(3px)}
+.rulesModal{direction:rtl;width:min(620px,94vw);max-height:88dvh;overflow:auto;background:linear-gradient(180deg,#24150e,#100a07);border:2px solid #c7953f;border-radius:18px;color:#fff;padding:16px;box-shadow:0 18px 60px rgba(0,0,0,.65)}
+.rulesModalHead{position:sticky;top:-16px;background:#21130d;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-16px -16px 10px;padding:12px 14px;border-bottom:1px solid #7f5c2b;z-index:2}
+.rulesModalHead h2{margin:0;color:#f4d47f;font-size:20px}.rulesClose{border:0;border-radius:9px;background:#5d2228;color:white;padding:8px 12px;font-size:16px;font-weight:900;cursor:pointer}
+.rulesQuick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}.rulesQuick div{background:#17100c;border:1px solid #5e4728;border-radius:10px;padding:9px;font-size:13px;line-height:1.5}.rulesQuick b{color:#f1cd70}
+.rulesList{margin:0;padding:0 20px 0 0}.rulesList li{margin:7px 0;font-size:13px;line-height:1.65}.rulesSpecial{margin-top:10px;padding:10px;border-radius:11px;background:#0d1712;border:1px solid #426d4f}.rulesSpecial b{color:#f4d47f}
+@media(max-height:500px) and (orientation:landscape){.rulesModal{max-height:94dvh;padding:12px}.rulesModalHead{top:-12px;margin:-12px -12px 8px}.rulesList li{font-size:11px;line-height:1.45;margin:4px 0}.rulesQuick div{font-size:11px;padding:6px}.rulesModalHead h2{font-size:17px}}
+
+/* funny-room-sounds-v1 */
+.soundLauncher{width:100%;margin:6px 0 4px;background:linear-gradient(180deg,#7c2a3d,#511826)!important;color:#fff4cf!important;border:1px solid #d8a84e!important;font-weight:900}.soundGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}.funSoundBtn{border:1px solid #9e7437;border-radius:10px;background:#21150f;color:#ffe39b;padding:9px 6px;font-weight:900;font-size:12px;min-height:40px}.funSoundBtn:active{transform:scale(.97)}.soundHint{font-size:11px;color:#cdbb9e;line-height:1.5;margin-top:8px}.soundClose{width:100%;margin-top:10px}.soundNow{font-size:12px;color:#ffe39b;text-align:center;margin-top:6px;min-height:18px}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -546,6 +570,22 @@ let unsubRoom=null,unsubChat=null,unsubHand=null,latestChat={},localRevealUntil=
 let voiceActive=false,voiceStarting=false,voiceMuted=false,localVoiceStream=null,voiceSyncBusy=false,voiceSessionId="",voiceSyncTimer=null;
 let turnCountdownTimer=null,handlingTurnTimeout=false;
 let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null,audioUnlocked=false;
+let funnyAudio=null,lastFunnyEventId="",funnyEventPrimed=false,lastFunnySendAt=0;
+const FUN_SOUNDS={
+ laugh:{label:"😂 ضحك",url:"https://www.myinstants.com/media/sounds/baby-laughing-meme.mp3"},
+ wildlaugh:{label:"🤣 ضحك قوي",url:"https://www.myinstants.com/media/sounds/silly-screaming-laughter.mp3"},
+ haha:{label:"😆 ههههه",url:"https://www.myinstants.com/media/sounds/ny-video-online-audio-converter.mp3"},
+ bruh:{label:"😑 براه",url:"https://www.myinstants.com/media/sounds/bruh-meme-sound-effect.mp3"},
+ boom:{label:"💥 بوم",url:"https://www.myinstants.com/media/sounds/vine-boom-meme_cCCpxZG.mp3"},
+ damage:{label:"💔 Emotional Damage",url:"https://www.myinstants.com/media/sounds/emotional-damage-meme.mp3"},
+ sad:{label:"🎻 حزين",url:"https://www.myinstants.com/media/sounds/tf_nemesis.mp3"},
+ fart:{label:"💨 فارت",url:"https://www.myinstants.com/media/sounds/fart-meme-sound.mp3"},
+ run:{label:"🏃 اهرب",url:"https://www.myinstants.com/media/sounds/run-vine-sound-effect.mp3"},
+ snore:{label:"😴 نام",url:"https://www.myinstants.com/media/sounds/snore-mimimimimimi.mp3"},
+ omg:{label:"😱 Oh My God",url:"https://www.myinstants.com/media/sounds/oh-my-god-meme.mp3"},
+ wow:{label:"🤩 واو",url:"https://www.myinstants.com/media/sounds/anime-wow-sound-effect-mp3cut.mp3"},
+ arab:{label:"🪘 عربي مضحك",url:"https://www.myinstants.com/media/sounds/arab-funny.mp3"}
+};
 const voicePeers=new Map();
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -567,6 +607,11 @@ async function unlockAudio(){
  }catch{audioUnlocked=false}
  return audioUnlocked
 }
+function getFunnyAudio(){if(!funnyAudio){funnyAudio=new Audio();funnyAudio.playsInline=true;funnyAudio.preload="auto";funnyAudio.volume=.9}return funnyAudio}
+async function playFunnySound(key,who=""){const item=FUN_SOUNDS[key];if(!item||sfxMuted)return false;try{const a=getFunnyAudio();a.pause();a.currentTime=0;a.src=item.url;await a.play();const el=document.getElementById("soundNow");if(el)el.textContent=(who?who+": ":"")+item.label;return true}catch(e){console.warn("funny sound",e);return false}}
+async function sendFunnySound(key){const item=FUN_SOUNDS[key];if(!item||!roomCode||!uid)return;const now=Date.now();if(now-lastFunnySendAt<2500){toast("انتظر شوي قبل الصوت الثاني 😄");return}lastFunnySendAt=now;try{await set(ref(db,`rooms/${roomCode}/public/funnySound`),{id:uid+"_"+now,key,name:myName,ts:now});closeModal()}catch(e){toast("تعذر إرسال الصوت")}}
+function showSoundBoard(){const buttons=Object.entries(FUN_SOUNDS).map(([k,v])=>`<button class="funSoundBtn" data-funny="${k}">${v.label}</button>`).join("");openModal(`<div class="panel"><h2 style="margin-top:0">🔊 أصوات المجلس</h2><div class="soundGrid">${buttons}</div><div id="soundNow" class="soundNow"></div><div class="soundHint">الصوت يسمعه كل الموجودين في الغرفة. يوجد انتظار بسيط بين كل صوت والثاني حتى ما يصير إزعاج.</div><button id="soundBoardClose" class="btn alt soundClose">إغلاق</button></div>`);document.querySelectorAll("[data-funny]").forEach(b=>b.onclick=()=>sendFunnySound(b.dataset.funny));document.getElementById("soundBoardClose").onclick=closeModal}
+function handleFunnyEvent(ev){if(!ev?.id)return;if(!funnyEventPrimed){lastFunnyEventId=ev.id;funnyEventPrimed=true;return}if(ev.id===lastFunnyEventId)return;lastFunnyEventId=ev.id;playFunnySound(ev.key,ev.name||"");}
 function sfx(name){if(sfxMuted||voiceActive||voiceStarting)return;unlockAudio();switch(name){case"draw":noise(.11,.06);tone(180,.08,"triangle",.04,.03);break;case"take":noise(.08,.05);tone(260,.08,"sine",.05);break;case"throw":noise(.07,.09);tone(120,.07,"triangle",.05);break;case"correct":tone(660,.10,"sine",.09);tone(880,.13,"sine",.08,.09);break;case"wrong":tone(170,.18,"sawtooth",.09);tone(110,.25,"sawtooth",.07,.14);break;case"penalty":tone(320,.08,"square",.05);tone(210,.13,"triangle",.06,.08);noise(.08,.05,.18);break;case"swap":tone(330,.08,"sine",.06);tone(620,.10,"sine",.07,.07);tone(930,.10,"sine",.05,.14);break;case"queen":tone(740,.12,"sine",.06);tone(980,.18,"sine",.05,.10);break;case"jack":tone(280,.08,"triangle",.06);tone(700,.10,"triangle",.06,.08);break;case"king":noise(.08,.05);noise(.08,.05,.12);tone(520,.14,"sine",.06,.22);break;case"joker1":tone(760,.08,"square",.06);tone(260,.16,"sine",.06,.07);break;case"joker2":tone(760,.07,"square",.06);tone(520,.07,"square",.06,.07);tone(240,.16,"sine",.06,.14);break;case"check":for(let i=0;i<4;i++){tone(i%2?760:540,.12,"square",.06,i*.13)}break;case"reveal":for(let i=0;i<4;i++)noise(.07,.045,i*.07);break;case"win":tone(523,.12,"sine",.07);tone(659,.12,"sine",.07,.12);tone(784,.24,"sine",.08,.24);break;}}
 async function toggleSfx(){
  sfxMuted=!sfxMuted;localStorage.setItem("sheikh_sfx_muted",sfxMuted?"1":"0");updateSfxUi();
@@ -592,7 +637,8 @@ function cardFaceHtml(c){
  const pipCount=Number(c.r);
  let center='';
  if(court){
-  center=`<div class="courtPortrait"><div class="courtHalo"></div><div class="courtHead">${c.r==='Q'?'◉':'●'}</div><div class="courtBody">${sym}</div><div class="courtLetter">${courtMark}</div></div>`;
+  const courtName={J:"JACK",Q:"QUEEN",K:"KING"}[c.r];
+  center=`<div class="faceCenter faceCourt"><div class="faceCourtArt">${courtMark}</div><div class="faceSuitBig">${sym}</div><div class="faceCourtName">${courtName}</div></div>`;
  }else if(c.r==='A'){
   center=`<div class="aceArt"><span>${sym}</span><i>شيك شيك</i></div>`;
  }else{
@@ -651,7 +697,7 @@ function home(msg=""){
 function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
 async function createRoom(){const n=document.getElementById("name").value.trim();if(!n){document.getElementById("err").textContent="اكتب اسم اللاعب أولاً";return}try{await ensureAuth();uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false}}});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
 async function joinRoom(){const n=document.getElementById("name").value.trim(),c=document.getElementById("code").value.trim().toUpperCase();if(!n||!c){document.getElementById("err").textContent="اكتب الاسم وكود الغرفة";return}try{await ensureAuth();uid=auth.currentUser.uid;const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())throw new Error("الغرفة غير موجودة");const r=s.val(),ps=r.players||{};if(r.status!=="lobby"&&!ps[uid])throw new Error("اللعبة بدأت");if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
-function subscribe(c){cleanupSubs();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}currentRoom=s.val();await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()})}
+function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}currentRoom=s.val();handleFunnyEvent(currentRoom?.funnySound);await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()})}
 
 async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active),totalRounds=Math.max(1,Math.min(10,Number(document.getElementById("roundCount")?.value||3)));if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}const totals={};for(const id of order)totals[id]=0;await beginRound(order,1,totalRounds,totals)}
 async function beginRound(order,roundNo,totalRounds,totals){totals={...(totals||{})};for(const id of order)if(totals[id]==null)totals[id]=0;const deck=buildDeck(),discard=deck.shift(),players={};for(const [id,p] of playerEntries())players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:0,ready:!order.includes(id),introDone:!order.includes(id),introStarted:false};await set(ref(db,`rooms/${roomCode}/public/game`),{phase:"dealing",turnOrder:order,turnIndex:0,deck,discard,discardPile:[discard],discardSeq:1,startedAt:Date.now(),actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,cumulativeScores:totals||{},emptyWinner:"",swapRequest:null,jackSwap:null,turnStartedAt:0,turnSeq:0,timeoutClaim:null});await update(ref(db,`rooms/${roomCode}/public`),{status:"game",players,reveals:null});try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`))}catch{}toast(`بدأت الجولة ${roundNo} من ${totalRounds}`)}
@@ -734,19 +780,45 @@ async function discardAndFinish(card,log){await putDiscard(card,log);await finis
 function chooseClear(n,title){const cards=myHand?.cards||[];openModal(`<h3>${title}</h3><div class="notice">اختر ${n} ${n===1?'ورقة':'ورقتين'} من أوراقك للمسح.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-clear="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div><div class="gap"></div><button id="cancelPower" class="btn danger">إلغاء القوة وإنهاء الدور</button>`);let chosen=[];sheet.querySelectorAll("[data-clear]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.clear;if(chosen.includes(i))return;chosen.push(i);b.disabled=true;b.textContent="تم الاختيار";if(chosen.length>=n){const cs=(myHand.cards||[]).slice();for(const k of chosen)cs[k]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cs)});closeModal();await sendSystem(`${myName} استخدم قوة الجوكر`);if(await checkEmptyAndEnd(cs))return;await finishTurn()}});document.getElementById("cancelPower").onclick=async()=>{closeModal();await finishTurn()}}
 function choosePeek(){const cards=myHand?.cards||[];openModal(`<h3>قوة البنت Q</h3><div class="notice">اختر ورقة من أوراقك لتشوفها 10 ثواني.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-peek="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);sheet.querySelectorAll("[data-peek]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.peek;localRevealUntil[i]=Date.now()+10000;closeModal();render();setTimeout(render,10200);await sendSystem(`${myName} استخدم قوة البنت`);await finishTurn()})}
 async function kingPower(){const take=await takeDeckCards(2),picked=take.cards||[];if(!take.ok||picked.length<2){toast("ما في ورقتين كفاية");return finishTurn()}if(take.recycled){toast("🔄 تم خلط أوراق الميدان وإعادة الرزمة")};await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:picked});showKingChoices(picked)}
-function showKingChoices(cards){openModal(`<h3>قوة K الأحمر</h3><div class="notice">سحبت كرتين. اختر الكرت اللي تبيه، والكرت الثاني ينرمي فوق في الميدان.</div><div class="choiceGrid">${cards.map((c,i)=>`<button class="btn alt" data-kpick="${i}"><div class="cardFace ${cardClass(c)}" style="margin:auto">${cardFaceHtml(c)}</div></button>`).join("")}</div>`);sheet.querySelectorAll("[data-kpick]").forEach(b=>b.onclick=()=>chooseKingSlot(+b.dataset.kpick,cards))}
-async function chooseKingSlot(chosen,cards){const keep=cards[chosen],other=cards[chosen?0:1];await putDiscard(other,`${myName} رمى الكرت الثاني من قوة K`);await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:keep,pendingSource:"king",powerCards:null});closeModal();toast("اختر ورقة من أوراقك للتبديل")}
+function showKingChoices(cards){openModal(`<h3>قوة K الأحمر</h3><div class="notice">سحبت كرتين. اختر كرتاً واحداً لتبدله مع <b>ورقة من أوراقك فقط</b>. الكرت الثاني سينزل فوق العقّة.</div><div class="choiceGrid">${cards.map((c,i)=>`<button class="btn alt" data-kpick="${i}"><div class="cardFace ${cardClass(c)}" style="margin:auto">${cardFaceHtml(c)}</div></button>`).join("")}</div>`);sheet.querySelectorAll("[data-kpick]").forEach(b=>b.onclick=()=>chooseKingOwnSlot(+b.dataset.kpick,cards))}
+function chooseKingOwnSlot(chosen,cards){
+ const keep=cards[chosen],other=cards[chosen?0:1],mine=myHand?.cards||[];
+ openModal(`<h3>بدّل كرت K الأحمر</h3><div class="notice good">اختر ورقة من أوراقك أنت فقط. لا يمكن التبديل مع لاعب آخر.</div><div class="choiceGrid">${mine.map((c,i)=>c?`<button class="btn alt" data-kslot="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);
+ sheet.querySelectorAll("[data-kslot]").forEach(b=>b.onclick=()=>finishKingSwap(chosen,+b.dataset.kslot,cards));
+}
+async function finishKingSwap(chosen,slot,cards){
+ if(!isMyTurn()||!myHand)return;
+ const keep=cards[chosen],other=cards[chosen?0:1],mine=(myHand.cards||[]).slice(),old=mine[slot];
+ if(!old){toast("الخانة فاضية");return}
+ mine[slot]=keep;
+ await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),mine);
+ await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:null,pending:null,pendingSource:null});
+ // الورقة القديمة تخرج أولاً، ثم الكرت غير المختار من قوة K ينزل أخيراً فوق العقّة ويصبح الظاهر.
+ await putDiscard(old,`${myName} بدّل ورقته رقم ${slot+1} بقوة K الأحمر`);
+ await putDiscard(other,`${myName} أنزل الكرت الثاني من قوة K فوق العقّة`);
+ closeModal();sfx("swap");toast(`تم تبديل الورقة رقم ${slot+1} — والكرت الثاني نزل فوق العقّة`);
+ await finishTurn();
+}
+let jackPowerTimer=null,jackPowerTick=null;
+function stopJackPowerTimer(){clearTimeout(jackPowerTimer);clearInterval(jackPowerTick);jackPowerTimer=null;jackPowerTick=null}
+function startJackPowerTimer(){
+ stopJackPowerTimer();
+ const until=Date.now()+10000;
+ const tick=()=>{const el=document.getElementById("jackCountdown");if(el)el.textContent=Math.max(0,Math.ceil((until-Date.now())/1000))};
+ tick();jackPowerTick=setInterval(tick,250);
+ jackPowerTimer=setTimeout(async()=>{stopJackPowerTimer();closeModal();const req=game().jackSwap;if(req?.initiatorUid===uid)await set(ref(db,`rooms/${roomCode}/public/game/jackSwap`),null);toast("⏱️ انتهت 10 ثواني — انتهت قوة J");await sendSystem(`${myName} انتهى وقت تبديل J`);await finishTurn()},10050);
+}
 async function useJackPower(){sfx("jack");
- if(!isMyTurn()||myHand?.pending?.r!=="J"||myHand?.pendingSource!=="deck")return;
+ if(!isMyTurn()||myHand?.pending?.r!=="J"||!isRed(myHand.pending)||myHand?.pendingSource!=="deck")return;
  const c=myHand.pending;
  await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});
- await putDiscard(c,`${myName} استخدم الولد J`);
- chooseJack();
+ await putDiscard(c,`${myName} اختار تبديل J الأحمر`);
+ startJackPowerTimer();chooseJack();
 }
 function chooseJack(){
  const ps=playerEntries().filter(([id,p])=>(p.cardCount??0)>0);
  if(ps.length<2){toast("ما في لاعبين كفاية للتبديل");return finishTurn()}
- openModal(`<h3>قوة الولد J</h3><div class="notice good">اختر <b>الورقة الأولى</b>. تقدر تختار من أوراقك أو من أي لاعب.</div>${ps.map(([id,p])=>`<button class="playerPick btn alt" data-jp1="${id}">${esc(p.name)}${id===uid?' (أنت)':''}</button>`).join("")}`);
+ openModal(`<h3>قوة الولد J</h3><div class="notice good">⏱️ عندك <b id="jackCountdown">10</b> ثواني لإكمال التبديل.<br>اختر <b>الورقة الأولى</b>. تقدر تختار من أوراقك أو من أي لاعب.</div>${ps.map(([id,p])=>`<button class="playerPick btn alt" data-jp1="${id}">${esc(p.name)}${id===uid?' (أنت)':''}</button>`).join("")}`);
  sheet.querySelectorAll("[data-jp1]").forEach(b=>b.onclick=()=>chooseJackSlot1(b.dataset.jp1,ps));
 }
 function jackSlotsFor(playerUid,attr){
@@ -759,18 +831,21 @@ function chooseJackSlot1(firstUid,ps){
  sheet.querySelectorAll("[data-js1]").forEach(b=>b.onclick=()=>chooseJackPlayer2({uid:firstUid,index:+b.dataset.js1},ps));
 }
 function chooseJackPlayer2(first,ps){
- openModal(`<h3>اختر الورقة الثانية</h3><div class="notice good">الحين اختر اللاعب الثاني. ويجوز تختار لاعب مختلف أو حتى ورقة ثانية من نفس اللاعب.</div>${ps.map(([id,p])=>`<button class="playerPick btn alt" data-jp2="${id}">${esc(p.name)}${id===uid?' (أنت)':''}</button>`).join("")}`);
+ const choices=ps.filter(([id])=>id!==first.uid);
+ openModal(`<h3>اختر الورقة الثانية</h3><div class="notice good">لازم تكون الورقة الثانية عند <b>لاعب مختلف</b>. تقدر تبدّل ورقة من أوراقك مع لاعب آخر، أو تبدّل بين لاعبين آخرين.</div>${choices.map(([id,p])=>`<button class="playerPick btn alt" data-jp2="${id}">${esc(p.name)}${id===uid?' (أنت)':''}</button>`).join("")}`);
  sheet.querySelectorAll("[data-jp2]").forEach(b=>b.onclick=()=>chooseJackSlot2(first,b.dataset.jp2));
 }
 function chooseJackSlot2(first,secondUid){
+ if(first.uid===secondUid){toast("قوة J تبدّل بين لاعبين مختلفين فقط");return chooseJack()}
  const name=currentRoom.players?.[secondUid]?.name||"اللاعب";
  openModal(`<h3>${esc(name)}</h3><div class="notice">اختر الورقة الثانية للتبديل.</div><div class="choiceGrid">${jackSlotsFor(secondUid,"data-js2")}</div>`);
  sheet.querySelectorAll("[data-js2]").forEach(b=>b.onclick=async()=>{
    const second={uid:secondUid,index:+b.dataset.js2};
-   if(first.uid===second.uid&&first.index===second.index){toast("اختر ورقة ثانية مختلفة");return}
-   const req={id:uid+"_J_"+Date.now(),initiatorUid:uid,initiatorName:myName,aUid:first.uid,aIndex:first.index,bUid:second.uid,bIndex:second.index,status:"collecting",parts:{},aDone:false,bDone:false,ts:Date.now()};
+   const aName=currentRoom.players?.[first.uid]?.name||"لاعب";
+   const bName=currentRoom.players?.[second.uid]?.name||"لاعب";
+   const req={id:uid+"_J_"+Date.now(),initiatorUid:uid,initiatorName:myName,aUid:first.uid,aName,aIndex:first.index,bUid:second.uid,bName,bIndex:second.index,status:"collecting",parts:{},aDone:false,bDone:false,ts:Date.now()};
    await set(ref(db,`rooms/${roomCode}/public/game/jackSwap`),req);
-   closeModal();toast("جاري تبديل الورقتين...");
+   closeModal();toast(`جاري تبديل ورقة ${first.index+1} من ${aName} مع ورقة ${second.index+1} من ${bName}...`);
  })
 }
 async function processJackSwap(req){
@@ -795,7 +870,15 @@ async function processJackSwap(req){
      }
      if(isA&&!req.aDone){const cs=(myHand.cards||[]).slice();if(!cs[req.aIndex]){await update(ref(db,`rooms/${roomCode}/public/game/jackSwap`),{failed:"الورقة الأولى غير موجودة"});return}cs[req.aIndex]=req.parts.B;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/public/game/jackSwap`),{aDone:true});return}
      if(isB&&!req.bDone){const cs=(myHand.cards||[]).slice();if(!cs[req.bIndex]){await update(ref(db,`rooms/${roomCode}/public/game/jackSwap`),{failed:"الورقة الثانية غير موجودة"});return}cs[req.bIndex]=req.parts.A;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/public/game/jackSwap`),{bDone:true});return}
-     if(req.initiatorUid===uid&&req.aDone&&req.bDone){sfx("swap");await set(ref(db,`rooms/${roomCode}/public/game/jackSwap`),null);await sendSystem(`${myName} بدّل ورقتين بقوة الولد J — انتهى دوره`);await finishTurn()}
+     if(req.initiatorUid===uid&&req.aDone&&req.bDone&&req.status!=="finishing"){
+       await update(ref(db,`rooms/${roomCode}/public/game/jackSwap`),{status:"finishing"});
+       const aName=req.aName||currentRoom.players?.[req.aUid]?.name||"لاعب";
+       const bName=req.bName||currentRoom.players?.[req.bUid]?.name||"لاعب";
+       const msg=`تم تبديل ورقة رقم ${Number(req.aIndex)+1} من ${aName} بورقة رقم ${Number(req.bIndex)+1} من ${bName} — انتهى دور ${myName}`;
+       stopJackPowerTimer();sfx("swap");toast(msg);await sendSystem(msg);
+       await set(ref(db,`rooms/${roomCode}/public/game/jackSwap`),null);
+       await finishTurn();
+     }
    }
  }finally{processingJack=false}
 }
@@ -804,20 +887,29 @@ async function processSwapRequest(req){if(!req||processingSwap)return;processing
  if(req.status==="failed"&&req.fromUid===uid){toast(req.reason||"فشل التبديل");await set(ref(db,`rooms/${roomCode}/public/game/swapRequest`),null);await finishTurn()}}finally{processingSwap=false}}
 
 async function kabas(i){const c=myHand?.cards?.[i],d=game().discard,seq=game().discardSeq||0;if(!c||!d)return;if(myHand.lastKabasSeq===seq){toast("كبست على هالرميه قبل");return}if(!sameRank(c,d)){toast("مو نفس الورقة");await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{lastKabasSeq:seq});return}const cs=(myHand.cards||[]).slice();cs[i]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{lastKabasSeq:seq});await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cs)});await sendSystem(`${myName} كبس ${cardLabel(c)} ⚡`);toast("كبسة صحيحة ⚡")}
-async function callCheck(){sfx("check");if(!isMyTurn())return;const order=game().turnOrder||[],remaining={};for(const id of order)if(id!==uid)remaining[id]=true;await update(ref(db,`rooms/${roomCode}/public/game`),{ending:true,checkCalledBy:uid,finalRemaining:remaining});await sendSystem(`${myName} قال شيك`);await finishTurn(true)}
-async function finishTurn(fromCheck=false){
+async function callCheck(){sfx("check");if(!isMyTurn())return;const order=game().turnOrder||[],remaining={};for(const id of order)if(id!==uid)remaining[id]=true;await update(ref(db,`rooms/${roomCode}/public/game`),{ending:true,checkCalledBy:uid,finalRemaining:remaining,decisionUntil:null,decisionUid:null});await sendSystem(`${myName} قال شيك`);await advanceTurnNow(true)}
+async function finishTurn(){
+ const g=game();if(g.phase!=="playing"||turnUid()!==uid)return;
+ // بعد إنهاء اللعب لا يستطيع اللاعب لعب ورقة أخرى: فقط شيك أو تمرير، ولمدة 5 ثوانٍ.
+ await update(ref(db,`rooms/${roomCode}/public/game`),{decisionUid:uid,decisionUntil:Date.now()+5000,hasDrawn:null,lastAction:`${myName} أنهى لعبه — عنده 5 ثواني يقول شيك`});
+}
+async function advanceTurnNow(fromCheck=false){
  const snap=await get(ref(db,`rooms/${roomCode}/public/game`));
  const g=snap.val()||game(),order=g.turnOrder||[];if(!order.length)return;
+ if(turnUid()!==uid&&!fromCheck)return;
  let remaining={...(g.finalRemaining||{})};
  if(g.ending&&!fromCheck&&remaining[uid]){delete remaining[uid];await set(ref(db,`rooms/${roomCode}/public/game/finalRemaining`),remaining)}
- if(g.ending&&Object.keys(remaining).length===0){await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",hasDrawn:null,turnStartedAt:0,timeoutClaim:null});return}
+ if(g.ending&&Object.keys(remaining).length===0){await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",hasDrawn:null,turnStartedAt:0,timeoutClaim:null,decisionUntil:null,decisionUid:null});return}
  let idx=(g.turnIndex||0),tries=0;
  do{idx=(idx+1)%order.length;tries++}while((currentRoom.players?.[order[idx]]?.cardCount??0)<=0&&tries<order.length);
- await update(ref(db,`rooms/${roomCode}/public/game`),{turnIndex:idx,hasDrawn:null,turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1,timeoutClaim:null});
+ await update(ref(db,`rooms/${roomCode}/public/game`),{turnIndex:idx,hasDrawn:null,turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1,timeoutClaim:null,decisionUntil:null,decisionUid:null});
 }
+async function passAfterPlay(){if(!isMyTurn()||game().decisionUid!==uid)return;await advanceTurnNow(false)}
 
 function turnSecondsLeft(){
- const g=game();if(g.phase!=="playing"||!g.turnStartedAt)return 60;
+ const g=game();if(g.phase!=="playing")return 60;
+ if(g.decisionUid===turnUid()&&g.decisionUntil)return Math.max(0,Math.ceil((Number(g.decisionUntil)-Date.now())/1000));
+ if(!g.turnStartedAt)return 60;
  return Math.max(0,Math.ceil((60000-(Date.now()-Number(g.turnStartedAt)))/1000));
 }
 function formatTurnTime(sec){sec=Math.max(0,Number(sec)||0);return `00:${String(sec).padStart(2,"0")}`}
@@ -828,7 +920,7 @@ function startTurnCountdownUi(){
   const sec=turnSecondsLeft(),el=document.getElementById("turnTimer");
   if(el){el.querySelector("b").textContent=formatTurnTime(sec);el.classList.toggle("warn",sec<=10)}
   if(sec<=10&&sec>0&&isMyTurn()&&sec!==window.__lastTurnBeep){window.__lastTurnBeep=sec;sfx("check")}
-  if(sec<=0&&isMyTurn())handleTurnTimeout();
+  if(sec<=0&&isMyTurn()){if(game().decisionUid===uid)passAfterPlay();else handleTurnTimeout();}
  };
  tick();turnCountdownTimer=setInterval(tick,250);
 }
@@ -887,7 +979,7 @@ function renderLobby(){
  const playerList=ps.map(([id,p],i)=>`<div class="miniPerson"><span class="miniDot"></span><span>${esc(p.name)}${id===uid?' • أنت':''}</span>${id===currentRoom.hostId?'<span class="crown">👑</span>':''}</div>`).join('');
  const spectatorList=rest.length?rest.map(([id,p])=>`<div class="miniPerson"><span>👀</span><span>${esc(p.name)}</span></div>`).join(''):`<div class="small center">الباقي يصيرون متفرجين بعد اختيار اللاعبين</div>`;
  app.innerHTML=`<div class="lobbyScene">
-   <div class="lobbyHeader"><div class="lobbyBrand"><span class="lobbyFlag left"></span><span class="lobbyFalcon" aria-hidden="true"></span><div class="lobbyTitlePlaque">شيك شيك</div><span class="lobbyFlag right"></span></div><div class="lobbySubtitle">الشيك • السكور • لعبة المجلس أونلاين</div><div class="lobbyTools"><button id="sfxTop" class="toolBtn" title="المؤثرات">🔊<small>الصوت</small></button><button id="voiceTop" class="toolBtn" title="المايك">🎙️<small>المايك</small></button><button class="toolBtn" onclick="document.getElementById('chatInput')?.focus()">💬<small>الشات</small></button></div></div>
+   <div class="lobbyHeader"><div class="lobbyBrand"><span class="lobbyFlag left"></span><span class="lobbyFalcon" aria-hidden="true"></span><div class="lobbyTitlePlaque">شيك شيك</div><span class="lobbyFlag right"></span></div><div class="lobbySubtitle">الشيك • السكور • لعبة المجلس أونلاين</div><div class="lobbyTools">${rulesButtonHtml()}<button id="sfxTop" class="toolBtn" title="المؤثرات">🔊<small>الصوت</small></button><button id="voiceTop" class="toolBtn" title="المايك">🎙️<small>المايك</small></button><button class="toolBtn" onclick="document.getElementById('chatInput')?.focus()">💬<small>الشات</small></button></div></div>
    <div class="roomCodeBox"><div class="roomCodeLabel">كود الغرفة</div><div class="roomCodeRow"><div class="roomCodeValue">${esc(roomCode)}</div><button id="copy" class="copyMini">📋 نسخ</button></div></div>
    <div class="lobbyTable">${seats}<div class="lobbyCenterDeck"><div><div class="cardBack" aria-label="رزمة الورق"></div><div class="lobbyDeckLabel"><span class="lobbyDeckCount">54</span><br>رزمة الورق</div></div><div><div class="lobbyCenterCard"><div class="cardFace black">${cardFaceHtml({r:"K",s:"S"})}</div></div><div class="lobbyDeckLabel">ورقة الميدان</div></div></div></div>
    ${host?`<div class="lobbySetup"><div class="setupGrid"><div class="setupBox"><label>👥 عدد اللاعبين</label><select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select><div class="lobbyHint">اختر 2 إلى 4، والباقي متفرجين</div></div><div class="setupBox"><label>🃏 عدد الجولات</label><select id="roundCount"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option><option value="7">7</option><option value="10">10</option></select></div></div><div class="lobbyMainActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="leave" class="btn danger">خروج</button></div><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`:`<div class="lobbySetup center"><div class="notice">👑 المضيف يختار 2 إلى 4 لاعبين، والباقي متفرجين.</div><button id="leave" class="btn danger">خروج</button><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`}
@@ -917,15 +1009,15 @@ function renderGame(){
  const spectators=playerEntries().filter(([id])=>!active.includes(id));
  const otherSeats=otherIds.map((id,i)=>{const p=currentRoom.players?.[id]||{},n=Math.max(0,p.cardCount||0),backs=Array.from({length:Math.min(n,5)},()=>`<span class="cardBack"></span>`).join("");return `<div class="refSeat ${positions[i]||"top"} ${id===tuid?'turn':''}"><div class="refSeatCards">${backs}</div><div class="refAvatar">${esc((p.name||"ل").trim().charAt(0)||"ل")}</div><div class="refSeatLabel"><b>${esc(p.name||"لاعب")}</b>${n} ورقة</div></div>`}).join("");
  const mySeat=isActivePlayer()?`<div class="refSeat bottom ${uid===tuid?'turn':''}"><div class="refAvatar">${esc((myName||"أ").trim().charAt(0)||"أ")}</div><div class="refSeatLabel"><b>${esc(myName)}</b>${countCards(myHand?.cards)} ورقة</div></div>`:"";
- const pending=myHand?.pending,turn=isMyTurn(),memorizing=g.phase==="memorize";
- const controls=pending?`<div class="refActions">${myHand?.pendingSource==="deck"&&pending?.r==="J"?`<button id="useJack" class="btn blue">J تبديل</button>`:""}${myHand?.pendingSource==="deck"&&pending?.r==="Q"&&isRed(pending)?`<button id="useQ" class="btn blue">Q كشف</button>`:""}${myHand?.pendingSource==="deck"&&pending?.r==="K"&&isRed(pending)?`<button id="useK" class="btn blue">K سحب 2</button>`:""}${myHand?.pendingSource!=="field"?(pending?.r==="JOKER"?`<div class="notice" style="max-width:260px">🃏 احتفظ بالجوكر: اختر «بدّل بهذي» تحت إحدى أوراقك.</div>`:`<button id="throw" class="btn danger">رمي الورقة</button>`):""}</div>`:`<div class="refActions"><button id="check" class="btn green" ${turn&&!g.ending&&!memorizing?'':'disabled'}>✓ شيك</button><button id="playHand" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>رمي ورقة</button><button id="takeField" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>أخذ الميدان</button><button id="draw" class="btn danger" ${turn&&!memorizing?'':'disabled'}>سحب ورقة</button></div>`;
+ const pending=myHand?.pending,turn=isMyTurn(),memorizing=g.phase==="memorize",deciding=turn&&g.decisionUid===uid&&Number(g.decisionUntil||0)>Date.now();
+ const controls=deciding?`<div class="refActions"><div class="notice good" style="max-width:280px"><b>خلصت لعبك</b><br>عندك 5 ثواني: شيك أو مرّر الدور.</div><button id="check" class="btn green" ${!g.ending?'':'disabled'}>✓ شيك</button><button id="passTurn" class="btn alt">تمرير الدور ▶</button></div>`:pending?`<div class="refActions">${myHand?.pendingSource==="deck"&&pending?.r==="J"&&isRed(pending)?`<button id="useJack" class="btn blue">J تبديل</button>`:""}${myHand?.pendingSource==="deck"&&pending?.r==="Q"&&isRed(pending)?`<button id="useQ" class="btn blue">Q كشف</button>`:""}${myHand?.pendingSource==="deck"&&pending?.r==="K"&&isRed(pending)?`<button id="useK" class="btn blue">K سحب 2</button>`:""}${myHand?.pendingSource!=="field"?(pending?.r==="JOKER"?`<div class="notice" style="max-width:260px">🃏 احتفظ بالجوكر: اختر «بدّل بهذي» تحت إحدى أوراقك.</div>`:`<button id="throw" class="btn danger">رمي الورقة</button>`):""}</div>`:`<div class="refActions"><button id="check" class="btn green" ${turn&&!g.ending&&!memorizing?'':'disabled'}>✓ شيك</button><button id="playHand" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>رمي ورقة</button><button id="takeField" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>أخذ الميدان</button><button id="draw" class="btn danger" ${turn&&!memorizing?'':'disabled'}>سحب ورقة</button></div>`;
  const introActive=memorizing&&isActivePlayer();
  const introUntil=Number(myHand?.introRevealUntil||0),count=introCountdown();
  const introPanel=introActive?`<div class="refIntro">${myHand?.introDone?`<b>تم الحفظ ✓</b><div class="refWaiting">بانتظار باقي اللاعبين</div>`:introUntil>Date.now()?`<b>احفظ أول ورقتين</b><strong id="introCount">${count}</strong><div class="refWaiting">ثواني</div>`:`<b>جاهز للحفظ؟</b><button id="startPeek" class="refStartPeek">👁️ ابدأ</button>`}</div>`:`<div class="refIntro"><b>${isActivePlayer()?`الجولة ${g.roundNo||1}`:"👀 متفرج"}</b><strong>${isActivePlayer()?`${g.roundNo||1}/${g.totalRounds||1}`:""}</strong></div>`;
  const pendingPreview=pending?`<div class="refPendingPreview"><div class="refPendingLabel">${myHand?.pendingSource==="deck"?"الورقة المسحوبة":"ورقة الميدان"}</div><div class="cardFace ${cardClass(pending)}">${cardFaceHtml(pending)}</div></div>`:"";
  const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div>${pendingPreview}<div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
  const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>وقت اللاعب</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
- app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${g.totalRounds||1}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span></div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools"><button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refChatFocus">💬<small>دردشة</small></button></div><div class="refRulesTitle">قوانين اللعبة</div><ul class="refRules"><li>الهدف: أقل مجموع كلي في نهاية المباراة.</li><li>البداية: 4 أوراق مخفية، وكل لاعب يكشف أول ورقتين 10 ثواني للحفظ.</li><li>في دورك: اسحب من الرزمة، أو خذ ورقة الميدان، أو ارمِ ورقة من يدك إذا كانت نفس رتبة ورقة الميدان.</li><li>الرمي الخطأ: تبقى ورقتك وتأخذ ورقة عقوبة.</li><li>مدة الدور 60 ثانية؛ عند انتهاء الوقت تأخذ ورقة عقوبة وينتقل الدور.</li><li>Q الأحمر: كشف ورقة من أوراقك 10 ثواني. J: تبديل ورقتين مخفيتين. K الأحمر: سحب ورقتين واختيار واحدة.</li><li>الجوكر يبقى بين أوراقك حتى نهاية الجولة: الأسود يلغي أعلى ورقة عند الحساب، والملون يلغي أعلى ورقتين.</li><li>قوى J وQ وK تعمل عند سحبها من الرزمة فقط. الجوكر لا يمسح فوراً؛ تأثيره يكون عند حساب نهاية الجولة.</li><li>إذا خلصت رزمة السحب، تُخلط أوراق الميدان القديمة وتُعاد كرزمة جديدة، وتبقى أوراق اللاعبين كما هي.</li><li>شيك: باقي اللاعبين يحصلون على دور أخير ثم تكشف الأوراق وتحسب النقاط.</li><li>A=1، 2–9 بقيمتها، 10 الأحمر=0، 10 الأسود=10، J/Q/K=10.</li></ul></aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
+ app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${g.totalRounds||1}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span></div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refChatFocus">💬<small>دردشة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div></aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
  wireCommon();
  const rs=document.getElementById("refSfx");if(rs)rs.onclick=toggleSfx;const rv=document.getElementById("refVoice");if(rv)rv.onclick=()=>startLiveVoice();const rc=document.getElementById("refChatFocus");if(rc)rc.onclick=()=>document.getElementById("chatInput")?.focus();
  const sp=document.getElementById("startPeek");if(sp)sp.onclick=startInitialPeek;
@@ -937,6 +1029,7 @@ function renderGame(){
  if(document.getElementById("useQ"))document.getElementById("useQ").onclick=useRedQ;
  if(document.getElementById("useK"))document.getElementById("useK").onclick=useRedK;
  if(document.getElementById("check"))document.getElementById("check").onclick=callCheck;
+ if(document.getElementById("passTurn"))document.getElementById("passTurn").onclick=passAfterPlay;
  document.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>swapPendingWithSlot(+b.dataset.swap));
  startTurnCountdownUi();
  if(introUntil>Date.now()&&!myHand?.introDone){clearTimeout(pendingStartTimer);pendingStartTimer=setTimeout(()=>finishInitialPeek(),Math.max(0,introUntil-Date.now()+80));const tick=()=>{const el=document.getElementById("introCount");if(el){el.textContent=introCountdown();if(introCountdown()>0)setTimeout(tick,250)}};tick()}
@@ -953,8 +1046,34 @@ function renderResults(){
  wireCommon();if(document.getElementById("backRoom"))document.getElementById("backRoom").onclick=resetToLobby;if(document.getElementById("nextRound"))document.getElementById("nextRound").onclick=()=>{const order=[...document.querySelectorAll("[data-nextactive]:checked")].map(x=>x.dataset.nextactive);if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}beginRound(order,(g.roundNo||1)+1,g.totalRounds||1,g.cumulativeScores||{})}
 }
 async function resetToLobby(){for(const [id] of playerEntries())if(id===uid)await remove(ref(db,`rooms/${roomCode}/privateHands/${id}`));const players={};for(const [id,p] of playerEntries())players[id]={name:p.name,order:p.order,cardCount:0,ready:false};await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,status:"lobby",createdAt:Date.now(),players});await remove(ref(db,`rooms/${roomCode}/public/reveals`))}
-function chatPanel(){return `<div class="panel chatPanel"><b>شات الغرفة</b><div class="voiceBar"><button id="sfxTest" class="btn alt">🔊 اختبار الصوت</button><button id="sfxToggle" class="btn alt">${sfxMuted?"🔇 تشغيل المؤثرات":"🔕 كتم المؤثرات"}</button><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
-function wireCommon(){document.addEventListener("pointerdown",unlockAudio,{once:true});const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
+
+function rulesButtonHtml(){return `<button id="rulesTop" class="rulesIconBtn" title="قواعد اللعبة">📖<small>القواعد</small></button>`}
+function showRulesModal(){
+ const old=document.getElementById("rulesModalBack");if(old)old.remove();
+ const el=document.createElement("div");el.id="rulesModalBack";el.className="rulesModalBack";
+ el.innerHTML=`<div class="rulesModal" role="dialog" aria-modal="true" aria-label="قواعد لعبة شيك شيك">
+   <div class="rulesModalHead"><h2>📖 قواعد شيك شيك</h2><button id="rulesClose" class="rulesClose">✕</button></div>
+   <div class="rulesQuick"><div><b>🎯 الهدف</b><br>أقل مجموع كلي بعد نهاية كل الجولات.</div><div><b>🃏 البداية</b><br>4 أوراق مخفية، وتشوف أول ورقتين لمدة 10 ثواني للحفظ.</div></div>
+   <ol class="rulesList">
+    <li><b>في دورك:</b> تسحب من الرزمة، أو تأخذ ورقة الميدان، أو ترمي ورقة من أوراقك إذا كانت نفس رتبة ورقة الميدان.</li>
+    <li><b>الرمي الخطأ:</b> الورقة تبقى عندك وتأخذ ورقة عقوبة.</li>
+    <li><b>وقت الدور:</b> 60 ثانية. إذا انتهى الوقت تأخذ ورقة عقوبة وينتقل الدور.</li>
+    <li><b>بعد ما تخلص لعبك:</b> عندك 5 ثواني تختار «شيك» أو «تمرير الدور». إذا ما اخترت، ينتقل الدور تلقائياً.</li>
+    <li><b>J الأحمر ♥♦:</b> إذا سحبته من الرزمة تختار ترميه عادي أو تستخدم التبديل. إذا اخترت التبديل عندك 10 ثواني وتبدّل ورقتين بين لاعبين مختلفين؛ ممكن ورقة منك مع لاعب آخر أو بين لاعبين آخرين. J الأسود ♠♣ بدون قوة خاصة.</li>
+    <li><b>Q الأحمر ♥♦:</b> إذا سحبته من الرزمة يكشف لك ورقة من أوراقك لمدة 10 ثواني.</li>
+    <li><b>K الأحمر ♥♦:</b> إذا سحبته من الرزمة يسحب لك كرتين إضافيين؛ تختار واحد وتبدله مع ورقة من أوراقك أنت فقط، والكرت الثاني ينزل فوق العقّة ويصير هو الورقة الظاهرة.</li>
+    <li><b>الجوكر:</b> يبقى بين أوراقك حتى نهاية الجولة. الأسود يلغي أعلى ورقة عند الحساب، والملون يلغي أعلى ورقتين. أكثر من جوكر تتجمع قوتهم.</li>
+    <li><b>القوى الخاصة:</b> قوة J/Q/K الأحمر تعمل فقط إذا انْسحبت الورقة من الرزمة، وليس إذا أخذتها من الميدان.</li>
+    <li><b>إذا خلصت الرزمة:</b> تُخلط أوراق الميدان القديمة وتعود كرزمة سحب جديدة، وأوراق اللاعبين ما تتغير.</li>
+    <li><b>شيك:</b> تبدأ نهاية الجولة حسب نظام اللعبة، ثم تُكشف الأوراق وتُحسب النقاط.</li>
+   </ol>
+   <div class="rulesSpecial"><b>🔢 حساب النقاط:</b><br>A = 1 • من 2 إلى 9 بقيمتها • 10 الأحمر = 0 • 10 الأسود = 10 • J / Q / K = 10 • الجوكر = 0 مع تطبيق قوة الإلغاء.</div>
+ </div>`;
+ document.body.appendChild(el);
+ const close=()=>el.remove();document.getElementById("rulesClose").onclick=close;el.addEventListener("click",e=>{if(e.target===el)close()});
+}
+function chatPanel(){return `<div class="panel chatPanel"><b>شات الغرفة</b><div class="voiceBar"><button id="sfxTest" class="btn alt">🔊 اختبار الصوت</button><button id="sfxToggle" class="btn alt">${sfxMuted?"🔇 تشغيل المؤثرات":"🔕 كتم المؤثرات"}</button><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><button id="funSounds" class="btn soundLauncher">😂 🔊 أصوات وضحك</button><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
+function wireCommon(){document.addEventListener("pointerdown",unlockAudio,{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
 function pairIdFor(a,b){return [a,b].sort().join("__")}
 function waitIceComplete(pc){if(pc.iceGatheringState==="complete")return Promise.resolve();return new Promise(resolve=>{const f=()=>{if(pc.iceGatheringState==="complete"){pc.removeEventListener("icegatheringstatechange",f);resolve()}};pc.addEventListener("icegatheringstatechange",f);setTimeout(()=>{pc.removeEventListener("icegatheringstatechange",f);resolve()},4000)})}
 function voiceRemoteCount(){let n=0;for(const pc of voicePeers.values())if(pc.connectionState==="connected")n++;return n}
