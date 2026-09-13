@@ -380,7 +380,7 @@ const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomai
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),app=document.getElementById("app"),modal=document.getElementById("modal"),sheet=document.getElementById("sheet");
 let uid=null,roomCode=localStorage.getItem("sheikh_room")||"",myName=localStorage.getItem("sheikh_name")||"",currentRoom=null,myHand=null;
 let unsubRoom=null,unsubChat=null,unsubHand=null,latestChat={},localRevealUntil={},pendingStartTimer=null,processingSwap=false,processingJack=false;
-let voiceActive=false,voiceMuted=false,localVoiceStream=null,voiceSyncBusy=false,voiceSessionId="",voiceSyncTimer=null;
+let voiceActive=false,voiceStarting=false,voiceMuted=false,localVoiceStream=null,voiceSyncBusy=false,voiceSessionId="",voiceSyncTimer=null;
 let turnCountdownTimer=null,handlingTurnTimeout=false;
 let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null,audioUnlocked=false;
 const voicePeers=new Map();
@@ -389,10 +389,11 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function toast(t){const x=document.getElementById("toast");x.textContent=t;x.style.display="block";clearTimeout(x._t);x._t=setTimeout(()=>x.style.display="none",2200)}
 function randomCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
 async function ensureAuth(){if(auth.currentUser){uid=auth.currentUser.uid;return}await signInAnonymously(auth)}
-function ctx(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}
-function tone(freq=440,dur=.12,type="sine",vol=.12,delay=0){if(sfxMuted)return;try{const a=ctx(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+delay;o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.03)}catch{}}
-function noise(dur=.12,vol=.08,delay=0){if(sfxMuted)return;try{const a=ctx(),n=Math.max(1,Math.floor(a.sampleRate*dur)),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const src=a.createBufferSource(),g=a.createGain(),t=a.currentTime+delay;src.buffer=b;g.gain.value=vol;src.connect(g).connect(a.destination);src.start(t)}catch{}}
+function ctx(){if(voiceActive||voiceStarting)throw new Error("WebAudio disabled during live voice");if(!audioCtx||audioCtx.state==="closed")audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}
+function tone(freq=440,dur=.12,type="sine",vol=.12,delay=0){if(sfxMuted||voiceActive||voiceStarting)return;try{const a=ctx(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+delay;o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.03)}catch{}}
+function noise(dur=.12,vol=.08,delay=0){if(sfxMuted||voiceActive||voiceStarting)return;try{const a=ctx(),n=Math.max(1,Math.floor(a.sampleRate*dur)),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const src=a.createBufferSource(),g=a.createGain(),t=a.currentTime+delay;src.buffer=b;g.gain.value=vol;src.connect(g).connect(a.destination);src.start(t)}catch{}}
 async function unlockAudio(){
+ if(voiceActive||voiceStarting)return false;
  try{
   const a=ctx();
   if(a.state==="suspended")await a.resume();
@@ -403,7 +404,7 @@ async function unlockAudio(){
  }catch{audioUnlocked=false}
  return audioUnlocked
 }
-function sfx(name){if(sfxMuted)return;unlockAudio();switch(name){case"draw":noise(.11,.06);tone(180,.08,"triangle",.04,.03);break;case"take":noise(.08,.05);tone(260,.08,"sine",.05);break;case"throw":noise(.07,.09);tone(120,.07,"triangle",.05);break;case"correct":tone(660,.10,"sine",.09);tone(880,.13,"sine",.08,.09);break;case"wrong":tone(170,.18,"sawtooth",.09);tone(110,.25,"sawtooth",.07,.14);break;case"penalty":tone(320,.08,"square",.05);tone(210,.13,"triangle",.06,.08);noise(.08,.05,.18);break;case"swap":tone(330,.08,"sine",.06);tone(620,.10,"sine",.07,.07);tone(930,.10,"sine",.05,.14);break;case"queen":tone(740,.12,"sine",.06);tone(980,.18,"sine",.05,.10);break;case"jack":tone(280,.08,"triangle",.06);tone(700,.10,"triangle",.06,.08);break;case"king":noise(.08,.05);noise(.08,.05,.12);tone(520,.14,"sine",.06,.22);break;case"joker1":tone(760,.08,"square",.06);tone(260,.16,"sine",.06,.07);break;case"joker2":tone(760,.07,"square",.06);tone(520,.07,"square",.06,.07);tone(240,.16,"sine",.06,.14);break;case"check":for(let i=0;i<4;i++){tone(i%2?760:540,.12,"square",.06,i*.13)}break;case"reveal":for(let i=0;i<4;i++)noise(.07,.045,i*.07);break;case"win":tone(523,.12,"sine",.07);tone(659,.12,"sine",.07,.12);tone(784,.24,"sine",.08,.24);break;}}
+function sfx(name){if(sfxMuted||voiceActive||voiceStarting)return;unlockAudio();switch(name){case"draw":noise(.11,.06);tone(180,.08,"triangle",.04,.03);break;case"take":noise(.08,.05);tone(260,.08,"sine",.05);break;case"throw":noise(.07,.09);tone(120,.07,"triangle",.05);break;case"correct":tone(660,.10,"sine",.09);tone(880,.13,"sine",.08,.09);break;case"wrong":tone(170,.18,"sawtooth",.09);tone(110,.25,"sawtooth",.07,.14);break;case"penalty":tone(320,.08,"square",.05);tone(210,.13,"triangle",.06,.08);noise(.08,.05,.18);break;case"swap":tone(330,.08,"sine",.06);tone(620,.10,"sine",.07,.07);tone(930,.10,"sine",.05,.14);break;case"queen":tone(740,.12,"sine",.06);tone(980,.18,"sine",.05,.10);break;case"jack":tone(280,.08,"triangle",.06);tone(700,.10,"triangle",.06,.08);break;case"king":noise(.08,.05);noise(.08,.05,.12);tone(520,.14,"sine",.06,.22);break;case"joker1":tone(760,.08,"square",.06);tone(260,.16,"sine",.06,.07);break;case"joker2":tone(760,.07,"square",.06);tone(520,.07,"square",.06,.07);tone(240,.16,"sine",.06,.14);break;case"check":for(let i=0;i<4;i++){tone(i%2?760:540,.12,"square",.06,i*.13)}break;case"reveal":for(let i=0;i<4;i++)noise(.07,.045,i*.07);break;case"win":tone(523,.12,"sine",.07);tone(659,.12,"sine",.07,.12);tone(784,.24,"sine",.08,.24);break;}}
 async function toggleSfx(){
  sfxMuted=!sfxMuted;localStorage.setItem("sheikh_sfx_muted",sfxMuted?"1":"0");updateSfxUi();
  if(!sfxMuted){
@@ -764,7 +765,7 @@ function wireCommon(){document.addEventListener("pointerdown",unlockAudio,{once:
 function pairIdFor(a,b){return [a,b].sort().join("__")}
 function waitIceComplete(pc){if(pc.iceGatheringState==="complete")return Promise.resolve();return new Promise(resolve=>{const f=()=>{if(pc.iceGatheringState==="complete"){pc.removeEventListener("icegatheringstatechange",f);resolve()}};pc.addEventListener("icegatheringstatechange",f);setTimeout(()=>{pc.removeEventListener("icegatheringstatechange",f);resolve()},4000)})}
 function voiceRemoteCount(){let n=0;for(const pc of voicePeers.values())if(pc.connectionState==="connected")n++;return n}
-function updateVoiceUi(){const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount(),present=Object.values(currentRoom?.voiceUsers||{}).filter(v=>v?.active).length-1;const waiting=voiceActive&&n===0&&present>0;el.innerHTML=`<span class="voiceDot ${voiceActive?(n>0?"on":"warn"):""}"></span>${voiceActive?`المايك شغال • متصل ${n}/${Math.max(0,present)}${waiting?" • جاري الاتصال...":""}`:"الصوت المباشر متوقف"}`}
+function updateVoiceUi(){const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount(),present=Object.values(currentRoom?.voiceUsers||{}).filter(v=>v?.active).length-1;const waiting=voiceActive&&n===0&&present>0;el.innerHTML=`<span class="voiceDot ${(voiceActive||voiceStarting)?(n>0?"on":"warn"):""}"></span>${voiceStarting?"جاري فتح المايك...":voiceActive?`المايك شغال • متصل ${n}/${Math.max(0,present)}${waiting?" • جاري الاتصال...":""}`:"الصوت المباشر متوقف"}`}
  const j=document.getElementById("voiceJoin"),m=document.getElementById("voiceMute"),l=document.getElementById("voiceLeave");if(j)j.textContent=voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر";if(m){m.disabled=!voiceActive;m.textContent=voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}if(l)l.disabled=!voiceActive}
 async function clearMyVoiceSignals(){
  try{
@@ -773,18 +774,24 @@ async function clearMyVoiceSignals(){
  }catch{}
 }
 async function startLiveVoice(){
- if(voiceActive){toast("المايك شغال بالفعل");return}
+ if(voiceActive||voiceStarting){toast(voiceActive?"المايك شغال بالفعل":"جاري فتح المايك...");return}
+ voiceStarting=true;updateVoiceUi();
  try{
    if(!window.isSecureContext)throw new Error("المايك يحتاج HTTPS");
    if(!navigator.mediaDevices?.getUserMedia)throw new Error("المتصفح لا يدعم المايك");
-   // iPhone/Safari: keep game WebAudio suspended for the whole live-mic session.
-   // This avoids AudioSession capture conflicts.
-   if(audioCtx&&audioCtx.state!=="suspended"){try{await audioCtx.suspend()}catch{}}
-   localVoiceStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+   // iPhone/Safari fix: completely release the WebAudio session before requesting capture.
+   // Suspending AudioContext is not enough on some iOS versions; closing it releases the
+   // playback AudioSession category so getUserMedia can switch Safari into capture mode.
+   if(audioCtx){try{await audioCtx.close()}catch{} audioCtx=null;audioUnlocked=false}
+   await sleep(250);
+   localVoiceStream=await navigator.mediaDevices.getUserMedia({
+     audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
+     video:false
+   });
    const tracks=localVoiceStream.getAudioTracks();
    if(!tracks.length)throw new Error("لم يتم العثور على مايك");
    tracks.forEach(t=>t.enabled=true);
-   voiceSessionId=uid+"_"+Date.now();voiceActive=true;voiceMuted=false;
+   voiceSessionId=uid+"_"+Date.now();voiceActive=true;voiceStarting=false;voiceMuted=false;
    for(const pc of voicePeers.values())try{pc.close()}catch{}voicePeers.clear();
    await clearMyVoiceSignals();
    await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{name:myName,active:true,muted:false,session:voiceSessionId,ts:Date.now()});
@@ -793,7 +800,7 @@ async function startLiveVoice(){
    clearInterval(voiceSyncTimer);voiceSyncTimer=setInterval(()=>{if(voiceActive)syncVoicePeers()},1800);
    toast("🎙️ المايك مفتوح — المؤثرات تتوقف أثناء المحادثة")
  }catch(e){
-   voiceActive=false;voiceSessionId="";
+   voiceStarting=false;voiceActive=false;voiceSessionId="";
    if(localVoiceStream){for(const t of localVoiceStream.getTracks())try{t.stop()}catch{}localVoiceStream=null}
    updateVoiceUi();
    const raw=String(e?.message||"");
@@ -810,8 +817,9 @@ async function stopLiveVoice(removeState=true){
  document.getElementById("voiceAudios").innerHTML="";updateVoiceUi();
  if(removeState&&roomCode&&uid){try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`));await clearMyVoiceSignals()}catch{}}
  voiceSessionId="";
- if(audioCtx&&audioCtx.state==="suspended"){try{await audioCtx.resume()}catch{}}
- if(was&&removeState)toast("تم إيقاف الصوت المباشر — رجعت مؤثرات اللعبة 🔊")
+ // Do not recreate WebAudio automatically on iPhone. It will unlock on the next user tap.
+ audioCtx=null;audioUnlocked=false;
+ if(was&&removeState)toast("تم إيقاف الصوت المباشر — اضغط اختبار الصوت لتشغيل المؤثرات 🔊")
 }
 function attachRemoteAudio(otherUid,stream){const box=document.getElementById("voiceAudios");let a=document.getElementById("voice_"+otherUid);if(!a){a=document.createElement("audio");a.id="voice_"+otherUid;a.autoplay=true;a.playsInline=true;box.appendChild(a)}a.srcObject=stream;a.muted=false;a.volume=1;const p=a.play();if(p?.catch)p.catch(()=>{toast("اضغط تشغيل المايك مرة ثانية لتفعيل صوت اللاعبين")})}
 async function makePeer(otherUid){
