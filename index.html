@@ -18,13 +18,13 @@ button{border:0;border-radius:13px;padding:13px 14px;font:inherit;font-weight:80
 .gameTop{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pile{background:#fff;border:1px solid var(--line);border-radius:16px;min-height:138px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px}.pileTitle{font-size:12px;color:var(--muted);margin-bottom:7px}.cardFace,.cardBack{width:78px;height:110px;border-radius:12px;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;box-shadow:0 4px 10px rgba(0,0,0,.08);background:#fff;position:relative}.cardBack{background:repeating-linear-gradient(45deg,#6d2633 0 8px,#d0a13b 8px 16px);color:#fff;border-color:#fff}.red{color:#c62828}.black{color:#111}.joker{font-size:17px;text-align:center;line-height:1.2}.mini{font-size:11px;color:var(--muted)}
 .hand{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.slot{background:#fff;border:1px solid var(--line);border-radius:15px;padding:10px;text-align:center;min-height:145px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}.slot.empty{opacity:.4}.slot.selected{outline:3px solid var(--gold)}.slot .cardFace,.slot .cardBack{width:70px;height:98px}.slot button{padding:8px 10px;width:100%;font-size:13px}
 .notice{padding:11px 12px;border-radius:12px;background:#fff7df;border:1px solid #ead7a7;margin:10px 0;font-size:13px;line-height:1.7}.notice.good{background:#eaf6f1;border-color:#b9dfcf}.notice.bad{background:#fff0ef;border-color:#edc1bd}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions .full{grid-column:1/-1}
-.modal{position:fixed;inset:0;background:rgba(30,22,18,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;z-index:30}.modal.hidden{display:none}.sheet{width:min(100%,580px);max-height:85vh;overflow:auto;background:var(--card);border-radius:22px;padding:18px;border:1px solid var(--line)}.sheet h3{margin:0 0 12px}.choiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.playerPick{padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px;margin:7px 0}.scoreTable{width:100%;border-collapse:collapse}.scoreTable td,.scoreTable th{padding:10px;border-bottom:1px solid var(--line);text-align:right}.winner{font-size:24px;color:var(--maroon);font-weight:900;text-align:center;padding:10px}.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#211b17;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;z-index:50;display:none}
+.modal{position:fixed;inset:0;background:rgba(30,22,18,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;z-index:30}.modal.hidden{display:none}.sheet{width:min(100%,580px);max-height:85vh;overflow:auto;background:var(--card);border-radius:22px;padding:18px;border:1px solid var(--line)}.sheet h3{margin:0 0 12px}.choiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.playerPick{padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px;margin:7px 0}.scoreTable{width:100%;border-collapse:collapse}.scoreTable td,.scoreTable th{padding:10px;border-bottom:1px solid var(--line);text-align:right}.winner{font-size:24px;color:var(--maroon);font-weight:900;text-align:center;padding:10px}.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#211b17;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;z-index:50;display:none}.voiceBar{display:flex;gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap}.voiceBar button{flex:1;min-width:120px}.voiceState{font-size:12px;color:var(--muted);width:100%;text-align:center}.voiceDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#aaa;margin-inline-end:5px}.voiceDot.on{background:#2f9e64}.voiceDot.warn{background:#d79b2b}
 @media(min-width:520px){.hand{grid-template-columns:repeat(4,1fr)}.slot{min-height:155px}}
 </style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>الشيخ</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
-<div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div>
+<div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="voiceAudios" style="display:none"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -34,6 +34,8 @@ const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomai
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),app=document.getElementById("app"),modal=document.getElementById("modal"),sheet=document.getElementById("sheet");
 let uid=null,roomCode=localStorage.getItem("sheikh_room")||"",myName=localStorage.getItem("sheikh_name")||"",currentRoom=null,myHand=null;
 let unsubRoom=null,unsubChat=null,unsubHand=null,latestChat={},localRevealUntil={},pendingStartTimer=null,processingSwap=false,processingJack=false;
+let voiceActive=false,voiceMuted=false,localVoiceStream=null,voiceSyncBusy=false;
+const voicePeers=new Map();
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function toast(t){const x=document.getElementById("toast");x.textContent=t;x.style.display="block";clearTimeout(x._t);x._t=setTimeout(()=>x.style.display="none",2200)}
@@ -60,10 +62,10 @@ function home(msg=""){
  app.innerHTML=`<div class="panel"><label>اسم اللاعب</label><input id="name" maxlength="20" value="${esc(myName)}" placeholder="مثال: أحمد"><div class="gap"></div><button id="create" class="btn">إنشاء غرفة</button><div id="err" class="err">${esc(msg)}</div></div><div class="panel"><label>دخول غرفة موجودة</label><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><div class="gap"></div><button id="join" class="btn alt">دخول</button></div>`;
  document.getElementById("create").onclick=createRoom;document.getElementById("join").onclick=joinRoom;
 }
-function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=null}
+function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=null;stopLiveVoice(false)}
 async function createRoom(){const n=document.getElementById("name").value.trim();if(!n){document.getElementById("err").textContent="اكتب اسم اللاعب أولاً";return}try{await ensureAuth();uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false}}});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
 async function joinRoom(){const n=document.getElementById("name").value.trim(),c=document.getElementById("code").value.trim().toUpperCase();if(!n||!c){document.getElementById("err").textContent="اكتب الاسم وكود الغرفة";return}try{await ensureAuth();uid=auth.currentUser.uid;const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())throw new Error("الغرفة غير موجودة");const r=s.val(),ps=r.players||{};if(r.status!=="lobby"&&!ps[uid])throw new Error("اللعبة بدأت");if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
-function subscribe(c){cleanupSubs();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}currentRoom=s.val();await autoGameWork();render();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()})}
+function subscribe(c){cleanupSubs();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}currentRoom=s.val();await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()})}
 
 async function startGame(){if(uid!==currentRoom?.hostId)return;if(playerEntries().length<2){toast("لازم لاعبين على الأقل");return}const deck=buildDeck(),discard=deck.shift(),order=playerEntries().map(x=>x[0]);const players={};for(const [id,p] of playerEntries())players[id]={...p,cardCount:0,ready:false};await set(ref(db,`rooms/${roomCode}/public/game`),{phase:"dealing",turnOrder:order,turnIndex:0,deck,discard,discardSeq:1,startedAt:Date.now(),actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",swapRequest:null});await update(ref(db,`rooms/${roomCode}/public`),{status:"game",players});for(const [id] of playerEntries())if(id===uid)await remove(ref(db,`rooms/${roomCode}/privateHands/${id}`));toast("بدأ التوزيع")}
 async function autoGameWork(){if(!currentRoom||!uid)return;const g=game();if(currentRoom.status==="lobby"&&myHand){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null;return}if(currentRoom.status==="game"&&g.phase==="dealing"&&!myHand)await claimInitialHand();if(g.phase==="dealing"&&uid===currentRoom.hostId){const ps=playerEntries();if(ps.length&&ps.every(([id,p])=>p.ready&&p.cardCount===4)){await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"playing",turnIndex:0});await sendSystem("بدأت اللعبة");}}
@@ -202,8 +204,66 @@ function renderResults(){
  wireCommon();if(document.getElementById("again"))document.getElementById("again").onclick=resetToLobby
 }
 async function resetToLobby(){if(uid!==currentRoom.hostId)return;for(const [id] of playerEntries())if(id===uid)await remove(ref(db,`rooms/${roomCode}/privateHands/${id}`));const players={};for(const [id,p] of playerEntries())players[id]={name:p.name,order:p.order,cardCount:0,ready:false};await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,status:"lobby",createdAt:Date.now(),players});await remove(ref(db,`rooms/${roomCode}/public/reveals`))}
-function chatPanel(){return `<div class="panel"><b>شات الغرفة</b><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
-function wireCommon(){const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));renderChat()}
+function chatPanel(){return `<div class="panel"><b>شات الغرفة</b><div class="voiceBar"><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
+function wireCommon(){const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
+function pairIdFor(a,b){return [a,b].sort().join("__")}
+function waitIceComplete(pc){if(pc.iceGatheringState==="complete")return Promise.resolve();return new Promise(resolve=>{const f=()=>{if(pc.iceGatheringState==="complete"){pc.removeEventListener("icegatheringstatechange",f);resolve()}};pc.addEventListener("icegatheringstatechange",f);setTimeout(()=>{pc.removeEventListener("icegatheringstatechange",f);resolve()},4000)})}
+function voiceRemoteCount(){let n=0;for(const pc of voicePeers.values())if(pc.connectionState==="connected")n++;return n}
+function updateVoiceUi(){const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount();el.innerHTML=`<span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?`المايك المباشر شغال • متصل مع ${n} لاعب`:"الصوت المباشر متوقف"}`}
+ const j=document.getElementById("voiceJoin"),m=document.getElementById("voiceMute"),l=document.getElementById("voiceLeave");if(j)j.textContent=voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر";if(m){m.disabled=!voiceActive;m.textContent=voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}if(l)l.disabled=!voiceActive}
+async function startLiveVoice(){
+ if(voiceActive){toast("المايك شغال بالفعل");return}
+ try{
+   if(!navigator.mediaDevices?.getUserMedia)throw new Error("المتصفح لا يدعم المايك");
+   localVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+   voiceActive=true;voiceMuted=false;updateVoiceUi();
+   await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{name:myName,active:true,muted:false,ts:Date.now()});
+   await syncVoicePeers();toast("تم تشغيل المايك المباشر 🎙️")
+ }catch(e){voiceActive=false;localVoiceStream=null;updateVoiceUi();toast(e?.name==="NotAllowedError"?"اسمح للمتصفح باستخدام المايك":"تعذر تشغيل المايك: "+(e?.message||"خطأ"))}
+}
+async function toggleVoiceMute(){if(!voiceActive||!localVoiceStream)return;voiceMuted=!voiceMuted;for(const t of localVoiceStream.getAudioTracks())t.enabled=!voiceMuted;try{await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{muted:voiceMuted,active:true,ts:Date.now()})}catch{}updateVoiceUi();toast(voiceMuted?"تم كتم المايك":"تم فتح المايك")}
+async function stopLiveVoice(removeState=true){
+ const was=voiceActive;voiceActive=false;voiceMuted=false;
+ if(localVoiceStream){for(const t of localVoiceStream.getTracks())try{t.stop()}catch{}localVoiceStream=null}
+ for(const pc of voicePeers.values())try{pc.close()}catch{}voicePeers.clear();
+ document.getElementById("voiceAudios").innerHTML="";updateVoiceUi();
+ if(removeState&&roomCode&&uid){try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`))}catch{}}
+ if(was&&removeState)toast("تم إيقاف الصوت المباشر")
+}
+function attachRemoteAudio(otherUid,stream){const box=document.getElementById("voiceAudios");let a=document.getElementById("voice_"+otherUid);if(!a){a=document.createElement("audio");a.id="voice_"+otherUid;a.autoplay=true;a.playsInline=true;box.appendChild(a)}a.srcObject=stream;const p=a.play();if(p?.catch)p.catch(()=>{})}
+async function makePeer(otherUid){
+ if(voicePeers.has(otherUid)||!localVoiceStream)return voicePeers.get(otherUid);
+ const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});voicePeers.set(otherUid,pc);
+ for(const t of localVoiceStream.getTracks())pc.addTrack(t,localVoiceStream);
+ pc.ontrack=e=>{const st=e.streams?.[0]||new MediaStream([e.track]);attachRemoteAudio(otherUid,st)};
+ pc.onconnectionstatechange=()=>{updateVoiceUi();if(["failed","closed"].includes(pc.connectionState)){try{pc.close()}catch{}voicePeers.delete(otherUid)}};
+ return pc
+}
+async function syncVoicePeers(){
+ if(!voiceActive||!localVoiceStream||!currentRoom||voiceSyncBusy)return;voiceSyncBusy=true;
+ try{
+   const players=Object.keys(currentRoom.players||{}).filter(id=>id!==uid);
+   for(const otherUid of players){
+     let pc=await makePeer(otherUid);if(!pc)continue;
+     const pair=pairIdFor(uid,otherUid),sig=currentRoom.voiceSignals?.[pair]||{},initiator=uid<otherUid;
+     if(initiator){
+       if(!sig.offer&&pc.signalingState==="stable"){
+         const offer=await pc.createOffer({offerToReceiveAudio:true});await pc.setLocalDescription(offer);await waitIceComplete(pc);
+         await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,ts:Date.now()});
+       }
+       const latest=(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`))).val();
+       if(latest?.sdp&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription({type:latest.type,sdp:latest.sdp}))}
+     }else{
+       const offer=sig.offer||(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`))).val();
+       if(offer?.sdp&&!pc.currentRemoteDescription){
+         await pc.setRemoteDescription(new RTCSessionDescription({type:offer.type,sdp:offer.sdp}));
+         const ans=await pc.createAnswer();await pc.setLocalDescription(ans);await waitIceComplete(pc);
+         await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,ts:Date.now()});
+       }
+     }
+   }
+ }catch(e){console.warn("voice sync",e)}finally{voiceSyncBusy=false;updateVoiceUi()}
+}
 async function sendChat(forced){const inp=document.getElementById("chatInput"),text=(forced||(inp?.value||"")).trim().slice(0,120);if(!text)return;try{await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid,name:myName,text,ts:Date.now()});if(inp)inp.value=""}catch(e){toast("تعذر إرسال الرسالة")}}
 async function sendSystem(text){try{await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid:"system",name:"النظام",text,ts:Date.now()})}catch{}}
 function renderChat(){const box=document.getElementById("chatBox");if(!box)return;const arr=Object.values(latestChat).sort((a,b)=>(a.ts||0)-(b.ts||0));box.innerHTML=arr.map(m=>`<p><b>${esc(m.name)}:</b> ${esc(m.text)}</p>`).join("");box.scrollTop=box.scrollHeight}
