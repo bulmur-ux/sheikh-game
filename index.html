@@ -434,6 +434,88 @@ body:has(.lobbyShell) #app{margin:0!important}
 @media (orientation:portrait){.lobbyBrand{gap:6px!important;min-height:66px} .lobbyTitlePlaque{font-size:29px!important;padding:8px 26px!important} .lobbyFlag{width:58px!important;height:34px!important} .lobbyFalcon{width:48px;height:48px} .lobbyTable{height:470px!important} .refBrand{min-width:320px!important;gap:5px!important} .refUaeFlag{width:54px!important;height:32px!important} .refFalcon{width:42px;height:42px} .refTitle{font-size:24px!important;padding:6px 23px!important}}
 </style>
 
+
+<style id="lobby-landscape-fit-v3">
+/* iPhone/Safari landscape lobby: no overlap, everything stays inside the visible viewport */
+@media (orientation:landscape) and (min-width:650px){
+  body:has(.lobbyScene) .wrap{width:100vw!important;max-width:none!important;height:100dvh!important;margin:0!important;padding:0!important;overflow:hidden!important}
+  body:has(.lobbyScene) .wrap>.stripe,body:has(.lobbyScene) .wrap>header{display:none!important}
+  body:has(.lobbyScene) #app{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important;margin:0!important;padding:0!important}
+  .lobbyScene{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;min-height:0!important;overflow:hidden!important;padding:0!important;border:0!important}
+
+  /* compact centered brand */
+  .lobbyHeader{position:absolute!important;left:50%!important;top:4px!important;transform:translateX(-50%)!important;width:430px!important;height:48px!important;margin:0!important;z-index:50!important}
+  .lobbyBrand{min-height:44px!important;height:44px!important;gap:6px!important}
+  .lobbyTitlePlaque{font-size:22px!important;line-height:1!important;padding:6px 24px!important;border-width:2px!important;border-radius:14px!important}
+  .lobbyFalcon{width:38px!important;height:38px!important;border-width:2px!important}
+  .lobbyFlag{width:52px!important;height:29px!important;border-width:1px!important}
+  .lobbySubtitle{display:none!important}
+  .lobbyTools{position:fixed!important;top:5px!important;right:8px!important;display:flex!important;gap:4px!important;margin:0!important;z-index:60!important}
+  .lobbyTools .toolBtn{width:46px!important;height:40px!important;padding:3px!important;font-size:15px!important;border-radius:9px!important}
+  .lobbyTools .toolBtn small{font-size:7px!important}
+
+  /* code stays above table, centered and small */
+  .roomCodeBox{position:absolute!important;left:50%!important;top:53px!important;transform:translateX(-50%)!important;width:350px!important;height:62px!important;margin:0!important;padding:5px 8px!important;z-index:45!important;border-radius:13px!important}
+  .roomCodeLabel{font-size:10px!important;margin:0 0 3px!important}
+  .roomCodeRow{gap:5px!important}
+  .roomCodeValue{font-size:22px!important;letter-spacing:8px!important;height:38px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+  .copyMini{font-size:11px!important;min-width:72px!important;height:38px!important;padding:4px 8px!important}
+
+  /* table owns the middle area only */
+  .lobbyTable{position:absolute!important;left:205px!important;right:255px!important;top:122px!important;bottom:10px!important;width:auto!important;height:auto!important;min-height:0!important;max-width:none!important;margin:0!important;border-width:8px!important;border-radius:46%/34%!important;z-index:10!important}
+  .lobbyTable:after{inset:14% 8%!important}
+  .lobbySeat .lobbyAvatar{width:48px!important;height:48px!important;font-size:18px!important}
+  .lobbySeatInfo{font-size:9px!important;padding:3px 5px!important;min-width:76px!important}
+  .lobbySeatInfo strong{font-size:10px!important}
+  .lobbySeatInfo span{font-size:8px!important}
+  .lobbySeat.s0{top:4px!important}.lobbySeat.s1{left:0!important}.lobbySeat.s2{right:0!important}.lobbySeat.s3{bottom:2px!important}
+  .lobbyCenterDeck{gap:12px!important}
+  .lobbyCenterDeck .cardBack,.lobbyCenterCard{width:58px!important;height:82px!important}
+  .lobbyDeckLabel{font-size:8px!important}.lobbyDeckCount{font-size:8px!important}
+
+  /* host controls live in their own left rail */
+  .lobbySetup{position:absolute!important;left:8px!important;top:88px!important;bottom:auto!important;width:188px!important;margin:0!important;padding:7px!important;z-index:40!important;border-radius:12px!important}
+  .setupGrid{display:block!important}
+  .setupBox{padding:5px!important;margin-bottom:5px!important}
+  .setupBox label{font-size:10px!important;margin-bottom:2px!important}
+  .setupBox select{height:31px!important;font-size:15px!important;padding:2px 8px!important}
+  .lobbyHint{font-size:8px!important;line-height:1.2!important;margin-top:2px!important}
+  .lobbyMainActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important;margin-top:5px!important}
+  .lobbyMainActions .btn{min-height:33px!important;font-size:10px!important;padding:4px!important}
+  .lobbyCapacity{font-size:8px!important;margin-top:4px!important}
+
+  /* players / spectators / chat on the right rail */
+  .lobbyBottomGrid{position:absolute!important;right:8px!important;top:58px!important;bottom:8px!important;width:238px!important;display:grid!important;grid-template-rows:auto auto minmax(0,1fr)!important;gap:5px!important;z-index:40!important;overflow:hidden!important}
+  .lobbyBottomGrid .lobbyList{margin:0!important;padding:6px!important;min-height:0!important;border-radius:11px!important}
+  .lobbyBottomGrid .lobbyList h3{font-size:11px!important;margin:0 0 4px!important}
+  .miniPerson{font-size:9px!important;padding:3px 4px!important;min-height:22px!important}
+  .lobbyChatWrap{margin:0!important;padding:0!important;min-height:0!important;height:auto!important;overflow:hidden!important;border-radius:11px!important}
+  .lobbyChatWrap>.panel{height:100%!important;padding:6px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+  .lobbyChatWrap>.panel>b{font-size:11px!important}
+  .lobbyChatWrap .voiceBar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:3px!important;margin:3px 0!important}
+  .lobbyChatWrap .voiceBar button{font-size:7px!important;padding:4px 2px!important;min-height:25px!important}
+  .lobbyChatWrap .voiceBar #voiceLeave{grid-column:1/-1!important}
+  .lobbyChatWrap .voiceState{grid-column:1/-1!important;font-size:7px!important}
+  .lobbyChatWrap .chat{flex:1 1 auto!important;height:auto!important;min-height:34px!important;margin:3px 0!important;padding:4px!important;overflow:auto!important}
+  .lobbyChatWrap .chat p,.lobbyChatWrap .chat b{font-size:9px!important;line-height:1.25!important}
+  .lobbyChatWrap .quickChat{gap:2px!important;overflow-x:auto!important;white-space:nowrap!important;margin:2px 0!important}
+  .lobbyChatWrap .quickChat button{font-size:7px!important;padding:4px 5px!important;min-width:auto!important}
+  .lobbyChatWrap .row{gap:3px!important}
+  .lobbyChatWrap .row #chatInput{font-size:9px!important;padding:5px!important;min-height:29px!important}
+  .lobbyChatWrap .row #send{flex:0 0 43px!important;font-size:8px!important;padding:4px 2px!important;min-height:29px!important}
+}
+
+@media (orientation:landscape) and (min-width:650px) and (max-height:430px){
+  .lobbyHeader{top:1px!important;height:40px!important}.lobbyBrand{height:38px!important;min-height:38px!important}.lobbyTitlePlaque{font-size:19px!important;padding:5px 20px!important}.lobbyFalcon{width:32px!important;height:32px!important}.lobbyFlag{width:44px!important;height:25px!important}
+  .roomCodeBox{top:41px!important;width:310px!important;height:55px!important}.roomCodeValue{height:33px!important;font-size:18px!important}.copyMini{height:33px!important}
+  .lobbyTable{left:190px!important;right:235px!important;top:101px!important;bottom:6px!important}
+  .lobbySetup{left:6px!important;top:65px!important;width:175px!important;padding:5px!important}.setupBox{padding:3px!important}.setupBox select{height:28px!important}.lobbyMainActions .btn{min-height:30px!important}
+  .lobbyBottomGrid{right:6px!important;top:48px!important;bottom:6px!important;width:220px!important}
+  .lobbyTools{top:2px!important;right:5px!important}.lobbyTools .toolBtn{width:41px!important;height:35px!important}
+  .lobbySeat .lobbyAvatar{width:42px!important;height:42px!important}.lobbyCenterDeck .cardBack,.lobbyCenterCard{width:50px!important;height:70px!important}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
