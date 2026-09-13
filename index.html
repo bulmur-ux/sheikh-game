@@ -150,7 +150,98 @@ linear-gradient(180deg,#a85825 0 19%,#6c2818 20% 34%,#35170f 35% 100%);box-shado
   .tableHud,.scoreStrip{width:185px!important}.scoreStrip{top:100px!important;max-height:105px!important}
   #app>.panel:has(#chatBox){width:198px!important}.myArea{width:min(520px,52vw)!important}.slot{min-width:62px!important;width:62px!important}.slot .cardFace,.slot .cardBack{width:60px!important;height:86px!important}.gameControls{width:195px!important}.seat.top{top:40px!important}.seat.bottom{bottom:56px!important}.centerPiles{top:46%!important}.stageAction{bottom:62px!important}
 }
+
+/* ===== Reference-layout correction: true landscape game screen ===== */
+.rulesPanel,.spectatorPanel{display:none}
+@media (orientation:landscape) and (min-width:650px){
+  body:has(.gameStage){overflow:hidden;background:#160d08}
+  body:has(.gameStage) .wrap{width:100vw;max-width:none;height:100dvh;padding:0;margin:0}
+  body:has(.gameStage) .stripe,body:has(.gameStage) header{display:none!important}
+  body:has(.gameStage) #app{width:100vw;height:100dvh;position:relative;direction:rtl;overflow:hidden;background:
+    radial-gradient(circle at 12% 22%,rgba(245,171,48,.18),transparent 19%),
+    radial-gradient(circle at 88% 24%,rgba(245,171,48,.15),transparent 18%),
+    linear-gradient(180deg,#4b2415 0,#24120c 28%,#130b08 100%)}
+
+  .gameStage{position:absolute!important;left:222px!important;right:230px!important;top:0!important;bottom:0!important;width:auto!important;height:100dvh!important;min-height:0!important;max-height:none!important;margin:0!important;border-radius:0!important;border:0!important;overflow:hidden!important;background:
+    radial-gradient(ellipse at center,#761d27 0 39%,#641821 40% 58%,#351e16 59% 68%,#120b08 69% 100%)!important;box-shadow:inset 0 0 0 4px #9d6d27,inset 0 0 0 13px #24130d,inset 0 0 70px #000!important}
+  .gameStage:before{inset:18% 8% 17%!important;border:2px solid rgba(211,155,57,.25)!important;border-radius:30%/25%!important;background:radial-gradient(ellipse at center,rgba(125,28,39,.45),rgba(85,19,27,.2))!important}
+  .stageTitle{position:absolute!important;top:8px!important;left:50%!important;transform:translateX(-50%)!important;z-index:40!important;margin:0!important;padding:7px 42px!important;border:2px solid #d2a03c!important;border-radius:16px!important;background:linear-gradient(#7f1f32,#54131f)!important;color:#f7d777!important;font-size:27px!important;line-height:1!important;box-shadow:0 3px 10px #0008!important;white-space:nowrap!important}
+  .seat .avatar{width:58px!important;height:58px!important;font-size:22px!important;border:3px solid #d7a63d!important;background:linear-gradient(#f8e8bd,#cda45a)!important}.seat.turn .avatar{box-shadow:0 0 0 4px #35d95a,0 0 18px #35d95a!important}
+  .seatName{font-size:13px!important;padding:5px 10px!important;background:#100b08!important;border:1px solid #b27c2d!important;color:#fff0cf!important}.seatMiniCard{width:35px!important;height:50px!important;margin-inline-start:-12px!important}
+  .seat.top{top:70px!important}.seat.left{left:28px!important;top:43%!important}.seat.right{right:28px!important;top:43%!important}.seat.bottom{bottom:112px!important}
+  .centerPiles{top:48%!important;gap:30px!important}.tablePile .cardBack,.tablePile .cardFace{width:90px!important;height:128px!important}.pileCount{font-size:12px!important;color:#f7e2b8!important;margin-top:5px!important}
+  .stageAction{bottom:92px!important;font-size:12px!important;color:#f4dca8!important}
+
+  .tableHud{position:absolute!important;left:10px!important;top:10px!important;width:202px!important;z-index:60!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}.hudBox{padding:8px!important;background:#0d0907!important;border:1px solid #b17b2d!important;border-radius:11px!important}.hudBox:nth-child(3){grid-column:1/-1}.hudBox b{font-size:11px!important;color:#e9c56b!important}.hudBox strong{font-size:13px!important;color:white!important}
+  .scoreStrip{position:absolute!important;left:10px!important;top:105px!important;width:202px!important;z-index:60!important;max-height:118px!important;overflow:auto!important;background:#0c0907!important;border:1px solid #b17b2d!important;border-radius:12px!important;padding:8px!important}.scoreStrip:before{content:"السكور";display:block;text-align:center;color:#f0d07a;font-weight:900;font-size:13px;margin-bottom:5px}.scoreChip{display:block!important;background:transparent!important;border:0!important;color:#fff!important;padding:3px 5px!important;font-size:11px!important;text-align:right!important}
+  .spectatorPanel{display:flex!important;position:absolute!important;left:10px!important;top:233px!important;width:202px!important;max-height:150px!important;overflow:auto!important;z-index:60!important;flex-direction:column!important;gap:5px!important;background:#0b0908!important;border:1px solid #b17b2d!important;border-radius:12px!important;padding:9px!important;color:#fff!important}.spectatorPanel b{color:#efcf77;font-size:13px}.spectatorPanel span,.spectatorPanel small{font-size:11px;padding:4px;border-bottom:1px solid #2e241b}
+  .rulesPanel{display:block!important;position:absolute!important;right:10px!important;top:10px!important;width:212px!important;z-index:60!important;background:#0b0908!important;border:1px solid #b17b2d!important;border-radius:12px!important;padding:9px 11px!important;color:#fff!important}.rulesPanel b{display:block;color:#efcf77;text-align:center;font-size:13px;margin-bottom:5px}.rulesPanel ul{margin:0;padding:0 16px 0 0}.rulesPanel li{font-size:10px;line-height:1.55;margin:1px 0}
+
+  #app>.panel:has(#chatBox){position:absolute!important;right:10px!important;top:170px!important;width:212px!important;bottom:8px!important;max-height:none!important;z-index:61!important;margin:0!important;padding:8px!important;background:#0b0908!important;border:1px solid #b17b2d!important;border-radius:12px!important;color:#fff!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+  #app>.panel:has(#chatBox)>b{font-size:13px!important;color:#f0cf77!important}.voiceBar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px!important}.voiceBar button{font-size:9px!important;padding:6px 3px!important}.voiceBar #voiceLeave{grid-column:1/-1}.voiceState{grid-column:1/-1;font-size:9px!important}.chat{flex:1!important;height:auto!important;min-height:75px!important;background:#050504!important;border-color:#49351d!important;padding:6px!important}.chat p,.chat b{font-size:12px!important;line-height:1.5!important}.quick{display:none!important}.row #chatInput{font-size:11px!important;padding:7px!important}.row #send{flex:0 0 55px!important;font-size:10px!important;padding:7px 3px!important}
+
+  .myArea{position:absolute!important;left:50%!important;bottom:0!important;transform:translateX(-50%)!important;width:min(560px,52vw)!important;z-index:70!important;margin:0!important;padding:0 8px 5px!important;border:0!important;background:linear-gradient(180deg,transparent 0,rgba(12,8,6,.9) 35%,#0c0806 100%)!important;box-shadow:none!important}.myAreaTitle{display:none!important}.hand{gap:7px!important;padding:0!important;margin:0!important;overflow:visible!important}.slot{min-width:76px!important;width:76px!important;min-height:108px!important;margin:0!important}.slot .cardFace,.slot .cardBack{width:74px!important;height:104px!important}.slotNum{top:-13px!important;right:50%!important;transform:translateX(50%)!important;background:#f2c84d!important;color:#24150d!important;border:2px solid #fff1b2!important;font-size:14px!important;min-width:27px!important;height:27px!important}.slot button{font-size:9px!important;width:70px!important;padding:4px!important}
+  .gameControls{position:absolute!important;right:232px!important;bottom:10px!important;width:142px!important;z-index:72!important;display:grid!important;grid-template-columns:1fr!important;gap:6px!important}.gameControls .btn{min-height:45px!important;padding:7px!important;font-size:12px!important;border:1px solid #b17b2d!important;border-radius:12px!important}.gameControls .full{grid-column:1!important}
+  .gameStage + .panel.center{display:none!important}
+}
+@media (orientation:landscape) and (min-width:650px) and (max-height:540px){
+  .gameStage{left:190px!important;right:198px!important}.tableHud,.scoreStrip,.spectatorPanel{left:6px!important;width:176px!important}.rulesPanel,#app>.panel:has(#chatBox){right:6px!important;width:184px!important}.rulesPanel{padding:6px 8px!important}.rulesPanel li{font-size:9px!important;line-height:1.35}.rulesPanel{top:6px!important}.rulesPanel+*{}#app>.panel:has(#chatBox){top:145px!important;bottom:5px!important}.spectatorPanel{top:210px!important;max-height:100px!important}.seat.top{top:50px!important}.seat.bottom{bottom:88px!important}.centerPiles{top:46%!important}.tablePile .cardBack,.tablePile .cardFace{width:72px!important;height:102px!important}.myArea{width:min(470px,48vw)!important}.slot{min-width:64px!important;width:64px!important}.slot .cardFace,.slot .cardBack{width:62px!important;height:88px!important}.gameControls{right:198px!important;width:126px!important}.gameControls .btn{min-height:39px!important;font-size:10px!important}.stageTitle{font-size:22px!important}.stageAction{bottom:74px!important}}
+
 </style>
+
+<style id="final-reference-layout">
+/* Final visual pass: keep portrait usable, make landscape match the approved table composition. */
+@media (orientation:landscape) and (min-width:650px){
+  html,body{height:100%;overflow:hidden;background:#120b07!important}
+  body{margin:0!important}
+  .wrap{width:100vw!important;max-width:none!important;height:100dvh!important;margin:0!important;padding:0!important;overflow:hidden!important;background:
+    radial-gradient(circle at 14% 22%,rgba(231,165,63,.20),transparent 22%),
+    radial-gradient(circle at 86% 18%,rgba(231,165,63,.18),transparent 22%),
+    linear-gradient(180deg,#6b3219 0 18%,#2b140d 18% 100%)!important}
+  .wrap>.stripe,.wrap>header{display:none!important}
+  #app{position:relative!important;width:100%!important;height:100%!important;max-width:none!important;margin:0!important;padding:0!important;overflow:hidden!important}
+
+  /* Main table fills the center, with permanent side rails like the approved mockup. */
+  .gameStage{position:absolute!important;left:230px!important;right:240px!important;top:8px!important;bottom:8px!important;height:auto!important;min-height:0!important;margin:0!important;border-radius:32%/26%!important;border:8px solid #2a160f!important;background:
+    linear-gradient(rgba(70,16,21,.15),rgba(70,16,21,.15)),
+    radial-gradient(ellipse at center,#7e202c 0 44%,#671a24 45% 61%,#3a2418 62% 70%,#160d09 71% 100%)!important;
+    box-shadow:inset 0 0 0 3px #b07b2e,inset 0 0 80px #000,0 0 0 1px #6f4a20!important;overflow:hidden!important}
+  .gameStage:after{content:"";position:absolute;inset:10% 7%;border-radius:30%/25%;border:2px solid rgba(211,155,57,.28);box-shadow:inset 0 0 35px rgba(0,0,0,.22);pointer-events:none}
+  .stageTitle{top:10px!important;font-size:30px!important;padding:8px 48px!important;border-radius:18px!important;color:#ffdc79!important;z-index:50!important}
+
+  .tableHud{left:10px!important;top:10px!important;width:208px!important;grid-template-columns:1fr 1fr!important;z-index:80!important}
+  .hudBox{min-height:55px!important;display:flex!important;flex-direction:column!important;justify-content:center!important}.hudBox b{font-size:12px!important}.hudBox strong{font-size:17px!important}
+  .scoreStrip{left:10px!important;top:140px!important;width:208px!important;max-height:135px!important;z-index:80!important}
+  .scoreChip{font-size:13px!important;padding:5px!important}
+  .spectatorPanel{left:10px!important;top:288px!important;width:208px!important;max-height:170px!important;z-index:80!important}.spectatorPanel b{font-size:15px!important}.spectatorPanel span,.spectatorPanel small{font-size:12px!important}
+
+  .rulesPanel{right:10px!important;top:10px!important;width:220px!important;z-index:80!important;padding:10px 12px!important}.rulesPanel b{font-size:15px!important}.rulesPanel li{font-size:12px!important;line-height:1.55!important}
+  #app>.panel:has(#chatBox){right:10px!important;top:178px!important;bottom:8px!important;width:220px!important;z-index:81!important;padding:9px!important}
+  #app>.panel:has(#chatBox)>b{font-size:16px!important}.chat{min-height:100px!important}.chat p,.chat b{font-size:14px!important;line-height:1.55!important}.voiceBar button{font-size:10px!important}.row #chatInput{font-size:13px!important}.row #send{font-size:11px!important}
+
+  .seat{z-index:25!important}.seat .avatar{width:66px!important;height:66px!important;font-size:25px!important}.seatName{font-size:14px!important;min-width:105px!important}.seatMiniCard{width:38px!important;height:54px!important}
+  .seat.top{top:72px!important}.seat.left{left:42px!important;top:44%!important}.seat.right{right:42px!important;top:44%!important}.seat.bottom{bottom:126px!important}
+  .centerPiles{top:48%!important;gap:34px!important;z-index:20!important}.tablePile .cardBack,.tablePile .cardFace{width:100px!important;height:142px!important}.pileCount{font-size:13px!important}
+  .stageAction{bottom:100px!important;font-size:13px!important;z-index:26!important}
+
+  /* Player's four cards sit across the lower edge, as in the reference. */
+  .myArea{left:50%!important;bottom:4px!important;width:min(610px,48vw)!important;padding:0 8px 6px!important;z-index:90!important;background:linear-gradient(180deg,transparent,rgba(15,9,6,.92) 42%,#0d0806)!important}
+  .hand{display:flex!important;justify-content:center!important;gap:8px!important;overflow:visible!important}.slot{width:82px!important;min-width:82px!important;min-height:116px!important}.slot .cardFace,.slot .cardBack{width:80px!important;height:112px!important}.slotNum{top:-14px!important;font-size:15px!important;min-width:29px!important;height:29px!important;background:#ffd34f!important;color:#2a170b!important;border:2px solid #fff1b2!important;box-shadow:0 2px 6px #000!important}
+  .gameControls{right:250px!important;bottom:14px!important;width:150px!important;z-index:92!important}.gameControls .btn{min-height:48px!important;font-size:13px!important}
+}
+
+/* Very short iPhone landscape: preserve the same composition, only trim sizes—not the whole page. */
+@media (orientation:landscape) and (min-width:650px) and (max-height:500px){
+  .gameStage{left:205px!important;right:210px!important}.tableHud,.scoreStrip,.spectatorPanel{left:6px!important;width:188px!important}.rulesPanel,#app>.panel:has(#chatBox){right:6px!important;width:194px!important}.rulesPanel{padding:6px 8px!important}.rulesPanel li{font-size:10px!important;line-height:1.35!important}#app>.panel:has(#chatBox){top:145px!important}.scoreStrip{top:118px!important;max-height:100px!important}.spectatorPanel{top:228px!important;max-height:95px!important}
+  .stageTitle{font-size:23px!important;padding:6px 36px!important}.seat .avatar{width:50px!important;height:50px!important}.seatName{font-size:11px!important}.seat.top{top:52px!important}.seat.bottom{bottom:94px!important}.seat.left{left:25px!important}.seat.right{right:25px!important}.centerPiles{top:46%!important}.tablePile .cardBack,.tablePile .cardFace{width:72px!important;height:102px!important}.myArea{width:min(500px,46vw)!important}.slot{width:65px!important;min-width:65px!important}.slot .cardFace,.slot .cardBack{width:63px!important;height:89px!important}.gameControls{right:218px!important;width:126px!important}.gameControls .btn{min-height:39px!important;font-size:10px!important}.chat p,.chat b{font-size:12px!important}
+}
+
+/* Portrait stays a dedicated mobile layout: no desktop-scale shrinking. */
+@media (orientation:portrait) and (max-width:600px){
+  .wrap{max-width:100%!important;padding:0 8px 18px!important}.gameStage{width:100%!important;min-height:520px!important}.chat p,.chat b{font-size:17px!important;line-height:1.7!important}.slotNum{background:#ffd34f!important;color:#25150b!important;border:2px solid #fff1b2!important;font-weight:950!important}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -403,7 +494,10 @@ function renderGame(){
  const seatHtml=others.map((id,i)=>{const p=currentRoom.players?.[id]||{},n=Math.max(0,p.cardCount||0),cards=Array.from({length:Math.min(n,5)},()=>`<span class="seatMiniCard cardBack"></span>`).join("");return `<div class="seat ${slots[i]||"top"} ${id===tuid?'turn':''}"><div class="avatar">${esc((p.name||"ل").trim().charAt(0))}</div><div class="seatName">${esc(p.name||"لاعب")} • ${n} ورقة</div><div class="seatCards">${cards}</div></div>`}).join("");
  const mySeat=isActivePlayer()?`<div class="seat bottom ${uid===tuid?'turn':''}"><div class="avatar">${esc((myName||"أ").trim().charAt(0))}</div><div class="seatName">${esc(myName)} • ${countCards(myHand?.cards)} ورقة</div></div>`:"";
  const scoreHtml=activeIds.map(id=>`<span class="scoreChip">${esc(currentRoom.players?.[id]?.name||"لاعب")}: <b>${totals[id]||0}</b></span>`).join("");
- const board=`<div class="tableHud"><div class="hudBox"><b>الجولة</b><strong>${g.roundNo||1} / ${g.totalRounds||1}</strong></div><div class="hudBox"><b>الدور</b><strong>${esc(tname||"—")}</strong></div><div class="hudBox"><b>وضعك</b><strong>${isActivePlayer()?"لاعب":"متفرج 👀"}</strong></div></div><div class="scoreStrip">${scoreHtml}</div><div class="gameStage"><div class="stageTitle">شيك شيك</div>${seatHtml}${mySeat}<div class="centerPiles"><div class="tablePile"><div class="cardBack" aria-label="رزمة شيك شيك"></div><div class="pileCount">${Array.isArray(g.deck)?g.deck.length:0} ورقة</div></div><div class="tablePile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="pileCount">الميدان</div></div></div><div class="stageAction">${g.ending?"⚠️ تم قول شيك — الأدوار الأخيرة":""}${g.ending&&g.lastAction?" • ":""}${g.lastAction?esc(g.lastAction):(!g.ending?`الدور الآن: ${esc(tname)}`:"")}</div></div>`;
+ const spectatorNames=playerEntries().filter(([id])=>!activeIds.includes(id)).map(([,p])=>p.name||"متفرج");
+ const rulesPanel=`<aside class="rulesPanel"><b>قوانين اللعبة</b><ul><li>4 أوراق لكل لاعب</li><li>أول ورقتين تظهر 10 ثواني</li><li>Q الأحمر و J و K الأحمر من الرزمة فقط</li><li>الخطأ = ورقة عقوبة</li><li>شيك: لكل لاعب دور أخير</li></ul></aside>`;
+ const spectatorPanel=`<aside class="spectatorPanel"><b>المتفرجين (${spectatorNames.length})</b>${spectatorNames.length?spectatorNames.map(n=>`<span>👀 ${esc(n)}</span>`).join(""):`<small>لا يوجد متفرجون</small>`}</aside>`;
+ const board=`<div class="tableHud"><div class="hudBox"><b>الجولة</b><strong>${g.roundNo||1} / ${g.totalRounds||1}</strong></div><div class="hudBox"><b>الدور</b><strong>${esc(tname||"—")}</strong></div><div class="hudBox"><b>وضعك</b><strong>${isActivePlayer()?"لاعب":"متفرج 👀"}</strong></div></div><div class="scoreStrip">${scoreHtml}</div>${rulesPanel}${spectatorPanel}<div class="gameStage"><div class="stageTitle">شيك شيك</div>${seatHtml}${mySeat}<div class="centerPiles"><div class="tablePile"><div class="cardBack" aria-label="رزمة شيك شيك"></div><div class="pileCount">${Array.isArray(g.deck)?g.deck.length:0} ورقة</div></div><div class="tablePile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="pileCount">ورقة اللعب الأخيرة</div></div></div><div class="stageAction">${g.ending?"⚠️ تم قول شيك — الأدوار الأخيرة":""}${g.ending&&g.lastAction?" • ":""}${g.lastAction?esc(g.lastAction):(!g.ending?`الدور الآن: ${esc(tname)}`:"")}</div></div>`;
  if(!isActivePlayer()){
   app.innerHTML=`${board}<div class="panel center"><span class="spectatorTag">👀 متفرج — لا تظهر لك الأوراق المخفية أثناء الجولة</span></div>${chatPanel()}`;wireCommon();return
  }
