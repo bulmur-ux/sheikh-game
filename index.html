@@ -558,6 +558,7 @@ body:has(.lobbyShell) #app{margin:0!important}
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
 <div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="voiceAudios" style="display:none"></div><audio id="roomFunnyAudio" playsinline preload="auto" style="display:none"></audio>
+<script src="sounds.js?v=2"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -571,21 +572,7 @@ let voiceActive=false,voiceStarting=false,voiceMuted=false,localVoiceStream=null
 let turnCountdownTimer=null,handlingTurnTimeout=false;
 let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null,audioUnlocked=false;
 let funnyAudio=null,lastFunnyEventId="",funnyEventPrimed=false,lastFunnySendAt=0,funnySubscribeAt=0;
-const FUN_SOUNDS={
- laugh:{label:"😂 ضحك",url:"https://www.myinstants.com/media/sounds/baby-laughing-meme.mp3"},
- wildlaugh:{label:"🤣 ضحك قوي",url:"https://www.myinstants.com/media/sounds/silly-screaming-laughter.mp3"},
- haha:{label:"😆 ههههه",url:"https://www.myinstants.com/media/sounds/ny-video-online-audio-converter.mp3"},
- bruh:{label:"😑 براه",url:"https://www.myinstants.com/media/sounds/bruh-meme-sound-effect.mp3"},
- boom:{label:"💥 بوم",url:"https://www.myinstants.com/media/sounds/vine-boom-meme_cCCpxZG.mp3"},
- damage:{label:"💔 Emotional Damage",url:"https://www.myinstants.com/media/sounds/emotional-damage-meme.mp3"},
- sad:{label:"🎻 حزين",url:"https://www.myinstants.com/media/sounds/tf_nemesis.mp3"},
- fart:{label:"💨 فارت",url:"https://www.myinstants.com/media/sounds/fart-meme-sound.mp3"},
- run:{label:"🏃 اهرب",url:"https://www.myinstants.com/media/sounds/run-vine-sound-effect.mp3"},
- snore:{label:"😴 نام",url:"https://www.myinstants.com/media/sounds/snore-mimimimimimi.mp3"},
- omg:{label:"😱 Oh My God",url:"https://www.myinstants.com/media/sounds/oh-my-god-meme.mp3"},
- wow:{label:"🤩 واو",url:"https://www.myinstants.com/media/sounds/anime-wow-sound-effect-mp3cut.mp3"},
- arab:{label:"🪘 عربي مضحك",url:"https://www.myinstants.com/media/sounds/arab-funny.mp3"}
-};
+const FUN_SOUNDS=window.SHEIKH_FUN_SOUNDS||{};
 const voicePeers=new Map();
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
