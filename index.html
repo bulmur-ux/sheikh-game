@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>شيك شيك | لعبة المجلس أونلاين</title>
+<meta name="theme-color" content="#6d2633">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="شيك شيك">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>
 :root{--bg:#f3ead8;--card:#fffaf0;--ink:#281d17;--muted:#817268;--maroon:#6d2633;--gold:#d0a13b;--line:#dfcfb3;--green:#2f6558;--danger:#a33d36;--blue:#1f6fb2}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(#f5ecd9,#eee1c7);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;color:var(--ink);min-height:100vh}
@@ -290,6 +297,74 @@ linear-gradient(180deg,#a85825 0 19%,#6c2818 20% 34%,#35170f 35% 100%);box-shado
 
 @media (orientation:landscape) and (max-height:500px){
  .refTitle{font-size:22px;padding:5px 28px;top:4px} .refLeftTop{width:180px;left:6px;top:6px} .refLeftBottom{width:180px;left:6px;top:190px;max-height:120px} .refRightTop{width:190px;right:6px;top:6px} .refRightChat{width:190px;right:6px;top:165px;bottom:5px} .refRules{font-size:10px} .refTable{left:195px;right:200px;top:60px;bottom:100px} .refSeat .refAvatar{width:48px;height:48px;font-size:20px} .refSeatLabel{font-size:10px;min-width:90px} .refSeat.top{top:8px} .refSeat.left{left:10px} .refSeat.right{right:10px} .refSeat.bottom{bottom:5px} .refCenterPiles .cardBack,.refCenterPiles .cardFace{width:62px;height:88px} .refBottom{left:195px;right:200px;height:96px;grid-template-columns:145px 1fr 165px} .refIntro{height:88px;padding:6px} .refIntro strong{font-size:22px} .refHandWrap .slot{width:62px;min-width:62px;min-height:82px} .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:60px;height:82px} .refActions .btn{min-height:39px;font-size:10px} .refRightChat .chat{height:calc(100% - 185px)}
+}
+</style>
+
+<style id="landscape-reference-final">
+/* Final landscape layout: match the approved reference instead of shrinking portrait UI */
+@media (orientation:landscape) and (min-width:650px){
+  html,body{width:100%;height:100%;margin:0;background:#100906;overflow:hidden}
+  body:has(.refGameShell) .wrap{width:100vw!important;max-width:none!important;margin:0!important;padding:0!important}
+  body:has(.refGameShell) .wrap>.stripe,
+  body:has(.refGameShell) .wrap>header{display:none!important}
+  body:has(.refGameShell) #app{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;margin:0!important;padding:0!important;overflow:hidden!important}
+  .refGameShell{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;min-height:0!important;overflow:hidden!important;padding:0!important;background:#160b07!important}
+  .refGameShell:before{background-image:linear-gradient(rgba(18,8,5,.12),rgba(10,4,2,.38)),var(--scene-bg)!important;background-size:cover!important;background-position:center!important;filter:saturate(1.18) contrast(1.04)!important}
+  .refTitle{top:5px!important;font-size:clamp(22px,3vw,38px)!important;padding:5px 38px!important;border-radius:16px!important;line-height:1.05!important}
+
+  /* left information panels */
+  .refLeftTop{left:8px!important;top:8px!important;width:190px!important;padding:7px!important;border-radius:12px!important}
+  .refRoundGrid{gap:5px!important}.refStat{padding:5px!important}.refStat b{font-size:10px!important}.refStat strong{font-size:15px!important}
+  .refScoreList{margin-top:5px!important;gap:2px!important}.refScoreRow{font-size:11px!important;padding:2px 1px!important}
+  .refLeftBottom{left:8px!important;top:170px!important;width:190px!important;max-height:145px!important;padding:7px!important;border-radius:12px!important}
+  .refSpectatorTitle{font-size:13px!important;margin-bottom:3px!important}.refSpectatorRow{font-size:11px!important;padding:4px 0!important}
+
+  /* right controls and chat */
+  .refRightTop{right:8px!important;top:8px!important;width:205px!important;padding:7px!important;border-radius:12px!important}
+  .refTopTools{gap:4px!important;margin-bottom:5px!important}.refTopTools button{font-size:16px!important;padding:5px 2px!important;border-radius:8px!important}.refTopTools small{font-size:8px!important}
+  .refRulesTitle{font-size:12px!important;margin:1px 0 3px!important}.refRules{font-size:9.5px!important;line-height:1.35!important;padding-right:13px!important}
+  .refRightChat{right:8px!important;top:160px!important;bottom:7px!important;width:205px!important;border-radius:12px!important}
+  .refRightChat>.panel{padding:6px!important}.refRightChat>.panel>b{font-size:13px!important}
+  .refRightChat .voiceBar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:3px!important;margin:4px 0!important}
+  .refRightChat .voiceBar button{font-size:8px!important;padding:5px 2px!important;min-width:0!important}.refRightChat .voiceBar #voiceLeave{grid-column:1/-1}.refRightChat .voiceState{grid-column:1/-1;font-size:8px!important}
+  .refRightChat .chat{height:calc(100% - 145px)!important;min-height:55px!important;padding:5px!important;margin:4px 0!important}.refRightChat .chat p,.refRightChat .chat b{font-size:11px!important;line-height:1.35!important}.refRightChat .row #chatInput{font-size:10px!important;padding:6px!important}.refRightChat .row #send{flex:0 0 48px!important;font-size:9px!important;padding:6px 2px!important}
+
+  /* Main table: wood surface + rectangular majlis carpet like the approved mockup */
+  .refTable{left:208px!important;right:223px!important;top:58px!important;bottom:6px!important;border-radius:34px!important;overflow:hidden!important;background:linear-gradient(90deg,#3d2116 0,#6a3820 12%,#4a2819 50%,#6a3820 88%,#3d2116 100%)!important;border:3px solid #8f5d28!important;box-shadow:inset 0 0 0 2px #25130d,inset 0 0 70px #0008,0 10px 28px #0009!important}
+  .refTable:before{inset:15% 10% 20%!important;border-radius:18px!important;border:3px solid #4f171d!important;background:radial-gradient(circle at 50% 44%,#8d202d 0 26%,#781a26 27% 58%,#57131d 59% 100%)!important;box-shadow:inset 0 0 0 3px #7d4320,inset 0 0 45px #26070d,0 4px 12px #0006!important}
+  .refTable:after{content:"";position:absolute;inset:19% 15% 25%;border:2px solid rgba(212,143,44,.32);border-radius:12px;z-index:1;pointer-events:none}
+  .refSeat{z-index:6!important;min-width:105px!important}.refSeat .refAvatar{width:52px!important;height:52px!important;font-size:20px!important;border-width:2px!important}.refSeatLabel{font-size:10px!important;padding:3px 7px!important;min-width:86px!important;border-width:1px!important}.refSeatCards{height:28px!important}.refSeatCards .cardBack{width:23px!important;height:34px!important;margin:0 -5px!important}
+  .refSeat.top{top:52px!important}.refSeat.left{left:12px!important;top:48%!important}.refSeat.right{right:12px!important;top:48%!important}.refSeat.bottom{bottom:86px!important}
+  .refCenterPiles{top:48%!important;gap:22px!important;z-index:7!important}.refPile .cardBack,.refPile .cardFace{width:66px!important;height:94px!important}.refPileLabel{font-size:9px!important;margin-top:2px!important}.pileCount{font-size:9px!important}
+  .refLastAction{bottom:78px!important;font-size:9px!important;padding:3px 8px!important;max-width:50%;overflow:hidden;text-overflow:ellipsis}
+  .refTurnTimer{top:45px!important;min-width:76px!important;font-size:14px!important;padding:4px 9px!important;border-width:1px!important}.refTurnTimer small{font-size:7px!important}
+
+  /* Bottom hand/actions, over the lower edge of table like the reference */
+  .refBottom{left:214px!important;right:229px!important;bottom:2px!important;height:108px!important;grid-template-columns:145px minmax(0,1fr) 175px!important;gap:7px!important;align-items:end!important;z-index:30!important}
+  .refIntro{height:92px!important;padding:6px!important;border-radius:12px!important}.refIntro b{font-size:11px!important}.refIntro strong{font-size:24px!important}.refIntro button{padding:7px!important;font-size:11px!important}
+  .refHandWrap{padding:0 4px 2px!important;background:linear-gradient(180deg,transparent,#120806cc 50%)!important}.refHandTitle{font-size:10px!important;margin-bottom:2px!important}.refHandWrap .hand{gap:5px!important;overflow:visible!important}.refHandWrap .slot{width:58px!important;min-width:58px!important;min-height:78px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:56px!important;height:78px!important;border-radius:7px!important}.refHandWrap .slotNum{top:-11px!important;font-size:11px!important;min-width:24px!important;height:24px!important;line-height:20px!important}
+  .refActions{gap:4px!important;padding-bottom:3px!important}.refActions .btn{min-height:38px!important;font-size:9px!important;padding:5px 3px!important;border-width:1px!important;border-radius:9px!important}
+}
+@media (orientation:landscape) and (min-width:650px) and (max-height:430px){
+  .refTitle{font-size:20px!important;top:3px!important;padding:4px 28px!important}
+  .refLeftTop{width:170px!important}.refLeftBottom{width:170px!important;top:145px!important;max-height:120px!important}.refRightTop{width:185px!important}.refRightChat{width:185px!important;top:142px!important}
+  .refTable{left:180px!important;right:195px!important;top:48px!important}.refBottom{left:186px!important;right:201px!important;height:94px!important;grid-template-columns:125px minmax(0,1fr) 150px!important}
+  .refSeat.top{top:38px!important}.refSeat.bottom{bottom:70px!important}.refCenterPiles{top:45%!important}.refLastAction{bottom:65px!important}
+  .refHandWrap .slot{width:50px!important;min-width:50px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:48px!important;height:68px!important}.refIntro{height:80px!important}.refActions .btn{min-height:33px!important}
+}
+</style>
+
+<style id="ios-final-polish">
+body:has(.lobbyShell) .wrap>header,body:has(.lobbyShell) .wrap>.stripe{display:none!important}
+body:has(.lobbyShell) .wrap{width:100%!important;max-width:none!important;padding:0!important}
+body:has(.lobbyShell) #app{margin:0!important}
+@media (orientation:landscape) and (min-width:650px){
+ body:has(.lobbyShell){overflow:auto;background:#160b07}
+ .lobbyShell{width:100vw!important;max-width:none!important;min-height:100dvh!important;border-radius:0!important;margin:0!important;padding:10px 18px 16px!important}
+ .lobbyHeader{margin:0 auto 5px!important}.lobbyTitlePlaque{font-size:30px!important;padding:5px 42px!important}
+ .lobbyTable{height:52vh!important;min-height:300px!important;margin:6px auto!important;max-width:1100px!important}
+ .lobbySetup{max-width:1100px!important;margin:6px auto!important}.lobbyBottomGrid{max-width:1100px!important;margin:7px auto 0!important}
+ .lobbyChatWrap .chat{height:105px!important}
 }
 </style>
 </head>
@@ -699,46 +774,31 @@ async function clearMyVoiceSignals(){
 }
 async function startLiveVoice(){
  if(voiceActive){toast("المايك شغال بالفعل");return}
- let resumeSfx=false;
  try{
-   if(!window.isSecureContext)throw new Error("المايك يحتاج اتصال HTTPS");
+   if(!window.isSecureContext)throw new Error("المايك يحتاج HTTPS");
    if(!navigator.mediaDevices?.getUserMedia)throw new Error("المتصفح لا يدعم المايك");
-
-   // iPhone/Safari: do not force navigator.audioSession. Let Safari switch
-   // to a capture-compatible audio session itself. Temporarily suspend
-   // WebAudio while requesting the microphone to avoid AudioSession conflicts.
-   if(audioCtx&&audioCtx.state==="running"){
-     try{await audioCtx.suspend();resumeSfx=true}catch{}
-   }
-
-   localVoiceStream=await navigator.mediaDevices.getUserMedia({
-     audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
-     video:false
-   });
+   // iPhone/Safari: keep game WebAudio suspended for the whole live-mic session.
+   // This avoids AudioSession capture conflicts.
+   if(audioCtx&&audioCtx.state!=="suspended"){try{await audioCtx.suspend()}catch{}}
+   localVoiceStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
    const tracks=localVoiceStream.getAudioTracks();
    if(!tracks.length)throw new Error("لم يتم العثور على مايك");
-
-   // Once capture is active Safari can safely resume game effects.
-   if(resumeSfx&&audioCtx){try{await audioCtx.resume()}catch{}}
-
+   tracks.forEach(t=>t.enabled=true);
    voiceSessionId=uid+"_"+Date.now();voiceActive=true;voiceMuted=false;
    for(const pc of voicePeers.values())try{pc.close()}catch{}voicePeers.clear();
    await clearMyVoiceSignals();
    await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{name:myName,active:true,muted:false,session:voiceSessionId,ts:Date.now()});
    updateVoiceUi();
-   setTimeout(()=>syncVoicePeers(),250);setTimeout(()=>syncVoicePeers(),1200);
-   clearInterval(voiceSyncTimer);voiceSyncTimer=setInterval(()=>{if(voiceActive)syncVoicePeers()},2000);
-   setTimeout(()=>{if(voiceActive&&voiceRemoteCount()===0&&Object.values(currentRoom?.voiceUsers||{}).filter(v=>v?.active).length>1)toast("إذا بقي 0 متصل فالشبكة تحتاج TURN للمحادثة المباشرة")},9000);
-   toast("المايك مفتوح — بانتظار اتصال اللاعبين 🎙️")
+   setTimeout(()=>syncVoicePeers(),150);setTimeout(()=>syncVoicePeers(),900);
+   clearInterval(voiceSyncTimer);voiceSyncTimer=setInterval(()=>{if(voiceActive)syncVoicePeers()},1800);
+   toast("🎙️ المايك مفتوح — المؤثرات تتوقف أثناء المحادثة")
  }catch(e){
-   if(resumeSfx&&audioCtx&&audioCtx.state==="suspended"){try{await audioCtx.resume()}catch{}}
    voiceActive=false;voiceSessionId="";
    if(localVoiceStream){for(const t of localVoiceStream.getTracks())try{t.stop()}catch{}localVoiceStream=null}
    updateVoiceUi();
    const raw=String(e?.message||"");
-   let msg=e?.name==="NotAllowedError"?"اسمح لـ Safari باستخدام المايك":e?.name==="NotFoundError"?"ما حصلت مايك في الجهاز":"تعذر تشغيل المايك";
-   if(/AudioSession|audio capture/i.test(raw))msg="تعذر فتح المايك على iPhone. افتح اللعبة مباشرة في Safari ثم جرّب مرة ثانية";
-   else if(raw)msg+=": "+raw;
+   let msg=e?.name==="NotAllowedError"?"اسمح للمايك من إعدادات Safari للموقع":e?.name==="NotFoundError"?"ما حصلت مايك في الجهاز":"تعذر تشغيل المايك";
+   if(raw)msg+=" — "+raw;
    toast(msg)
  }
 }
@@ -750,7 +810,8 @@ async function stopLiveVoice(removeState=true){
  document.getElementById("voiceAudios").innerHTML="";updateVoiceUi();
  if(removeState&&roomCode&&uid){try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`));await clearMyVoiceSignals()}catch{}}
  voiceSessionId="";
- if(was&&removeState)toast("تم إيقاف الصوت المباشر")
+ if(audioCtx&&audioCtx.state==="suspended"){try{await audioCtx.resume()}catch{}}
+ if(was&&removeState)toast("تم إيقاف الصوت المباشر — رجعت مؤثرات اللعبة 🔊")
 }
 function attachRemoteAudio(otherUid,stream){const box=document.getElementById("voiceAudios");let a=document.getElementById("voice_"+otherUid);if(!a){a=document.createElement("audio");a.id="voice_"+otherUid;a.autoplay=true;a.playsInline=true;box.appendChild(a)}a.srcObject=stream;a.muted=false;a.volume=1;const p=a.play();if(p?.catch)p.catch(()=>{toast("اضغط تشغيل المايك مرة ثانية لتفعيل صوت اللاعبين")})}
 async function makePeer(otherUid){
