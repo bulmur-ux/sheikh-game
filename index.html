@@ -600,9 +600,10 @@ const FALLBACK_FUN_SOUNDS={
 };
 const FUN_SOUNDS=(window.SHEIKH_FUN_SOUNDS&&Object.keys(window.SHEIKH_FUN_SOUNDS).length)?window.SHEIKH_FUN_SOUNDS:FALLBACK_FUN_SOUNDS;
 const RADIO_STATIONS=[
- {id:"adfm",name:"📻 أبوظبي FM",meta:"98.4 FM • بث مباشر داخل اللعبة",stream:"https://admn-radio-cdn-lb.starzplayarabia.com/out/v1/admn_radio_enc/abudhabi_fm/abudhabi_fm_hls_nd/index.m3u8",official:"https://www.admn.ae/ar/brand/4197610/%D8%A5%D8%B0%D8%A7%D8%B9%D8%A9-%D8%A3%D8%A8%D9%88%D8%B8%D8%A8%D9%8A"},
- {id:"emarat",name:"🇦🇪 إمارات FM",meta:"خليجي وترفيهي • البث الرسمي",official:"https://www.admn.ae/ar/brand/4197611/%D8%A5%D9%85%D8%A7%D8%B1%D8%A7%D8%AA-%D8%A3%D9%81-%D8%A3%D9%85"},
- {id:"noor",name:"🌙 نور دبي",meta:"إذاعة اجتماعية • الصفحة الرسمية",official:"https://www.dmi.gov.ae/content/corporate/ar-ae/brands/radio/noordubai.html"}
+ {id:"adfm",name:"📻 أبوظبي FM",meta:"🇦🇪 الإمارات • 98.4 FM • مباشر داخل اللعبة",stream:"https://admn-radio-cdn-lb.starzplayarabia.com/out/v1/admn_radio_enc/abudhabi_fm/abudhabi_fm_hls_nd/index.m3u8",official:"https://www.admn.ae/ar/brand/4197610/%D8%A5%D8%B0%D8%A7%D8%B9%D8%A9-%D8%A3%D8%A8%D9%88%D8%B8%D8%A8%D9%8A"},
+ {id:"shj",name:"📻 إذاعة الشارقة",meta:"🇦🇪 الإمارات • بث مباشر داخل اللعبة",stream:"https://svs.itworkscdn.net/smcradiolive/smcradiolive/playlist.m3u8",official:"https://www.sba.net.ae/"},
+ {id:"shjquran",name:"🕌 إذاعة القرآن الكريم - الشارقة",meta:"🇦🇪 الإمارات • قرآن وبرامج دينية • مباشر",stream:"https://live.kwikmotion.com/smcquranlive/quranradiolive/playlist.m3u8",official:"https://www.sba.net.ae/"},
+ {id:"pulse95",name:"🎙️ Pulse 95",meta:"🇦🇪 الشارقة • بث مباشر داخل اللعبة",stream:"https://svs.itworkscdn.net/pulse95live/pulse96/playlist.m3u8",official:"https://pulse95radio.com/"}
 ];
 let radioAudio=null,radioStationId="",radioVolume=45,radioMuted=false;
 const voicePeers=new Map();
@@ -659,8 +660,11 @@ function previewFunnySound(key){primeRoomAudio();playFunnySound(key,"");}
 function showSoundBoard(){
  primeRoomAudio();
  const groups={};for(const [k,v] of Object.entries(FUN_SOUNDS)){const c=v.category||"أخرى";(groups[c]||(groups[c]=[])).push([k,v])}
+ const categoryNames={laugh:"ضحك وردود",reaction:"ضحك وردود",funny:"ضحك وردود",shock:"صرخات ومفاجآت",challenge:"تحدي ومزح",win:"فوز وخسارة",lose:"فوز وخسارة"};
+ const normalized={};for(const [c,items] of Object.entries(groups)){const name=categoryNames[c]||c||"أخرى";(normalized[name]||(normalized[name]=[])).push(...items)}
  const preferred=["ضحك وردود","صرخات ومفاجآت","تحدي ومزح","فوز وخسارة","أخرى"];
- const html=preferred.filter(c=>groups[c]?.length).map(c=>`<div class="soundCategory"><div class="soundCategoryTitle">${esc(c)}</div><div class="soundRows">${groups[c].map(([k,v])=>`<div class="soundItem"><div class="soundItemName">${esc(v.label)}</div><button class="soundMini soundPreview" data-preview="${esc(k)}">▶️ معاينة</button><button class="soundMini soundSend" data-funny="${esc(k)}">📢 إرسال</button></div>`).join("")}</div></div>`).join("");
+ const ordered=[...preferred.filter(c=>normalized[c]?.length),...Object.keys(normalized).filter(c=>!preferred.includes(c)&&normalized[c]?.length)];
+ const html=ordered.map(c=>`<div class="soundCategory"><div class="soundCategoryTitle">${esc(c)}</div><div class="soundRows">${normalized[c].map(([k,v])=>`<div class="soundItem"><div class="soundItemName">${esc(v.label)}</div><button class="soundMini soundPreview" data-preview="${esc(k)}">▶️ معاينة</button><button class="soundMini soundSend" data-funny="${esc(k)}">📢 إرسال</button></div>`).join("")}</div></div>`).join("") || `<div class="soundHint">ما تم تحميل قائمة الأصوات. حدّث الصفحة وجرب مرة ثانية.</div>`;
  openModal(`<div class="panel"><h2 style="margin-top:0">🔊 أصوات المجلس</h2>${html}<div id="soundNow" class="soundNow"></div><div class="soundHint">▶️ المعاينة تسمعها أنت فقط. 📢 الإرسال يسمعه كل الموجودين في الغرفة. يوجد انتظار بسيط بين الإرسال والثاني.</div><button id="soundBoardClose" class="btn alt soundClose">إغلاق</button></div>`);
  document.querySelectorAll("[data-preview]").forEach(b=>b.onclick=()=>previewFunnySound(b.dataset.preview));
  document.querySelectorAll("[data-funny]").forEach(b=>b.onclick=()=>sendFunnySound(b.dataset.funny));
@@ -676,10 +680,10 @@ async function playRadio(id){
  try{const a=getRadioAudio();a.pause();a.src=st.stream;a.volume=radioVolume/100;a.muted=radioMuted;radioStationId=id;await a.play();updateRadioState(`شغال الآن: ${st.name}`)}catch(e){console.warn("radio",e);updateRadioState("تعذر تشغيل البث داخل اللعبة — افتح البث الرسمي")}
 }
 function showRadioPanel(){
- const cards=RADIO_STATIONS.map(st=>`<div class="radioCard"><div class="radioCardTop"><div><div class="radioName">${esc(st.name)}</div><div class="radioMeta">${esc(st.meta||"")}</div></div></div><div class="radioControls">${st.stream?`<button class="radioPlay" data-radio="${esc(st.id)}">▶️ تشغيل</button>`:""}<a class="radioOpen" href="${esc(st.official)}" target="_blank" rel="noopener">↗ البث الرسمي</a></div></div>`).join("");
+ const cards=RADIO_STATIONS.map(st=>`<div class="radioCard"><div class="radioCardTop"><div><div class="radioName">${esc(st.name)}</div><div class="radioMeta">${esc(st.meta||"")}</div></div></div><div class="radioControls"><button class="radioPlay" data-radio="${esc(st.id)}">▶️ تشغيل</button></div></div>`).join("");
  const isiOS=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
- const volumeUi=isiOS?`<div class="radioVolumeBox"><button id="radioMute" type="button">${radioMuted?"🔊 فتح الصوت":"🔇 كتم"}</button><span class="radioVolumeValue">أزرار الجهاز</span></div><div class="entertainNote">على iPhone مستوى صوت البث يتحكم فيه iOS نفسه. استخدم أزرار رفع/خفض الصوت في الجهاز؛ زر الكتم هنا يعمل داخل اللعبة.</div>`:`<div class="radioVolumeBox"><button id="radioVolDown" type="button">−</button><span id="radioVolumeValue" class="radioVolumeValue">${radioVolume}%</span><button id="radioVolUp" type="button">＋</button></div>`;
- openModal(`<div class="panel"><h2 style="margin-top:0">📻 إذاعات الإمارات</h2><div class="radioList">${cards}</div><label style="display:block;margin-top:12px">🔉 مستوى الصوت</label>${volumeUi}<div class="radioControls"><button id="radioStop" class="radioStop">⏹ إيقاف الراديو</button></div><div id="radioState" class="radioState">${radioStationId?"الراديو شغال عندك فقط":"الراديو يسمعه جهازك فقط"}</div><div class="entertainNote">حماية للمايك: إذا المايك شغال، الراديو ما يشتغل. شغّل الراديو فقط إذا ما تبي تستخدم المايك.</div><button id="radioClose" class="btn alt soundClose">إغلاق</button></div>`);
+ const volumeUi=isiOS?`<div class="entertainNote">على iPhone استخدم أزرار رفع/خفض الصوت في الجهاز.</div>`:`<div class="radioVolumeBox"><button id="radioVolDown" type="button">−</button><span id="radioVolumeValue" class="radioVolumeValue">${radioVolume}%</span><button id="radioVolUp" type="button">＋</button></div>`;
+ openModal(`<div class="panel"><h2 style="margin-top:0">📻 إذاعات الخليج</h2><div class="radioList">${cards}</div>${isiOS?"":`<label style="display:block;margin-top:12px">🔉 مستوى الصوت</label>${volumeUi}`}<div class="radioControls" style="margin-top:14px;display:flex;gap:10px;align-items:center"><button id="radioStop" class="radioStop" style="flex:1">⏹ إيقاف الراديو</button><button id="radioMute" type="button" class="radioStop" style="flex:1">${radioMuted?"🔊 فتح الصوت":"🔇 كتم"}</button></div>${isiOS?volumeUi:""}<div id="radioState" class="radioState">${radioStationId?"الراديو شغال عندك فقط":"الراديو يسمعه جهازك فقط"}</div><div class="entertainNote">حماية للمايك: إذا المايك شغال، الراديو ما يشتغل.</div><button id="radioClose" class="btn alt soundClose">إغلاق</button></div>`);
  document.querySelectorAll("[data-radio]").forEach(b=>b.onclick=()=>playRadio(b.dataset.radio));
  const setVol=(v)=>{radioVolume=Math.max(0,Math.min(100,v));const vv=document.getElementById("radioVolumeValue");if(vv)vv.textContent=radioVolume+"%";if(radioAudio)radioAudio.volume=radioVolume/100};
  const vd=document.getElementById("radioVolDown"),vu=document.getElementById("radioVolUp");if(vd)vd.onclick=()=>setVol(radioVolume-10);if(vu)vu.onclick=()=>setVol(radioVolume+10);
