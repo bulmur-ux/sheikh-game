@@ -83,6 +83,24 @@ linear-gradient(180deg,#a85825 0 19%,#6c2818 20% 34%,#35170f 35% 100%);box-shado
 .lobbyCenterCard{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;display:block!important}
 .lobbyCenterCard .cardFace{width:100%;height:100%}
 
+
+/* ===== vNext: clean playing cards + landscape table ===== */
+.faceCardInner{inset:4px;border-radius:9px;background:linear-gradient(145deg,#fffaf0,#f5e4ba);border:1px solid rgba(176,124,38,.55)}
+.faceCorner{gap:0;line-height:.82}.faceRank{font-size:18px}.faceSuitSmall{font-size:13px}.faceCorner.tl{top:6px;left:6px}.faceCorner.br{bottom:6px;right:6px}
+.aceArt,.pipArt{position:absolute;inset:20px 13px;display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:50%;background:radial-gradient(circle,rgba(207,164,80,.16),transparent 67%)}
+.aceArt span{font-size:40px;line-height:1}.aceArt i{font-style:normal;font-size:7px;color:#8b642d;margin-top:4px;font-weight:900}.pipArt .pipMain{font-size:34px;line-height:1}.pipArt b{font-family:Georgia,serif;font-size:14px;margin-top:2px}
+.courtPortrait{position:absolute;inset:18px 12px;overflow:hidden;border:1px solid rgba(185,133,45,.48);border-radius:8px;background:linear-gradient(160deg,#f8e8bd,#fff9e8 46%,#ead19a);display:flex;align-items:center;justify-content:center}.courtHalo{position:absolute;width:48px;height:48px;border-radius:50%;top:8px;background:radial-gradient(circle,#e4bd68 0 35%,transparent 37%);border:1px solid #c59438}.courtHead{position:absolute;top:16px;font-size:16px;color:#5c351f;z-index:2}.courtBody{position:absolute;bottom:8px;width:50px;height:55px;border-radius:28px 28px 8px 8px;background:linear-gradient(135deg,#6e1824,#c69b43);display:grid;place-items:center;font-size:26px;color:inherit;border:2px solid #e4c77f}.courtLetter{position:absolute;right:3px;bottom:-5px;font-family:Georgia,serif;font-weight:900;font-size:36px;opacity:.16;color:#6f4c22}.faceJoker .jokerArt{position:absolute;inset:17px 10px;border:1px solid #c69a47;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle,#fff7dc,#ead2a0)}.jokerArt .jokerStar{font-size:28px}.jokerArt b{font:900 11px Georgia,serif;letter-spacing:1px}.jokerArt small{font-size:7px;color:#7d5729}.colorJoker .jokerStar{color:#b11928}.blackJoker .jokerStar{color:#15110e}
+.cardFace:before,.cardFace:after{display:none}
+@media (orientation:landscape) and (min-width:650px){
+ body{overflow-x:hidden}.wrap{width:min(100%,1500px);max-width:none;padding:0 12px 18px}.wrap>header{padding:5px 0}.wrap>header h1{font-size:27px}.wrap>header p{display:none}
+ .tableHud{position:absolute;left:16px;top:14px;z-index:20;width:205px;flex-direction:column;margin:0}.hudBox{padding:5px 7px}.hudBox b{font-size:10px}.hudBox strong{font-size:13px}.scoreStrip{position:absolute;left:16px;top:172px;z-index:20;width:205px;display:block}.scoreChip{display:block;margin-bottom:4px;text-align:right}
+ #app{position:relative}.gameStage{min-height:620px;height:calc(100vh - 70px);max-height:760px;margin-left:225px;margin-right:225px;border-radius:38px}.gameStage:before{inset:78px 60px 100px}.stageTitle{font-size:25px;padding:7px 34px}.seat .avatar{width:58px;height:58px;font-size:22px}.seatName{font-size:13px}.seat.top{top:65px}.seat.left{left:20px}.seat.right{right:20px}.seat.bottom{bottom:105px}.centerPiles{gap:28px}.tablePile .cardBack,.tablePile .cardFace{width:92px;height:130px}.pileCount{font-size:12px}
+ .myArea{position:absolute;z-index:21;left:50%;transform:translateX(-50%);bottom:8px;width:min(620px,58vw);margin:0;padding:6px 10px;background:rgba(24,14,10,.95)}.myAreaTitle{margin-bottom:2px}.hand{overflow:visible;padding:0;gap:5px}.slot{min-width:82px;width:82px;min-height:118px;margin-left:0}.slot .cardFace,.slot .cardBack{width:78px;height:110px}.slot button{position:absolute;bottom:-2px;left:2px;width:74px;z-index:4}
+ .gameControls{position:absolute;right:15px;bottom:20px;z-index:22;width:205px;grid-template-columns:1fr}.gameControls .btn{min-height:54px}.gameControls .full{grid-column:1}
+ .gameStage + .panel,.myArea~.panel{margin-top:10px}
+ .panel:has(> b:first-child){max-width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -114,11 +132,23 @@ function updateSfxUi(){const b=document.getElementById("sfxToggle");if(b)b.textC
 function cardLabel(c){if(!c)return"";if(c.r==="JOKER")return c.color==="color"?"🃏 ملون":"🃏 أسود";const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";return `${c.r}${sym}`}
 function cardFaceHtml(c){
  if(!c)return '<div class="faceCardInner"><div class="faceCenter"><span class="faceBrand">—</span></div></div>';
- if(c.r==="JOKER"){const colored=c.color==="color";return `<div class="faceCardInner faceJoker"><div class="faceCorner tl"><span class="faceRank">J</span><span class="faceSuitSmall">★</span></div><div class="faceCenter"><span class="faceSuitBig">${colored?'🦅':'♠'}</span><span class="faceJokerLabel">JOKER</span><span class="faceBrand">شيك شيك</span></div><div class="faceCorner br"><span class="faceRank">J</span><span class="faceSuitSmall">★</span></div></div>`}
+ if(c.r==="JOKER"){
+  const colored=c.color==="color";
+  return `<div class="faceCardInner faceJoker ${colored?'colorJoker':'blackJoker'}"><div class="faceCorner tl"><span class="faceRank">J</span><span class="faceSuitSmall">★</span></div><div class="jokerArt"><span class="jokerStar">★</span><b>JOKER</b><small>${colored?'الملون':'الأسود'}</small></div><div class="faceCorner br"><span class="faceRank">J</span><span class="faceSuitSmall">★</span></div></div>`
+ }
  const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";
- const court={J:['ولد','🧔🏻'],Q:['بنت','👩🏻'],K:['ملك','👑']}[c.r];
- const center=court?`<div class="faceCenter faceCourt"><span class="faceCourtArt">${court[1]}</span><span class="faceSuitBig">${sym}</span><span class="faceCourtName">${court[0]}</span><span class="faceBrand">شيك شيك</span></div>`:`<div class="faceCenter"><span class="faceSuitBig">${sym}</span><span class="faceBrand">شيك شيك</span></div>`;
- return `<div class="faceCardInner"><div class="faceCorner tl"><span class="faceRank">${c.r}</span><span class="faceSuitSmall">${sym}</span></div>${center}<div class="faceCorner br"><span class="faceRank">${c.r}</span><span class="faceSuitSmall">${sym}</span></div></div>`
+ const court=["J","Q","K"].includes(c.r);
+ const courtMark={J:"J",Q:"Q",K:"K"}[c.r]||"";
+ const pipCount=Number(c.r);
+ let center='';
+ if(court){
+  center=`<div class="courtPortrait"><div class="courtHalo"></div><div class="courtHead">${c.r==='Q'?'◉':'●'}</div><div class="courtBody">${sym}</div><div class="courtLetter">${courtMark}</div></div>`;
+ }else if(c.r==='A'){
+  center=`<div class="aceArt"><span>${sym}</span><i>شيك شيك</i></div>`;
+ }else{
+  center=`<div class="pipArt"><span class="pipMain">${sym}</span><b>${c.r}</b></div>`;
+ }
+ return `<div class="faceCardInner ${court?'courtInner':''}"><div class="faceCorner tl"><span class="faceRank">${c.r}</span><span class="faceSuitSmall">${sym}</span></div>${center}<div class="faceCorner br"><span class="faceRank">${c.r}</span><span class="faceSuitSmall">${sym}</span></div></div>`
 }
 function isRed(c){return c&&(c.s==="H"||c.s==="D")}
 function cardClass(c){return !c?"":(c.r==="JOKER"?"joker":(isRed(c)?"red":"black"))}
