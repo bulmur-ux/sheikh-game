@@ -164,8 +164,8 @@ const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomai
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),app=document.getElementById("app"),modal=document.getElementById("modal"),sheet=document.getElementById("sheet");
 let uid=null,roomCode=localStorage.getItem("sheikh_room")||"",myName=localStorage.getItem("sheikh_name")||"",currentRoom=null,myHand=null;
 let unsubRoom=null,unsubChat=null,unsubHand=null,latestChat={},localRevealUntil={},pendingStartTimer=null,processingSwap=false,processingJack=false;
-let voiceActive=false,voiceMuted=false,localVoiceStream=null,voiceSyncBusy=false;
-let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null;
+let voiceActive=false,voiceMuted=false,localVoiceStream=null,voiceSyncBusy=false,voiceSessionId="";
+let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null,audioUnlocked=false;
 const voicePeers=new Map();
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -175,10 +175,30 @@ async function ensureAuth(){if(auth.currentUser){uid=auth.currentUser.uid;return
 function ctx(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}
 function tone(freq=440,dur=.12,type="sine",vol=.12,delay=0){if(sfxMuted)return;try{const a=ctx(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+delay;o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.03)}catch{}}
 function noise(dur=.12,vol=.08,delay=0){if(sfxMuted)return;try{const a=ctx(),n=Math.max(1,Math.floor(a.sampleRate*dur)),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const src=a.createBufferSource(),g=a.createGain(),t=a.currentTime+delay;src.buffer=b;g.gain.value=vol;src.connect(g).connect(a.destination);src.start(t)}catch{}}
-async function unlockAudio(){try{const a=ctx();if(a.state==="suspended")await a.resume()}catch{}}
+async function unlockAudio(){
+ try{
+  const a=ctx();
+  if(a.state==="suspended")await a.resume();
+  // Safari/iPhone: force a tiny audible graph once after a user gesture.
+  const b=a.createBuffer(1,1,a.sampleRate),src=a.createBufferSource(),g=a.createGain();
+  g.gain.value=0.0001;src.buffer=b;src.connect(g).connect(a.destination);src.start();
+  audioUnlocked=a.state==="running";
+  if(navigator.audioSession&&"type" in navigator.audioSession){try{navigator.audioSession.type=voiceActive?"play-and-record":"playback"}catch{}}
+ }catch{audioUnlocked=false}
+ return audioUnlocked
+}
 function sfx(name){if(sfxMuted)return;unlockAudio();switch(name){case"draw":noise(.11,.06);tone(180,.08,"triangle",.04,.03);break;case"take":noise(.08,.05);tone(260,.08,"sine",.05);break;case"throw":noise(.07,.09);tone(120,.07,"triangle",.05);break;case"correct":tone(660,.10,"sine",.09);tone(880,.13,"sine",.08,.09);break;case"wrong":tone(170,.18,"sawtooth",.09);tone(110,.25,"sawtooth",.07,.14);break;case"penalty":tone(320,.08,"square",.05);tone(210,.13,"triangle",.06,.08);noise(.08,.05,.18);break;case"swap":tone(330,.08,"sine",.06);tone(620,.10,"sine",.07,.07);tone(930,.10,"sine",.05,.14);break;case"queen":tone(740,.12,"sine",.06);tone(980,.18,"sine",.05,.10);break;case"jack":tone(280,.08,"triangle",.06);tone(700,.10,"triangle",.06,.08);break;case"king":noise(.08,.05);noise(.08,.05,.12);tone(520,.14,"sine",.06,.22);break;case"joker1":tone(760,.08,"square",.06);tone(260,.16,"sine",.06,.07);break;case"joker2":tone(760,.07,"square",.06);tone(520,.07,"square",.06,.07);tone(240,.16,"sine",.06,.14);break;case"check":for(let i=0;i<4;i++){tone(i%2?760:540,.12,"square",.06,i*.13)}break;case"reveal":for(let i=0;i<4;i++)noise(.07,.045,i*.07);break;case"win":tone(523,.12,"sine",.07);tone(659,.12,"sine",.07,.12);tone(784,.24,"sine",.08,.24);break;}}
-function toggleSfx(){sfxMuted=!sfxMuted;localStorage.setItem("sheikh_sfx_muted",sfxMuted?"1":"0");updateSfxUi();if(!sfxMuted)sfx("correct")}
-function updateSfxUi(){const b=document.getElementById("sfxToggle");if(b)b.textContent=sfxMuted?"🔇 تشغيل مؤثرات اللعبة":"🔊 كتم مؤثرات اللعبة"}
+async function toggleSfx(){
+ sfxMuted=!sfxMuted;localStorage.setItem("sheikh_sfx_muted",sfxMuted?"1":"0");updateSfxUi();
+ if(!sfxMuted){
+  const ok=await unlockAudio();
+  if(ok){sfx("correct");toast("المؤثرات شغالة 🔊")}else toast("تعذر تشغيل صوت اللعبة على المتصفح");
+ }else toast("تم كتم مؤثرات اللعبة")
+}
+function updateSfxUi(){
+ const b=document.getElementById("sfxToggle");if(b)b.textContent=sfxMuted?"🔇 تشغيل مؤثرات اللعبة":"🔊 كتم مؤثرات اللعبة";
+ const t=document.getElementById("sfxTop");if(t)t.innerHTML=sfxMuted?"🔇<small>الصوت</small>":"🔊<small>الصوت</small>"
+}
 function cardLabel(c){if(!c)return"";if(c.r==="JOKER")return c.color==="color"?"🃏 ملون":"🃏 أسود";const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";return `${c.r}${sym}`}
 function cardFaceHtml(c){
  if(!c)return '<div class="faceCardInner"><div class="faceCenter"><span class="faceBrand">—</span></div></div>';
@@ -402,8 +422,8 @@ function renderGame(){
  document.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>swapPendingWithSlot(+b.dataset.swap))
 }
 function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><div class="cardBack">فارغة</div></div>`;const reveal=(localRevealUntil[i]||0)>Date.now();return `<div class="slot"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
-function renderResults(){const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),best=arr[0]?.[1]?.score,winners=arr.filter(x=>x[1].score===best).map(x=>x[1].name),totals=g.cumulativeScores||{},final=(g.roundNo||1)>=(g.totalRounds||1),totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));app.innerHTML=`<div class="panel"><div class="winner">${arr.length?`🏆 الجولة: ${esc(winners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${g.totalRounds||1}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — الجولة: <b>${x.score}</b> • التراكمي: <b>${totals[id]||0}</b><div class="small">${(x.cards||[]).filter(Boolean).map(cardLabel).join(" • ")||"بدون أوراق"}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل مجموع تراكمي: ${totalArr[0][1]}</div>`:""}${uid===currentRoom.hostId&&!final?`<div class="gap"></div><div class="notice">👑 تقدر تغيّر لاعبين الجولة التالية. اختر من 2 إلى 4:</div>${playerEntries().map(([id,p])=>`<label class="playerPick"><input type="checkbox" data-nextactive="${id}" ${(g.turnOrder||[]).includes(id)?"checked":""} style="width:auto;margin-left:8px">${esc(p.name)}</label>`).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button>`:""}${uid===currentRoom.hostId&&final?`<div class="gap"></div><button id="again" class="btn green">مباراة جديدة</button>`:""}<div class="gap"></div><button id="leave" class="btn danger">خروج</button></div>${chatPanel()}`;wireCommon();if(document.getElementById("again"))document.getElementById("again").onclick=resetToLobby;if(document.getElementById("nextRound"))document.getElementById("nextRound").onclick=()=>{const order=[...document.querySelectorAll("[data-nextactive]:checked")].map(x=>x.dataset.nextactive);if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}beginRound(order,(g.roundNo||1)+1,g.totalRounds||1,g.cumulativeScores||{})}}
-async function resetToLobby(){if(uid!==currentRoom.hostId)return;for(const [id] of playerEntries())if(id===uid)await remove(ref(db,`rooms/${roomCode}/privateHands/${id}`));const players={};for(const [id,p] of playerEntries())players[id]={name:p.name,order:p.order,cardCount:0,ready:false};await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,status:"lobby",createdAt:Date.now(),players});await remove(ref(db,`rooms/${roomCode}/public/reveals`))}
+function renderResults(){const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),best=arr[0]?.[1]?.score,winners=arr.filter(x=>x[1].score===best).map(x=>x[1].name),totals=g.cumulativeScores||{},final=(g.roundNo||1)>=(g.totalRounds||1),totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));app.innerHTML=`<div class="panel"><div class="winner">${arr.length?`🏆 الجولة: ${esc(winners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${g.totalRounds||1}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — الجولة: <b>${x.score}</b> • التراكمي: <b>${totals[id]||0}</b><div class="small">${(x.cards||[]).filter(Boolean).map(cardLabel).join(" • ")||"بدون أوراق"}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل مجموع تراكمي: ${totalArr[0][1]}</div>`:""}${uid===currentRoom.hostId&&!final?`<div class="gap"></div><div class="notice">👑 تقدر تغيّر لاعبين الجولة التالية. اختر من 2 إلى 4:</div>${playerEntries().map(([id,p])=>`<label class="playerPick"><input type="checkbox" data-nextactive="${id}" ${(g.turnOrder||[]).includes(id)?"checked":""} style="width:auto;margin-left:8px">${esc(p.name)}</label>`).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button>`:""}${final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة للغرفة</button>`:""}<div class="gap"></div><button id="leave" class="btn danger">خروج</button></div>${chatPanel()}`;wireCommon();if(document.getElementById("backRoom"))document.getElementById("backRoom").onclick=resetToLobby;if(document.getElementById("nextRound"))document.getElementById("nextRound").onclick=()=>{const order=[...document.querySelectorAll("[data-nextactive]:checked")].map(x=>x.dataset.nextactive);if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}beginRound(order,(g.roundNo||1)+1,g.totalRounds||1,g.cumulativeScores||{})}}
+async function resetToLobby(){for(const [id] of playerEntries())if(id===uid)await remove(ref(db,`rooms/${roomCode}/privateHands/${id}`));const players={};for(const [id,p] of playerEntries())players[id]={name:p.name,order:p.order,cardCount:0,ready:false};await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,status:"lobby",createdAt:Date.now(),players});await remove(ref(db,`rooms/${roomCode}/public/reveals`))}
 function chatPanel(){return `<div class="panel"><b>شات الغرفة</b><div class="voiceBar"><button id="sfxToggle" class="btn alt">${sfxMuted?"🔇 تشغيل مؤثرات اللعبة":"🔊 كتم مؤثرات اللعبة"}</button><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
 function wireCommon(){document.addEventListener("pointerdown",unlockAudio,{once:true});const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
 function pairIdFor(a,b){return [a,b].sort().join("__")}
@@ -411,15 +431,36 @@ function waitIceComplete(pc){if(pc.iceGatheringState==="complete")return Promise
 function voiceRemoteCount(){let n=0;for(const pc of voicePeers.values())if(pc.connectionState==="connected")n++;return n}
 function updateVoiceUi(){const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount();el.innerHTML=`<span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?`المايك المباشر شغال • متصل مع ${n} لاعب`:"الصوت المباشر متوقف"}`}
  const j=document.getElementById("voiceJoin"),m=document.getElementById("voiceMute"),l=document.getElementById("voiceLeave");if(j)j.textContent=voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر";if(m){m.disabled=!voiceActive;m.textContent=voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}if(l)l.disabled=!voiceActive}
+async function clearMyVoiceSignals(){
+ try{
+  const players=Object.keys(currentRoom?.players||{}).filter(id=>id!==uid);
+  await Promise.all(players.map(other=>remove(ref(db,`rooms/${roomCode}/public/voiceSignals/${pairIdFor(uid,other)}`)).catch(()=>{})));
+ }catch{}
+}
 async function startLiveVoice(){
  if(voiceActive){toast("المايك شغال بالفعل");return}
  try{
+   if(!window.isSecureContext)throw new Error("المايك يحتاج اتصال HTTPS");
    if(!navigator.mediaDevices?.getUserMedia)throw new Error("المتصفح لا يدعم المايك");
-   await unlockAudio();localVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
-   voiceActive=true;voiceMuted=false;updateVoiceUi();
-   await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{name:myName,active:true,muted:false,ts:Date.now()});
-   await syncVoicePeers();toast("تم تشغيل المايك المباشر 🎙️")
- }catch(e){voiceActive=false;localVoiceStream=null;updateVoiceUi();toast(e?.name==="NotAllowedError"?"اسمح للمتصفح باستخدام المايك":"تعذر تشغيل المايك: "+(e?.message||"خطأ"))}
+   await unlockAudio();
+   localVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1},video:false});
+   const tracks=localVoiceStream.getAudioTracks();
+   if(!tracks.length)throw new Error("لم يتم العثور على مايك");
+   voiceSessionId=uid+"_"+Date.now();voiceActive=true;voiceMuted=false;
+   if(navigator.audioSession&&"type" in navigator.audioSession){try{navigator.audioSession.type="play-and-record"}catch{}}
+   for(const pc of voicePeers.values())try{pc.close()}catch{}voicePeers.clear();
+   await clearMyVoiceSignals();
+   await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{name:myName,active:true,muted:false,session:voiceSessionId,ts:Date.now()});
+   updateVoiceUi();
+   setTimeout(()=>syncVoicePeers(),250);setTimeout(()=>syncVoicePeers(),1200);
+   toast("المايك مفتوح — بانتظار اتصال اللاعبين 🎙️")
+ }catch(e){
+   voiceActive=false;voiceSessionId="";
+   if(localVoiceStream){for(const t of localVoiceStream.getTracks())try{t.stop()}catch{}localVoiceStream=null}
+   updateVoiceUi();
+   const msg=e?.name==="NotAllowedError"?"اسمح لـ Safari باستخدام المايك":e?.name==="NotFoundError"?"ما حصلت مايك في الجهاز":"تعذر تشغيل المايك: "+(e?.message||"خطأ");
+   toast(msg)
+ }
 }
 async function toggleVoiceMute(){if(!voiceActive||!localVoiceStream)return;voiceMuted=!voiceMuted;for(const t of localVoiceStream.getAudioTracks())t.enabled=!voiceMuted;try{await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{muted:voiceMuted,active:true,ts:Date.now()})}catch{}updateVoiceUi();toast(voiceMuted?"تم كتم المايك":"تم فتح المايك")}
 async function stopLiveVoice(removeState=true){
@@ -427,7 +468,8 @@ async function stopLiveVoice(removeState=true){
  if(localVoiceStream){for(const t of localVoiceStream.getTracks())try{t.stop()}catch{}localVoiceStream=null}
  for(const pc of voicePeers.values())try{pc.close()}catch{}voicePeers.clear();
  document.getElementById("voiceAudios").innerHTML="";updateVoiceUi();
- if(removeState&&roomCode&&uid){try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`))}catch{}}
+ if(removeState&&roomCode&&uid){try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`));await clearMyVoiceSignals()}catch{}}
+ voiceSessionId="";if(navigator.audioSession&&"type" in navigator.audioSession){try{navigator.audioSession.type="playback"}catch{}}
  if(was&&removeState)toast("تم إيقاف الصوت المباشر")
 }
 function attachRemoteAudio(otherUid,stream){const box=document.getElementById("voiceAudios");let a=document.getElementById("voice_"+otherUid);if(!a){a=document.createElement("audio");a.id="voice_"+otherUid;a.autoplay=true;a.playsInline=true;box.appendChild(a)}a.srcObject=stream;a.muted=false;a.volume=1;const p=a.play();if(p?.catch)p.catch(()=>{toast("اضغط تشغيل المايك مرة ثانية لتفعيل صوت اللاعبين")})}
@@ -436,29 +478,33 @@ async function makePeer(otherUid){
  const pc=new RTCPeerConnection({iceServers:[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302","stun:stun2.l.google.com:19302"]}]});voicePeers.set(otherUid,pc);
  for(const t of localVoiceStream.getTracks())pc.addTrack(t,localVoiceStream);
  pc.ontrack=e=>{const st=e.streams?.[0]||new MediaStream([e.track]);attachRemoteAudio(otherUid,st)};
- pc.onconnectionstatechange=()=>{updateVoiceUi();if(["failed","closed"].includes(pc.connectionState)){try{pc.close()}catch{}voicePeers.delete(otherUid)}};
+ pc.onconnectionstatechange=()=>{
+  updateVoiceUi();
+  if(["failed","closed","disconnected"].includes(pc.connectionState)){try{pc.close()}catch{}voicePeers.delete(otherUid);if(voiceActive)setTimeout(()=>syncVoicePeers(),700)}
+ };
  return pc
 }
 async function syncVoicePeers(){
  if(!voiceActive||!localVoiceStream||!currentRoom||voiceSyncBusy)return;voiceSyncBusy=true;
  try{
-   const players=Object.keys(currentRoom.players||{}).filter(id=>id!==uid);
+   const vu=currentRoom.voiceUsers||{};
+   const players=Object.keys(vu).filter(id=>id!==uid&&vu[id]?.active);
    for(const otherUid of players){
      let pc=await makePeer(otherUid);if(!pc)continue;
      const pair=pairIdFor(uid,otherUid),sig=currentRoom.voiceSignals?.[pair]||{},initiator=uid<otherUid;
      if(initiator){
        if(!sig.offer&&pc.signalingState==="stable"){
          const offer=await pc.createOffer({offerToReceiveAudio:true});await pc.setLocalDescription(offer);await waitIceComplete(pc);
-         await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,ts:Date.now()});
+         await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,session:voiceSessionId,ts:Date.now()});
        }
        const latest=(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`))).val();
-       if(latest?.sdp&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription({type:latest.type,sdp:latest.sdp}))}
+       if(latest?.sdp&&latest.session===voiceSessionId&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription({type:latest.type,sdp:latest.sdp}))}
      }else{
        const offer=sig.offer||(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`))).val();
        if(offer?.sdp&&!pc.currentRemoteDescription){
          await pc.setRemoteDescription(new RTCSessionDescription({type:offer.type,sdp:offer.sdp}));
          const ans=await pc.createAnswer();await pc.setLocalDescription(ans);await waitIceComplete(pc);
-         await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,ts:Date.now()});
+         await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,session:offer.session||"",ts:Date.now()});
        }
      }
    }
