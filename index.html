@@ -367,6 +367,14 @@ body:has(.lobbyShell) #app{margin:0!important}
  .lobbyChatWrap .chat{height:105px!important}
 }
 </style>
+
+<style id="pending-card-preview-fix">
+.refHandWrap{position:relative}
+.refPendingPreview{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);z-index:80;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 10px;border:2px solid #d9a53a;border-radius:14px;background:linear-gradient(180deg,#2a120d,#120806);box-shadow:0 8px 28px #000b,0 0 0 2px #5c2b18 inset;pointer-events:none}
+.refPendingPreview .refPendingLabel{font-weight:900;font-size:13px;color:#ffd86b;text-shadow:0 1px 2px #000}
+.refPendingPreview .cardFace{width:76px!important;height:108px!important;box-shadow:0 4px 16px #000a}
+@media (orientation:landscape) and (min-width:650px){.refPendingPreview{transform:translate(-50%,-4px);padding:5px 7px;gap:3px}.refPendingPreview .refPendingLabel{font-size:10px}.refPendingPreview .cardFace{width:58px!important;height:82px!important}}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -738,7 +746,8 @@ function renderGame(){
  const introActive=memorizing&&isActivePlayer();
  const introUntil=Number(myHand?.introRevealUntil||0),count=introCountdown();
  const introPanel=introActive?`<div class="refIntro">${myHand?.introDone?`<b>تم الحفظ ✓</b><div class="refWaiting">بانتظار باقي اللاعبين</div>`:introUntil>Date.now()?`<b>احفظ أول ورقتين</b><strong id="introCount">${count}</strong><div class="refWaiting">ثواني</div>`:`<b>جاهز للحفظ؟</b><button id="startPeek" class="refStartPeek">👁️ ابدأ</button>`}</div>`:`<div class="refIntro"><b>${isActivePlayer()?`الجولة ${g.roundNo||1}`:"👀 متفرج"}</b><strong>${isActivePlayer()?`${g.roundNo||1}/${g.totalRounds||1}`:""}</strong></div>`;
- const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div><div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
+ const pendingPreview=pending?`<div class="refPendingPreview"><div class="refPendingLabel">${myHand?.pendingSource==="deck"?"الورقة المسحوبة":"ورقة الميدان"}</div><div class="cardFace ${cardClass(pending)}">${cardFaceHtml(pending)}</div></div>`:"";
+ const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div>${pendingPreview}<div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
  const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>وقت اللاعب</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
  app.innerHTML=`<div class="refGameShell"><div class="refTitle">شيك شيك</div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${g.totalRounds||1}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span></div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools"><button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refChatFocus">💬<small>دردشة</small></button></div><div class="refRulesTitle">قوانين اللعبة</div><ul class="refRules"><li>4 أوراق لكل لاعب</li><li>اضغط ابدأ ثم تظهر أول ورقتين 10 ثواني</li><li>Q الأحمر وJ وK الأحمر قوتها من الرزمة فقط</li><li>الخطأ = ورقة عقوبة</li><li>لكل لاعب 60 ثانية، بعدها ورقة عقوبة وينتقل الدور</li><li>شيك = لكل لاعب دور أخير</li></ul></aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
  wireCommon();
@@ -797,7 +806,7 @@ async function startLiveVoice(){
    await update(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`),{name:myName,active:true,muted:false,session:voiceSessionId,ts:Date.now()});
    updateVoiceUi();
    setTimeout(()=>syncVoicePeers(),150);setTimeout(()=>syncVoicePeers(),900);
-   clearInterval(voiceSyncTimer);voiceSyncTimer=setInterval(()=>{if(voiceActive)syncVoicePeers()},1800);
+   clearInterval(voiceSyncTimer);voiceSyncTimer=setInterval(()=>{if(voiceActive)syncVoicePeers()},1000);
    toast("🎙️ المايك مفتوح — المؤثرات تتوقف أثناء المحادثة")
  }catch(e){
    voiceStarting=false;voiceActive=false;voiceSessionId="";
@@ -824,7 +833,12 @@ async function stopLiveVoice(removeState=true){
 function attachRemoteAudio(otherUid,stream){const box=document.getElementById("voiceAudios");let a=document.getElementById("voice_"+otherUid);if(!a){a=document.createElement("audio");a.id="voice_"+otherUid;a.autoplay=true;a.playsInline=true;box.appendChild(a)}a.srcObject=stream;a.muted=false;a.volume=1;const p=a.play();if(p?.catch)p.catch(()=>{toast("اضغط تشغيل المايك مرة ثانية لتفعيل صوت اللاعبين")})}
 async function makePeer(otherUid){
  if(voicePeers.has(otherUid)||!localVoiceStream)return voicePeers.get(otherUid);
- const pc=new RTCPeerConnection({iceServers:[{urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302","stun:stun2.l.google.com:19302"]}]});voicePeers.set(otherUid,pc);
+ const pc=new RTCPeerConnection({
+  iceServers:[
+   {urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302","stun:stun2.l.google.com:19302","stun:stun.cloudflare.com:3478"]}
+  ],
+  iceCandidatePoolSize:10
+ });voicePeers.set(otherUid,pc);
  pc._addedRemoteIce=new Set();
  for(const t of localVoiceStream.getTracks())pc.addTrack(t,localVoiceStream);
  pc.ontrack=e=>{const st=e.streams?.[0]||new MediaStream([e.track]);attachRemoteAudio(otherUid,st)};
@@ -847,8 +861,10 @@ async function syncVoicePeers(){
      let pc=await makePeer(otherUid);if(!pc)continue;
      const pair=pairIdFor(uid,otherUid),sig=currentRoom.voiceSignals?.[pair]||{},initiator=uid<otherUid;
      if(initiator){
-       if(!sig.offer&&pc.signalingState==="stable"){
-         const offer=await pc.createOffer({offerToReceiveAudio:true});await pc.setLocalDescription(offer);
+       const liveOffer=(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`))).val();
+       if((!liveOffer||liveOffer.session!==voiceSessionId)&&pc.signalingState==="stable"){
+         await remove(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`)).catch(()=>{});
+         const offer=await pc.createOffer({offerToReceiveAudio:true,iceRestart:true});await pc.setLocalDescription(offer);
          await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,session:voiceSessionId,ts:Date.now()});
        }
        const latest=(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`))).val();
