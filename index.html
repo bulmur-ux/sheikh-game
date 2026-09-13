@@ -557,7 +557,7 @@ body:has(.lobbyShell) #app{margin:0!important}
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
-<div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="voiceAudios" style="display:none"></div>
+<div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="voiceAudios" style="display:none"></div><audio id="roomFunnyAudio" playsinline preload="auto" style="display:none"></audio>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -566,7 +566,7 @@ import { getDatabase, ref, get, set, update, onValue, push, query, limitToLast, 
 const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomain:"al-sheikh-game.firebaseapp.com",databaseURL:"https://al-sheikh-game-default-rtdb.firebaseio.com",projectId:"al-sheikh-game",storageBucket:"al-sheikh-game.firebasestorage.app",messagingSenderId:"739452149085",appId:"1:739452149085:web:778619aa18fed1c698dcb4"};
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),app=document.getElementById("app"),modal=document.getElementById("modal"),sheet=document.getElementById("sheet");
 let uid=null,roomCode=localStorage.getItem("sheikh_room")||"",myName=localStorage.getItem("sheikh_name")||"",currentRoom=null,myHand=null;
-let unsubRoom=null,unsubChat=null,unsubHand=null,latestChat={},localRevealUntil={},pendingStartTimer=null,processingSwap=false,processingJack=false;
+let unsubRoom=null,unsubChat=null,unsubHand=null,unsubFunny=null,latestChat={},localRevealUntil={},pendingStartTimer=null,processingSwap=false,processingJack=false;
 let voiceActive=false,voiceStarting=false,voiceMuted=false,localVoiceStream=null,voiceSyncBusy=false,voiceSessionId="",voiceSyncTimer=null;
 let turnCountdownTimer=null,handlingTurnTimeout=false;
 let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null,audioUnlocked=false;
@@ -607,22 +607,38 @@ async function unlockAudio(){
  }catch{audioUnlocked=false}
  return audioUnlocked
 }
-function getFunnyAudio(){if(!funnyAudio){funnyAudio=new Audio();funnyAudio.playsInline=true;funnyAudio.preload="auto";funnyAudio.volume=.9}return funnyAudio}
-async function playFunnySound(key,who=""){const item=FUN_SOUNDS[key];if(!item||sfxMuted)return false;try{releaseFunnyAudio();const a=new Audio(item.url);funnyAudio=a;a.playsInline=true;a.preload="auto";a.volume=.9;const cleanup=()=>{if(funnyAudio===a)releaseFunnyAudio()};a.addEventListener("ended",cleanup,{once:true});a.addEventListener("error",cleanup,{once:true});await a.play();const el=document.getElementById("soundNow");if(el)el.textContent=(who?who+": ":"")+item.label;return true}catch(e){console.warn("funny sound",e);releaseFunnyAudio();return false}}
-function releaseFunnyAudio(){if(!funnyAudio)return;try{funnyAudio.pause();funnyAudio.removeAttribute("src");funnyAudio.load()}catch{}funnyAudio=null}
-async function sendFunnySound(key){const item=FUN_SOUNDS[key];if(!item||!roomCode||!uid)return;const now=Date.now();if(now-lastFunnySendAt<2500){toast("انتظر شوي قبل الصوت الثاني 😄");return}lastFunnySendAt=now;try{await set(ref(db,`rooms/${roomCode}/public/funnySound`),{id:uid+"_"+now,key,name:myName,ts:now});closeModal()}catch(e){toast("تعذر إرسال الصوت")}}
-function showSoundBoard(){const buttons=Object.entries(FUN_SOUNDS).map(([k,v])=>`<button class="funSoundBtn" data-funny="${k}">${v.label}</button>`).join("");openModal(`<div class="panel"><h2 style="margin-top:0">🔊 أصوات المجلس</h2><div class="soundGrid">${buttons}</div><div id="soundNow" class="soundNow"></div><div class="soundHint">الصوت يسمعه كل الموجودين في الغرفة حتى مع تشغيل المايك. يوجد انتظار بسيط بين كل صوت والثاني.</div><button id="soundBoardClose" class="btn alt soundClose">إغلاق</button></div>`);document.querySelectorAll("[data-funny]").forEach(b=>b.onclick=()=>sendFunnySound(b.dataset.funny));document.getElementById("soundBoardClose").onclick=closeModal}
-function handleFunnyEvent(ev){if(!ev?.id)return;if(!funnyEventPrimed){lastFunnyEventId=ev.id;funnyEventPrimed=true;return}if(ev.id===lastFunnyEventId)return;lastFunnyEventId=ev.id;playFunnySound(ev.key,ev.name||"");}
-function makeVoiceSafeTone(freq=440,dur=.12,vol=.18){
- const sr=8000,n=Math.max(1,Math.floor(sr*dur)),bytes=44+n*2,b=new ArrayBuffer(bytes),v=new DataView(b);
- const ws=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
- ws(0,"RIFF");v.setUint32(4,36+n*2,true);ws(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,"data");v.setUint32(40,n*2,true);
- for(let i=0;i<n;i++){const env=Math.min(1,i/(sr*.01))*Math.max(0,1-i/n),x=Math.sin(2*Math.PI*freq*i/sr)*vol*env;v.setInt16(44+i*2,Math.max(-32767,Math.min(32767,Math.round(x*32767))),true)}
- return URL.createObjectURL(new Blob([b],{type:"audio/wav"}))
+function getFunnyAudio(){
+ const a=document.getElementById("roomFunnyAudio")||funnyAudio||new Audio();
+ funnyAudio=a;a.playsInline=true;a.preload="auto";a.volume=.9;return a
 }
-function voiceSafeBeep(freq=440,dur=.12,vol=.18,delay=0){setTimeout(()=>{try{const url=makeVoiceSafeTone(freq,dur,vol),a=new Audio(url);a.playsInline=true;a.volume=1;a.addEventListener("ended",()=>URL.revokeObjectURL(url),{once:true});a.addEventListener("error",()=>URL.revokeObjectURL(url),{once:true});a.play().catch(()=>URL.revokeObjectURL(url))}catch{}},Math.max(0,delay*1000))}
-function voiceSafeSfx(name){const m={draw:[[240,.08,.12,0]],take:[[320,.08,.12,0]],throw:[[170,.07,.14,0]],correct:[[660,.09,.16,0],[880,.12,.14,.09]],wrong:[[170,.16,.16,0],[110,.22,.14,.12]],penalty:[[320,.08,.14,0],[210,.12,.15,.08]],swap:[[330,.07,.13,0],[620,.09,.15,.07],[930,.09,.11,.14]],queen:[[740,.10,.13,0],[980,.15,.11,.09]],jack:[[280,.08,.13,0],[700,.10,.14,.08]],king:[[420,.08,.12,0],[520,.13,.14,.12]],joker1:[[760,.08,.13,0],[260,.15,.14,.07]],joker2:[[760,.07,.13,0],[520,.07,.13,.07],[240,.15,.14,.14]],check:[[540,.10,.13,0],[760,.10,.13,.12],[540,.10,.13,.24],[760,.10,.13,.36]],reveal:[[520,.06,.10,0],[620,.06,.10,.08],[720,.06,.10,.16]],win:[[523,.11,.13,0],[659,.11,.13,.11],[784,.22,.15,.22]]};for(const [f,d,v,del] of (m[name]||[[440,.08,.1,0]]))voiceSafeBeep(f,d,v,del)}
-function sfx(name){if(sfxMuted)return;if(voiceActive||voiceStarting){voiceSafeSfx(name);return}unlockAudio();switch(name){case"draw":noise(.11,.06);tone(180,.08,"triangle",.04,.03);break;case"take":noise(.08,.05);tone(260,.08,"sine",.05);break;case"throw":noise(.07,.09);tone(120,.07,"triangle",.05);break;case"correct":tone(660,.10,"sine",.09);tone(880,.13,"sine",.08,.09);break;case"wrong":tone(170,.18,"sawtooth",.09);tone(110,.25,"sawtooth",.07,.14);break;case"penalty":tone(320,.08,"square",.05);tone(210,.13,"triangle",.06,.08);noise(.08,.05,.18);break;case"swap":tone(330,.08,"sine",.06);tone(620,.10,"sine",.07,.07);tone(930,.10,"sine",.05,.14);break;case"queen":tone(740,.12,"sine",.06);tone(980,.18,"sine",.05,.10);break;case"jack":tone(280,.08,"triangle",.06);tone(700,.10,"triangle",.06,.08);break;case"king":noise(.08,.05);noise(.08,.05,.12);tone(520,.14,"sine",.06,.22);break;case"joker1":tone(760,.08,"square",.06);tone(260,.16,"sine",.06,.07);break;case"joker2":tone(760,.07,"square",.06);tone(520,.07,"square",.06,.07);tone(240,.16,"sine",.06,.14);break;case"check":for(let i=0;i<4;i++){tone(i%2?760:540,.12,"square",.06,i*.13)}break;case"reveal":for(let i=0;i<4;i++)noise(.07,.045,i*.07);break;case"win":tone(523,.12,"sine",.07);tone(659,.12,"sine",.07,.12);tone(784,.24,"sine",.08,.24);break;}}
+let roomAudioPrimed=false;
+async function primeRoomAudio(){
+ if(roomAudioPrimed)return true;
+ try{
+  const a=getFunnyAudio();
+  const silent="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAACAgICA";
+  a.src=silent;a.volume=.001;await a.play();a.pause();a.currentTime=0;a.removeAttribute("src");a.load();a.volume=.9;roomAudioPrimed=true;return true
+ }catch{return false}
+}
+async function playFunnySound(key,who=""){
+ const item=FUN_SOUNDS[key];if(!item||sfxMuted)return false;
+ try{
+  const a=getFunnyAudio();try{a.pause()}catch{}
+  a.src=item.url;a.currentTime=0;a.volume=.9;
+  const ok=await a.play().then(()=>true).catch(()=>false);
+  if(!ok){console.warn("room sound autoplay blocked",key);return false}
+  const el=document.getElementById("soundNow");if(el)el.textContent=(who?who+": ":"")+item.label;return true
+ }catch(e){console.warn("funny sound",e);return false}
+}
+function releaseFunnyAudio(){
+ const a=funnyAudio||document.getElementById("roomFunnyAudio");if(!a)return;
+ try{a.pause();a.removeAttribute("src");a.load();a.volume=.9}catch{}
+ funnyAudio=a
+}
+async function sendFunnySound(key){await primeRoomAudio();const item=FUN_SOUNDS[key];if(!item||!roomCode||!uid)return;const now=Date.now();if(now-lastFunnySendAt<2500){toast("انتظر شوي قبل الصوت الثاني 😄");return}lastFunnySendAt=now;try{await set(ref(db,`rooms/${roomCode}/public/funnySound`),{id:uid+"_"+now,key,name:myName,ts:now});closeModal()}catch(e){toast("تعذر إرسال الصوت")}}
+function showSoundBoard(){primeRoomAudio();const buttons=Object.entries(FUN_SOUNDS).map(([k,v])=>`<button class="funSoundBtn" data-funny="${k}">${v.label}</button>`).join("");openModal(`<div class="panel"><h2 style="margin-top:0">🔊 أصوات المجلس</h2><div class="soundGrid">${buttons}</div><div id="soundNow" class="soundNow"></div><div class="soundHint">الصوت يُرسل لكل الموجودين في الغرفة. في الآيفون يجب لمس الشاشة مرة واحدة لتفعيل تشغيل أصوات الغرفة. يوجد انتظار بسيط بين كل صوت والثاني.</div><button id="soundBoardClose" class="btn alt soundClose">إغلاق</button></div>`);document.querySelectorAll("[data-funny]").forEach(b=>b.onclick=()=>sendFunnySound(b.dataset.funny));document.getElementById("soundBoardClose").onclick=closeModal}
+function handleFunnyEvent(ev){if(!ev?.id)return;if(!funnyEventPrimed){lastFunnyEventId=ev.id;funnyEventPrimed=true;return}if(ev.id===lastFunnyEventId)return;lastFunnyEventId=ev.id;playFunnySound(ev.key,ev.name||"");}
+function sfx(name){if(sfxMuted||voiceActive||voiceStarting)return;unlockAudio();switch(name){case"draw":noise(.11,.06);tone(180,.08,"triangle",.04,.03);break;case"take":noise(.08,.05);tone(260,.08,"sine",.05);break;case"throw":noise(.07,.09);tone(120,.07,"triangle",.05);break;case"correct":tone(660,.10,"sine",.09);tone(880,.13,"sine",.08,.09);break;case"wrong":tone(170,.18,"sawtooth",.09);tone(110,.25,"sawtooth",.07,.14);break;case"penalty":tone(320,.08,"square",.05);tone(210,.13,"triangle",.06,.08);noise(.08,.05,.18);break;case"swap":tone(330,.08,"sine",.06);tone(620,.10,"sine",.07,.07);tone(930,.10,"sine",.05,.14);break;case"queen":tone(740,.12,"sine",.06);tone(980,.18,"sine",.05,.10);break;case"jack":tone(280,.08,"triangle",.06);tone(700,.10,"triangle",.06,.08);break;case"king":noise(.08,.05);noise(.08,.05,.12);tone(520,.14,"sine",.06,.22);break;case"joker1":tone(760,.08,"square",.06);tone(260,.16,"sine",.06,.07);break;case"joker2":tone(760,.07,"square",.06);tone(520,.07,"square",.06,.07);tone(240,.16,"sine",.06,.14);break;case"check":for(let i=0;i<4;i++){tone(i%2?760:540,.12,"square",.06,i*.13)}break;case"reveal":for(let i=0;i<4;i++)noise(.07,.045,i*.07);break;case"win":tone(523,.12,"sine",.07);tone(659,.12,"sine",.07,.12);tone(784,.24,"sine",.08,.24);break;}}
 async function toggleSfx(){
  sfxMuted=!sfxMuted;localStorage.setItem("sheikh_sfx_muted",sfxMuted?"1":"0");updateSfxUi();
  if(!sfxMuted){
@@ -704,10 +720,10 @@ function home(msg=""){
  app.innerHTML=`<div class="panel"><label>اسم اللاعب</label><input id="name" maxlength="20" value="${esc(myName)}" placeholder="مثال: أحمد"><div class="gap"></div><button id="create" class="btn">إنشاء غرفة</button><div id="err" class="err">${esc(msg)}</div></div><div class="panel"><label>دخول غرفة موجودة</label><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><div class="gap"></div><button id="join" class="btn alt">دخول</button></div>`;
  document.getElementById("create").onclick=createRoom;document.getElementById("join").onclick=joinRoom;
 }
-function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
+function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
 async function createRoom(){const n=document.getElementById("name").value.trim();if(!n){document.getElementById("err").textContent="اكتب اسم اللاعب أولاً";return}try{await ensureAuth();uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false}}});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
 async function joinRoom(){const n=document.getElementById("name").value.trim(),c=document.getElementById("code").value.trim().toUpperCase();if(!n||!c){document.getElementById("err").textContent="اكتب الاسم وكود الغرفة";return}try{await ensureAuth();uid=auth.currentUser.uid;const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())throw new Error("الغرفة غير موجودة");const r=s.val(),ps=r.players||{};if(r.status!=="lobby"&&!ps[uid])throw new Error("اللعبة بدأت");if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
-function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}currentRoom=s.val();handleFunnyEvent(currentRoom?.funnySound);await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()})}
+function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}currentRoom=s.val();await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()});unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()))}
 
 async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active),totalRounds=Math.max(1,Math.min(10,Number(document.getElementById("roundCount")?.value||3)));if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}const totals={};for(const id of order)totals[id]=0;await beginRound(order,1,totalRounds,totals)}
 async function beginRound(order,roundNo,totalRounds,totals){totals={...(totals||{})};for(const id of order)if(totals[id]==null)totals[id]=0;const deck=buildDeck(),discard=deck.shift(),players={};for(const [id,p] of playerEntries())players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:0,ready:!order.includes(id),introDone:!order.includes(id),introStarted:false};await set(ref(db,`rooms/${roomCode}/public/game`),{phase:"dealing",turnOrder:order,turnIndex:0,deck,discard,discardPile:[discard],discardSeq:1,startedAt:Date.now(),actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,cumulativeScores:totals||{},emptyWinner:"",swapRequest:null,jackSwap:null,turnStartedAt:0,turnSeq:0,timeoutClaim:null});await update(ref(db,`rooms/${roomCode}/public`),{status:"game",players,reveals:null});try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`))}catch{}toast(`بدأت الجولة ${roundNo} من ${totalRounds}`)}
@@ -1083,7 +1099,7 @@ function showRulesModal(){
  const close=()=>el.remove();document.getElementById("rulesClose").onclick=close;el.addEventListener("click",e=>{if(e.target===el)close()});
 }
 function chatPanel(){return `<div class="panel chatPanel"><b>شات الغرفة</b><div class="voiceBar"><button id="sfxTest" class="btn alt">🔊 اختبار الصوت</button><button id="sfxToggle" class="btn alt">${sfxMuted?"🔇 تشغيل المؤثرات":"🔕 كتم المؤثرات"}</button><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><button id="funSounds" class="btn soundLauncher">😂 🔊 أصوات وضحك</button><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
-function wireCommon(){document.addEventListener("pointerdown",unlockAudio,{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
+function wireCommon(){document.addEventListener("pointerdown",()=>{primeRoomAudio();unlockAudio()},{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
 function pairIdFor(a,b){return [a,b].sort().join("__")}
 function waitIceComplete(pc){if(pc.iceGatheringState==="complete")return Promise.resolve();return new Promise(resolve=>{const f=()=>{if(pc.iceGatheringState==="complete"){pc.removeEventListener("icegatheringstatechange",f);resolve()}};pc.addEventListener("icegatheringstatechange",f);setTimeout(()=>{pc.removeEventListener("icegatheringstatechange",f);resolve()},4000)})}
 function voiceRemoteCount(){let n=0;for(const pc of voicePeers.values())if(pc.connectionState==="connected")n++;return n}
@@ -1105,9 +1121,7 @@ async function startLiveVoice(){
    // Suspending AudioContext is not enough on some iOS versions; closing it releases the
    // playback AudioSession category so getUserMedia can switch Safari into capture mode.
    if(audioCtx){try{await audioCtx.close()}catch{} audioCtx=null;audioUnlocked=false}
-   // Funny MP3s use a separate HTMLAudioElement. Release it too before capture on iPhone.
-   releaseFunnyAudio();
-   await sleep(350);
+   await sleep(250);
    localVoiceStream=await navigator.mediaDevices.getUserMedia({
      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
      video:false
@@ -1122,7 +1136,7 @@ async function startLiveVoice(){
    updateVoiceUi();
    setTimeout(()=>syncVoicePeers(),150);setTimeout(()=>syncVoicePeers(),900);
    clearInterval(voiceSyncTimer);voiceSyncTimer=setInterval(()=>{if(voiceActive)syncVoicePeers()},1000);
-   toast("🎙️ المايك مفتوح — الصوت والمؤثرات تعمل مع المحادثة")
+   toast("🎙️ المايك مفتوح — المؤثرات تتوقف أثناء المحادثة")
  }catch(e){
    voiceStarting=false;voiceActive=false;voiceSessionId="";
    if(localVoiceStream){for(const t of localVoiceStream.getTracks())try{t.stop()}catch{}localVoiceStream=null}
@@ -1174,13 +1188,6 @@ async function syncVoicePeers(){
    const players=Object.keys(vu).filter(id=>id!==uid&&vu[id]?.active);
    for(const otherUid of players){
      let pc=await makePeer(otherUid);if(!pc)continue;
-     const remoteSession=vu[otherUid]?.session||"";
-     if(pc._remoteSession&&remoteSession&&pc._remoteSession!==remoteSession){
-       try{pc.close()}catch{} voicePeers.delete(otherUid);
-       const oldAudio=document.getElementById("voice_"+otherUid);if(oldAudio)oldAudio.remove();
-       pc=await makePeer(otherUid);if(!pc)continue;
-     }
-     pc._remoteSession=remoteSession;
      const pair=pairIdFor(uid,otherUid),sig=currentRoom.voiceSignals?.[pair]||{},initiator=uid<otherUid;
      if(initiator){
        const liveOffer=(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`))).val();
@@ -1193,11 +1200,7 @@ async function syncVoicePeers(){
        if(latest?.sdp&&latest.session===voiceSessionId&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription({type:latest.type,sdp:latest.sdp}))}await addRemoteIce(pc,pair,otherUid)
      }else{
        const offer=sig.offer||(await get(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/offer`))).val();
-       if(offer?.sdp&&pc.currentRemoteDescription&&pc._acceptedOfferSession!==offer.session){
-         try{pc.close()}catch{} voicePeers.delete(otherUid);pc=await makePeer(otherUid);if(!pc)continue;pc._remoteSession=remoteSession;
-       }
        if(offer?.sdp&&!pc.currentRemoteDescription){
-         pc._acceptedOfferSession=offer.session||"";
          await pc.setRemoteDescription(new RTCSessionDescription({type:offer.type,sdp:offer.sdp}));
          const ans=await pc.createAnswer();await pc.setLocalDescription(ans);
          await set(ref(db,`rooms/${roomCode}/public/voiceSignals/${pair}/answer`),{type:pc.localDescription.type,sdp:pc.localDescription.sdp,from:uid,session:offer.session||"",ts:Date.now()});
