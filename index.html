@@ -558,7 +558,7 @@ body:has(.lobbyShell) #app{margin:0!important}
 .soundLauncher{width:100%;margin:6px 0 4px;background:linear-gradient(180deg,#7c2a3d,#511826)!important;color:#fff4cf!important;border:1px solid #d8a84e!important;font-weight:900}.soundGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}.funSoundBtn{border:1px solid #9e7437;border-radius:10px;background:#21150f;color:#ffe39b;padding:9px 6px;font-weight:900;font-size:12px;min-height:40px}.funSoundBtn:active{transform:scale(.97)}.soundHint{font-size:11px;color:#cdbb9e;line-height:1.5;margin-top:8px}.soundClose{width:100%;margin-top:10px}.soundNow{font-size:12px;color:#ffe39b;text-align:center;margin-top:6px;min-height:18px}
 </style>
 
-<style id="landscape-iphone-fix-v5">
+<style id="landscape-iphone-fix-v6">
 /* iPhone landscape: give the table most of the screen and stop panels/cards overlapping */
 @media (orientation:landscape) and (min-width:650px) and (max-height:500px){
   body:has(.refGameShell),body:has(.refGameShell) .wrap,body:has(.refGameShell) #app{overflow:hidden!important}
@@ -600,26 +600,78 @@ body:has(.lobbyShell) #app{margin:0!important}
   .refSeat .refAvatar{width:40px!important;height:40px!important;font-size:15px!important}
   .refSeatLabel{font-size:8px!important;min-width:66px!important;padding:2px 4px!important}
   .refSeatCards{height:21px!important}.refSeatCards .cardBack{width:18px!important;height:26px!important;margin:0 -4px!important}
-  .refSeat.top{top:20px!important}.refSeat.bottom{bottom:72px!important}.refSeat.left{left:5px!important;top:46%!important}.refSeat.right{right:5px!important;top:46%!important}
+  .refSeat.top{top:20px!important}.refSeat.bottom{bottom:88px!important}.refSeat.left{left:5px!important;top:46%!important}.refSeat.right{right:5px!important;top:46%!important}
 
   .refCenterPiles{top:43%!important;gap:18px!important}
-  .refPile .cardBack,.refPile .cardFace{width:54px!important;height:76px!important}
+  .refPile .cardBack,.refPile .cardFace{width:60px!important;height:84px!important}
   .refPileLabel{font-size:7px!important}.pileCount{font-size:7px!important}
   .refTurnTimer{top:28px!important;min-width:62px!important;font-size:11px!important;padding:3px 6px!important}.refTurnTimer small{font-size:6px!important}
   .refLastAction{bottom:68px!important;font-size:7px!important;padding:2px 6px!important;max-width:55%!important}
 
   /* hand at the bottom: compact enough to fit 4-8 cards without covering the table */
-  .refBottom{left:138px!important;right:158px!important;bottom:2px!important;height:82px!important;grid-template-columns:96px minmax(0,1fr) 108px!important;gap:4px!important;align-items:end!important}
-  .refIntro{height:72px!important;padding:4px!important;border-radius:9px!important}.refIntro b{font-size:8px!important}.refIntro strong{font-size:18px!important}.refIntro button{font-size:8px!important;padding:4px!important}
-  .refHandWrap{padding:0 2px 1px!important}.refHandTitle{font-size:8px!important;margin-bottom:1px!important}.refHandWrap .hand{gap:3px!important;justify-content:center!important;overflow:visible!important}
-  .refHandWrap .slot{width:42px!important;min-width:42px!important;min-height:58px!important}
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:40px!important;height:56px!important;border-radius:6px!important}
-  .refHandWrap .slotNum{top:-8px!important;font-size:8px!important;min-width:18px!important;height:18px!important;line-height:15px!important;border-width:1px!important}
+  .refBottom{left:138px!important;right:158px!important;bottom:2px!important;height:98px!important;grid-template-columns:96px minmax(0,1fr) 108px!important;gap:4px!important;align-items:end!important}
+  .refIntro{height:88px!important;padding:4px!important;border-radius:9px!important}.refIntro b{font-size:8px!important}.refIntro strong{font-size:18px!important}.refIntro button{font-size:8px!important;padding:4px!important}
+  .refHandWrap{padding:0 2px 1px!important}.refHandTitle{font-size:8px!important;margin-bottom:1px!important}.refHandWrap .hand{gap:4px!important;justify-content:center!important;overflow:visible!important;align-items:flex-end!important}
+  .refHandWrap .slot{width:54px!important;min-width:54px!important;min-height:75px!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:52px!important;height:73px!important;border-radius:7px!important}
+  .refHandWrap .slotNum{top:-9px!important;font-size:9px!important;min-width:19px!important;height:19px!important;line-height:16px!important;border-width:1px!important}
+  .refHandWrap .cardFace .faceRank{font-size:16px!important}.refHandWrap .cardFace .faceSuitSmall{font-size:12px!important}.refHandWrap .cardFace .faceCourtArt{font-size:27px!important}.refHandWrap .cardFace .faceCourt .faceSuitBig{font-size:21px!important}.refHandWrap .cardFace .aceArt span{font-size:34px!important}.refHandWrap .cardFace .pipArt .pipMain{font-size:30px!important}.refHandWrap .cardFace .pipArt b{font-size:13px!important}
   .refActions{gap:3px!important;padding-bottom:1px!important}.refActions .btn{min-height:29px!important;font-size:7px!important;padding:3px 2px!important;border-radius:7px!important}
 
   /* pending/drawn-card preview */
   .refPendingPreview{transform:translate(-50%,0)!important;padding:3px 4px!important;gap:2px!important}
-  .refPendingPreview .refPendingLabel{font-size:7px!important}.refPendingPreview .cardFace{width:44px!important;height:62px!important}
+  .refPendingPreview .refPendingLabel{font-size:8px!important}.refPendingPreview .cardFace{width:56px!important;height:79px!important}
+}
+</style>
+
+<style id="landscape-reference-cards-v7">
+/* Landscape refinement: larger, clearer hand cards inspired by the approved reference layout */
+@media (orientation:landscape) and (min-width:650px) and (max-height:500px){
+  .refTable{left:134px!important;right:154px!important;top:42px!important;bottom:118px!important}
+  .refTable:before{inset:12% 7% 10%!important}
+  .refTable:after{inset:16% 11% 15%!important}
+
+  .refSeat.top{top:10px!important}
+  .refSeat.bottom{bottom:8px!important}
+  .refSeat.left{top:48%!important}
+  .refSeat.right{top:48%!important}
+
+  .refCenterPiles{top:46%!important;gap:22px!important}
+  .refPile .cardBack,.refPile .cardFace{width:66px!important;height:94px!important}
+  .refPileLabel,.pileCount{font-size:8px!important}
+
+  .refBottom{left:138px!important;right:158px!important;bottom:3px!important;height:116px!important;grid-template-columns:96px minmax(0,1fr) 108px!important;gap:5px!important;align-items:end!important}
+  .refIntro{height:106px!important}
+  .refHandWrap{padding:0 4px 2px!important;overflow:visible!important}
+  .refHandTitle{font-size:9px!important;margin-bottom:2px!important}
+  .refHandWrap .hand{gap:7px!important;justify-content:center!important;overflow:visible!important;align-items:flex-end!important;flex-wrap:nowrap!important}
+  .refHandWrap .slot{width:72px!important;min-width:72px!important;min-height:102px!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:70px!important;height:99px!important;border-radius:9px!important;border-width:2px!important;box-shadow:0 3px 9px rgba(0,0,0,.35)!important}
+  .refHandWrap .slotNum{top:-10px!important;font-size:10px!important;min-width:21px!important;height:21px!important;line-height:18px!important}
+
+  .refHandWrap .cardFace .faceCorner{inset:5px auto auto 5px!important}
+  .refHandWrap .cardFace .faceCorner.br{inset:auto 5px 5px auto!important}
+  .refHandWrap .cardFace .faceRank{font-size:20px!important;line-height:.9!important}
+  .refHandWrap .cardFace .faceSuitSmall{font-size:15px!important}
+  .refHandWrap .cardFace .faceCourtArt{font-size:38px!important}
+  .refHandWrap .cardFace .faceCourt .faceSuitBig{font-size:29px!important}
+  .refHandWrap .cardFace .aceArt span{font-size:46px!important}
+  .refHandWrap .cardFace .pipArt .pipMain{font-size:42px!important}
+  .refHandWrap .cardFace .pipArt b{font-size:17px!important}
+
+  .refActions{gap:4px!important;padding-bottom:2px!important}
+  .refActions .btn{min-height:36px!important;font-size:8px!important;padding:4px 3px!important}
+  .refLastAction{bottom:112px!important}
+  .refPendingPreview{bottom:114px!important}
+}
+
+/* Extra-tight landscape phones: keep four hand cards large without clipping */
+@media (orientation:landscape) and (min-width:650px) and (max-height:390px){
+  .refHandWrap .hand{gap:5px!important}
+  .refHandWrap .slot{width:66px!important;min-width:66px!important;min-height:94px!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:64px!important;height:91px!important}
+  .refBottom{height:108px!important}
+  .refTable{bottom:110px!important}
 }
 </style>
 </head>
