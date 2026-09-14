@@ -200,6 +200,9 @@ linear-gradient(180deg,#a85825 0 19%,#6c2818 20% 34%,#35170f 35% 100%);box-shado
 /* entertainment soundboard + local radio */
 .entertainRow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:7px 0}.entertainRow .btn{min-width:0;font-size:12px;padding:9px 6px}.soundCategory{margin:10px 0 14px}.soundCategoryTitle{color:#f3d277;font-weight:900;font-size:14px;margin:0 0 7px}.soundRows{display:grid;gap:7px}.soundItem{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(227,191,111,.22);border-radius:12px;padding:7px}.soundItemName{font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.soundMini{border:0;border-radius:9px;padding:7px 9px;font-weight:800;cursor:pointer}.soundPreview{background:#3f3327;color:#ffe7ab}.soundSend{background:#7a2436;color:#fff}.radioList{display:grid;gap:9px}.radioCard{background:rgba(255,255,255,.06);border:1px solid rgba(227,191,111,.25);border-radius:13px;padding:10px;color:#fff}.radioCardTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.radioName{font-weight:900;color:#f5d77a}.radioMeta{font-size:11px;color:#d6c6aa;margin-top:3px}.radioControls{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.radioControls button,.radioControls a{border:0;border-radius:9px;padding:8px 10px;font-weight:800;text-decoration:none;cursor:pointer}.radioPlay{background:#2b7d57;color:#fff}.radioStop{background:#63303a;color:#fff}.radioOpen{background:#3f3327;color:#ffe7ab}.radioVol{width:100%;margin-top:9px}.radioVolumeBox{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px}.radioVolumeBox button{width:48px;height:40px;border:0;border-radius:10px;background:#3f3327;color:#ffe7ab;font-size:20px;font-weight:900;cursor:pointer}.radioVolumeValue{min-width:58px;text-align:center;font-weight:900;color:#f5d77a;font-size:16px}.radioState{font-size:12px;color:#f1d795;min-height:18px;margin-top:7px}.entertainNote{font-size:11px;color:#cdbb9d;line-height:1.55;margin-top:8px}
 .compactDecision{display:flex!important;flex-direction:column;gap:8px;max-width:560px;margin:8px auto!important}.decisionTitle{width:100%;text-align:center;padding:9px 12px;border:1px solid #b88a3b;border-radius:14px;background:#fff8e8;font-weight:800}.decisionButtons{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}.decisionButtons .btn{min-height:54px;font-size:18px}
+
+/* ===== نظام حسابات شيك شيك ===== */
+.authShell{max-width:520px;margin:8px auto 0}.authBrand{text-align:center;padding:10px 0 4px}.authBrand h2{margin:0;color:var(--maroon);font-size:28px}.authBrand p{margin:7px 0;color:var(--muted);font-size:13px}.authTabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.authTabs button{background:#fff;border:1px solid var(--line);color:var(--ink)}.authTabs button.active{background:var(--maroon);color:#fff;border-color:var(--maroon)}.authField{margin-bottom:12px}.passwordWrap{position:relative}.passwordWrap input{padding-left:52px}.eyeBtn{position:absolute;left:6px;top:6px;width:42px;height:42px;padding:0;background:transparent;font-size:20px}.authLink{border:0;background:transparent;color:var(--maroon);padding:8px 4px;font-weight:800}.accountBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:13px}.accountBar strong{color:var(--maroon)}.accountBar button{padding:8px 10px;background:#f3ead8;border:1px solid var(--line);font-size:12px}.authHint{font-size:12px;color:var(--muted);line-height:1.7;margin-top:8px}.authMsg{min-height:20px;margin-top:9px;font-size:13px}.authMsg.error{color:var(--danger)}.authMsg.success{color:var(--green)}
 </style>
 
 <style id="final-reference-layout">
@@ -1011,7 +1014,7 @@ body:has(.lobbyShell) #app{margin:0!important}
 <script src="voice.js?v=3"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getDatabase, ref, get, set, update, onValue, push, query, limitToLast, runTransaction, remove } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
 const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomain:"al-sheikh-game.firebaseapp.com",databaseURL:"https://al-sheikh-game-default-rtdb.firebaseio.com",projectId:"al-sheikh-game",storageBucket:"al-sheikh-game.firebasestorage.app",messagingSenderId:"739452149085",appId:"1:739452149085:web:778619aa18fed1c698dcb4"};
@@ -1067,7 +1070,7 @@ voiceController=window.SheikhVoice?.createVoiceController({
 });
 function toast(t){const x=document.getElementById("toast");x.textContent=t;x.style.display="block";clearTimeout(x._t);x._t=setTimeout(()=>x.style.display="none",2200)}
 function randomCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
-async function ensureAuth(){if(auth.currentUser){uid=auth.currentUser.uid;return}await signInAnonymously(auth)}
+async function ensureAuth(){if(auth.currentUser && !auth.currentUser.isAnonymous){uid=auth.currentUser.uid;return auth.currentUser}throw new Error("يجب تسجيل الدخول أولاً") }
 function ctx(){if(voiceActive||voiceStarting)throw new Error("WebAudio disabled during live voice");if(!audioCtx||audioCtx.state==="closed")audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}
 function tone(freq=440,dur=.12,type="sine",vol=.12,delay=0){if(sfxMuted||voiceActive||voiceStarting)return;try{const a=ctx(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+delay;o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.03)}catch{}}
 function noise(dur=.12,vol=.08,delay=0){if(sfxMuted||voiceActive||voiceStarting)return;try{const a=ctx(),n=Math.max(1,Math.floor(a.sampleRate*dur)),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const src=a.createBufferSource(),g=a.createGain(),t=a.currentTime+delay;src.buffer=b;g.gain.value=vol;src.connect(g).connect(a.destination);src.start(t)}catch{}}
@@ -1220,14 +1223,31 @@ function closeModal(){modal.classList.add("hidden");sheet.innerHTML=""}
 function openModal(html){sheet.innerHTML=html;modal.classList.remove("hidden")}
 modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
 
+function normalizeUsername(v=""){return v.normalize("NFKC").trim().replace(/[\u064B-\u065F\u0670\u0640\s\u200B-\u200D\uFEFF]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").toLowerCase()}
+function authErrorText(e){const c=e?.code||"";if(c.includes("email-already-in-use"))return "البريد الإلكتروني مسجل مسبقاً";if(c.includes("invalid-email"))return "البريد الإلكتروني غير صحيح";if(c.includes("weak-password"))return "كلمة المرور ضعيفة — استخدم 6 أحرف أو أكثر";if(c.includes("invalid-credential")||c.includes("wrong-password")||c.includes("user-not-found"))return "البريد الإلكتروني أو كلمة المرور غير صحيحة";if(c.includes("too-many-requests"))return "محاولات كثيرة. حاول بعد قليل";if(c.includes("network-request-failed"))return "تعذر الاتصال بالإنترنت";return e?.message||"حدث خطأ غير متوقع"}
+function setAuthMsg(text,type="error"){const el=document.getElementById("authMsg");if(el){el.textContent=text;el.className="authMsg "+type}}
+function togglePass(id,btn){const x=document.getElementById(id);if(!x)return;x.type=x.type==="password"?"text":"password";btn.textContent=x.type==="password"?"👁️":"🙈"}
+function authScreen(mode="login",msg=""){
+ cleanupSubs();currentRoom=null;myHand=null;roomCode="";localStorage.removeItem("sheikh_room");
+ const signup=mode==="signup";
+ app.innerHTML=`<div class="authShell"><div class="authBrand"><h2>شيك شيك</h2><p>حسابك ثابت — اسمك ونتائجك وحظرك مرتبط بالحساب</p></div><div class="panel"><div class="authTabs"><button id="tabLogin" class="${!signup?'active':''}">تسجيل الدخول</button><button id="tabSignup" class="${signup?'active':''}">عضو جديد</button></div>${signup?`<div class="authField"><label>اسم المستخدم</label><input id="regUser" maxlength="20" autocomplete="nickname" placeholder="مثال: بو سعيد"><div class="authHint">الاسم يكون خاص بك ولا يمكن تكراره حتى باختلاف المسافات.</div></div>`:''}<div class="authField"><label>البريد الإلكتروني</label><input id="authEmail" type="email" dir="ltr" autocomplete="email" placeholder="name@gmail.com"></div><div class="authField"><label>كلمة المرور</label><div class="passwordWrap"><input id="authPass" type="password" dir="ltr" autocomplete="${signup?'new-password':'current-password'}" placeholder="••••••••"><button class="eyeBtn" id="eye1" type="button">👁️</button></div></div>${signup?`<div class="authField"><label>تأكيد كلمة المرور</label><div class="passwordWrap"><input id="authPass2" type="password" dir="ltr" autocomplete="new-password" placeholder="••••••••"><button class="eyeBtn" id="eye2" type="button">👁️</button></div></div>`:''}<button id="authSubmit" class="btn">${signup?'إنشاء الحساب':'دخول'}</button>${!signup?`<div class="center"><button id="forgotBtn" class="authLink" type="button">نسيت كلمة المرور؟</button></div>`:''}<div id="authMsg" class="authMsg ${msg?'error':''}">${esc(msg)}</div></div></div>`;
+ document.getElementById("tabLogin").onclick=()=>authScreen("login");document.getElementById("tabSignup").onclick=()=>authScreen("signup");document.getElementById("eye1").onclick=function(){togglePass("authPass",this)};if(signup)document.getElementById("eye2").onclick=function(){togglePass("authPass2",this)};document.getElementById("authSubmit").onclick=signup?registerAccount:loginAccount;if(!signup)document.getElementById("forgotBtn").onclick=forgotPassword;
+}
+async function registerAccount(){const username=document.getElementById("regUser").value.trim(),email=document.getElementById("authEmail").value.trim().toLowerCase(),pass=document.getElementById("authPass").value,pass2=document.getElementById("authPass2").value,norm=normalizeUsername(username);if(username.length<2)return setAuthMsg("اسم المستخدم قصير");if(norm.length<2)return setAuthMsg("اكتب اسم مستخدم صحيح");if(!email)return setAuthMsg("اكتب البريد الإلكتروني");if(pass.length<6)return setAuthMsg("كلمة المرور يجب أن تكون 6 أحرف على الأقل");if(pass!==pass2)return setAuthMsg("تأكيد كلمة المرور غير مطابق");const btn=document.getElementById("authSubmit");btn.disabled=true;btn.textContent="جاري إنشاء الحساب...";let cred=null,reserved=false;try{cred=await createUserWithEmailAndPassword(auth,email,pass);uid=cred.user.uid;const claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>cur===null?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw Object.assign(new Error("اسم المستخدم مستخدم مسبقاً"),{code:"username-taken"});reserved=true;await set(ref(db,`users/${uid}`),{username,usernameNorm:norm,email,role:"player",status:"active",createdAt:Date.now()});myName=username;localStorage.setItem("sheikh_name",username);home("تم إنشاء حسابك بنجاح")}catch(e){if(reserved&&uid)try{await remove(ref(db,`usernames/${norm}`))}catch{}if(cred?.user)try{await deleteUser(cred.user)}catch{}if(e?.code==="username-taken")authScreen("signup","اسم المستخدم مستخدم مسبقاً — اختر اسماً آخر");else authScreen("signup",authErrorText(e))}}
+async function loginAccount(){const email=document.getElementById("authEmail").value.trim().toLowerCase(),pass=document.getElementById("authPass").value;if(!email||!pass)return setAuthMsg("اكتب البريد الإلكتروني وكلمة المرور");const btn=document.getElementById("authSubmit");btn.disabled=true;btn.textContent="جاري الدخول...";try{const c=await signInWithEmailAndPassword(auth,email,pass);await loadPlayerAccount(c.user)}catch(e){setAuthMsg(authErrorText(e));btn.disabled=false;btn.textContent="دخول"}}
+async function forgotPassword(){const email=document.getElementById("authEmail").value.trim().toLowerCase();if(!email)return setAuthMsg("اكتب بريدك الإلكتروني أولاً");try{await sendPasswordResetEmail(auth,email);setAuthMsg("تم إرسال رابط تغيير كلمة المرور إلى بريدك الإلكتروني","success")}catch(e){setAuthMsg(authErrorText(e))}}
+async function checkMyBan(){if(!auth.currentUser)return null;const s=await get(ref(db,`bans/${auth.currentUser.uid}`));return s.exists()?s.val():null}
+async function loadPlayerAccount(user){if(!user||user.isAnonymous){if(user)try{await signOut(auth)}catch{}authScreen();return false}uid=user.uid;const [p,b]=await Promise.all([get(ref(db,`users/${uid}`)),get(ref(db,`bans/${uid}`))]);if(b.exists()){const x=b.val()||{};authScreen("login",`هذا الحساب محظور${x.reason?": "+x.reason:""}`);return false}if(!p.exists()){const a=await get(ref(db,`admins/${uid}`));if(a.exists()){authScreen("login","هذا حساب إدارة. استخدم حساب لاعب للدخول إلى اللعبة");return false}authScreen("login","لم يتم العثور على ملف اللاعب لهذا الحساب");return false}const profile=p.val();if(profile.status!=="active"){authScreen("login","هذا الحساب غير نشط");return false}myName=profile.username||"لاعب";localStorage.setItem("sheikh_name",myName);if(roomCode)subscribe(roomCode);else home();return true}
+async function logoutPlayer(){cleanupSubs();roomCode="";myName="";localStorage.removeItem("sheikh_room");localStorage.removeItem("sheikh_name");await signOut(auth);authScreen()}
 function home(msg=""){
  cleanupSubs(); currentRoom=null;myHand=null;
- app.innerHTML=`<div class="panel"><label>اسم اللاعب</label><input id="name" maxlength="20" value="${esc(myName)}" placeholder="مثال: أحمد"><div class="gap"></div><button id="create" class="btn">إنشاء غرفة</button><div id="err" class="err">${esc(msg)}</div></div><div class="panel"><label>دخول غرفة موجودة</label><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><div class="gap"></div><button id="join" class="btn alt">دخول</button></div>`;
- document.getElementById("create").onclick=createRoom;document.getElementById("join").onclick=joinRoom;
+ if(!auth.currentUser||auth.currentUser.isAnonymous){authScreen("login",msg);return}
+ app.innerHTML=`<div class="accountBar"><div><span class="small">مرحباً</span><br><strong>👤 ${esc(myName)}</strong></div><button id="logoutBtn">تسجيل الخروج</button></div><div class="panel"><button id="create" class="btn">إنشاء غرفة</button><div id="err" class="${msg&&msg.includes('بنجاح')?'ok':'err'}">${esc(msg)}</div></div><div class="panel"><label>دخول غرفة موجودة</label><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><div class="gap"></div><button id="join" class="btn alt">دخول</button></div>`;
+ document.getElementById("create").onclick=createRoom;document.getElementById("join").onclick=joinRoom;document.getElementById("logoutBtn").onclick=logoutPlayer;
 }
 function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
-async function createRoom(){const n=document.getElementById("name").value.trim();if(!n){document.getElementById("err").textContent="اكتب اسم اللاعب أولاً";return}try{await ensureAuth();uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false}}});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
-async function joinRoom(){const n=document.getElementById("name").value.trim(),c=document.getElementById("code").value.trim().toUpperCase();if(!n||!c){document.getElementById("err").textContent="اكتب الاسم وكود الغرفة";return}try{await ensureAuth();uid=auth.currentUser.uid;const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())throw new Error("الغرفة غير موجودة");const r=s.val(),ps=r.players||{};if(r.status!=="lobby"&&!ps[uid])throw new Error("اللعبة بدأت");if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
+async function createRoom(){const n=myName;if(!n){authScreen("login","سجل الدخول أولاً");return}try{await ensureAuth();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false}}});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
+async function joinRoom(){const n=myName,c=document.getElementById("code").value.trim().toUpperCase();if(!n||!c){document.getElementById("err").textContent="اكتب كود الغرفة";return}try{await ensureAuth();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));uid=auth.currentUser.uid;const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())throw new Error("الغرفة غير موجودة");const r=s.val(),ps=r.players||{};if(r.status!=="lobby"&&!ps[uid])throw new Error("اللعبة بدأت");if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
 async function handleHostRoundRemoveRequest(nextRoom){
  const req=nextRoom?.roundRemoveRequests?.[uid];
  if(!req)return false;
@@ -1297,36 +1317,64 @@ async function kickPlayer(targetUid){
 }
 
 async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active),totalRounds=Math.max(1,Math.min(10,Number(document.getElementById("roundCount")?.value||3)));if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}const readyCheck={order,totalRounds,startedAt:Date.now(),deadline:Date.now()+20000,ready:{}};await set(ref(db,`rooms/${roomCode}/public/readyCheck`),readyCheck);await sendSystem("⏱️ عندكم 20 ثانية للضغط على «ابدأ اللعب» — المتأخر يتحول متفرج");}
-async function confirmReadyToPlay(){const rc=currentRoom?.readyCheck;if(!rc||(rc.order||[]).includes(uid)===false)return;await set(ref(db,`rooms/${roomCode}/public/readyCheck/ready/${uid}`),true);toast("✅ تم تأكيد جاهزيتك");}
+async function confirmReadyToPlay(){
+ const rc=currentRoom?.readyCheck;if(!rc||(rc.order||[]).includes(uid)===false)return;
+ await set(ref(db,`rooms/${roomCode}/public/readyCheck/ready/${uid}`),true);
+ toast("✅ تم تأكيد جاهزيتك");
+ // لا ننتظر 20 ثانية إذا الجميع ضغط «ابدأ اللعب». أي لاعب جاهز يقدر يطلق البداية.
+ setTimeout(()=>finishReadyCheck().catch(e=>console.warn("ready finish",e)),80);
+}
 async function finishReadyCheck(){
- // صاحب الغرفة هو الأساس، لكن أي لاعب مختار يستطيع إنقاذ البداية بعد انتهاء المهلة إذا انقطع جهاز المضيف.
- const rc=currentRoom?.readyCheck;if(!rc||Date.now()<Number(rc.deadline||0))return;
- const canFinish=uid===currentRoom?.hostId||(rc.order||[]).includes(uid);if(!canFinish)return;
- const readyOrder=(rc.order||[]).filter(id=>rc.ready?.[id]);
- if(readyOrder.length<2){
-  // الحذف بمعاملة يمنع أكثر من جهاز من تنفيذ نفس الإنهاء.
-  let cleared=false;await runTransaction(ref(db,`rooms/${roomCode}/public/readyCheck`),x=>{if(!x||Date.now()<Number(x.deadline||0))return x;cleared=true;return null});
+ const rc=currentRoom?.readyCheck;if(!rc)return false;
+ const canFinish=uid===currentRoom?.hostId||(rc.order||[]).includes(uid);if(!canFinish)return false;
+ const selected=Array.isArray(rc.order)?rc.order:[];
+ const readyNow=selected.filter(id=>rc.ready?.[id]);
+ const allReady=selected.length>=2&&readyNow.length===selected.length;
+ const expired=Date.now()>=Number(rc.deadline||0);
+ // نبدأ فوراً إذا الجميع جاهز، أو عند انتهاء المهلة بالجاهزين فقط.
+ if(!allReady&&!expired)return false;
+ if(expired&&readyNow.length<2){
+  let cleared=false;
+  await runTransaction(ref(db,`rooms/${roomCode}/public/readyCheck`),x=>{
+   if(!x)return x;const ids=Array.isArray(x.order)?x.order:[];const r=ids.filter(id=>x.ready?.[id]);
+   if(Date.now()<Number(x.deadline||0)||r.length>=2)return x;cleared=true;return null;
+  });
   if(cleared){toast("يلزم لاعبان جاهزان على الأقل — لم تبدأ المباراة");try{await sendSystem("لم تبدأ المباراة: أقل من لاعبين أكدوا الجاهزية")}catch{}}
-  return;
+  return false;
  }
- // نحجز الانتقال مرة واحدة فقط حتى لو حاول أكثر من جهاز في نفس اللحظة.
- let won=false;const claim=await runTransaction(ref(db,`rooms/${roomCode}/public/readyCheck`),x=>{if(!x||x.finishing||Date.now()<Number(x.deadline||0))return x;const r=(x.order||[]).filter(id=>x.ready?.[id]);if(r.length<2)return x;x.finishing=uid;won=true;return x});
- if(!won)return;
- const live=claim.snapshot.val()||rc;const order=(live.order||[]).filter(id=>live.ready?.[id]);const totals={};for(const id of order)totals[id]=0;
- await remove(ref(db,`rooms/${roomCode}/public/readyCheck`));await beginRound(order,1,Number(live.totalRounds||3),totals);
+ let won=false;
+ const claim=await runTransaction(ref(db,`rooms/${roomCode}/public/readyCheck`),x=>{
+  if(!x||x.finishing)return x;
+  const ids=Array.isArray(x.order)?x.order:[];const r=ids.filter(id=>x.ready?.[id]);
+  const everyone=ids.length>=2&&r.length===ids.length;const timeUp=Date.now()>=Number(x.deadline||0);
+  if(!everyone&&!timeUp)return x;if(r.length<2)return x;
+  x.finishing=uid;x.finishingAt=Date.now();won=true;return x;
+ });
+ if(!won)return false;
+ const live=claim.snapshot.val()||rc;const order=(live.order||[]).filter(id=>live.ready?.[id]);
+ if(order.length<2)return false;
+ const totals={};for(const id of order)totals[id]=0;
+ // ابدأ الجولة أولاً، وbeginRound يمسح readyCheck ضمن نفس التحديث الذري.
+ await beginRound(order,1,Number(live.totalRounds||3),totals);
+ return true;
 }
 async function beginRound(order,roundNo,totalRounds,totals){
- // كل جولة لها رمز مستقل حتى لا تحمل أي يد/حالة من الجولة السابقة.
  clearTimeout(pendingStartTimer);pendingStartTimer=null;localRevealUntil={};seenRoundToken="";
+ order=[...new Set((order||[]).filter(Boolean))];if(order.length<2)throw new Error("يلزم لاعبان على الأقل");
  totals={...(totals||{})};for(const id of order)if(totals[id]==null)totals[id]=0;
+ // نقرأ اللاعبين مباشرة من Firebase حتى لا نعتمد على currentRoom قديم وقت الانتقال.
+ const pubSnap=await get(ref(db,`rooms/${roomCode}/public`));const livePub=pubSnap.val()||currentRoom||{};const livePlayers=livePub.players||{};
  const deck=buildDeck(),discard=deck.shift(),players={};
  const roundToken=`r${Number(roundNo)||1}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
- for(const [id,p] of playerEntries())players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:0,ready:!order.includes(id),introDone:!order.includes(id),introStarted:false,dealRoundNo:0,dealToken:""};
+ for(const [id,p] of Object.entries(livePlayers))players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:0,ready:!order.includes(id),introDone:!order.includes(id),introStarted:false,dealRoundNo:0,dealToken:""};
+ for(const id of order){if(!players[id])throw new Error("لاعب مختار غير موجود في الغرفة");}
  const freshGame={phase:"dealing",roundToken,turnOrder:order,turnIndex:0,deck,discard,discardPile:[discard],discardSeq:1,dealt:{},startedAt:Date.now(),actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,cumulativeScores:totals||{},emptyWinner:"",swapRequest:null,jackSwap:null,turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},decisionUid:null,decisionUntil:null,hasDrawn:null,lastAction:"",results:null,memorizeUntil:0};
- // تحديث game + players + reveals دفعة واحدة يمنع بدء الجولة بين حالتين قديمة وجديدة.
- await update(ref(db,`rooms/${roomCode}/public`),{status:"game",game:freshGame,players,reveals:null});
+ // مسح readyCheck مع إنشاء الجولة في تحديث واحد يمنع شاشة «جاهز» من البقاء معلقة.
+ await update(ref(db,`rooms/${roomCode}/public`),{status:"game",game:freshGame,players,reveals:null,readyCheck:null});
  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
- toast(`بدأت الجولة ${roundNo} من ${totalRounds}`)
+ toast(`بدأت الجولة ${roundNo} من ${totalRounds}`);
+ // تشغيل الاسترداد فوراً بدل انتظار دورة onValue التالية.
+ setTimeout(()=>autoGameWork().catch(e=>console.warn("round bootstrap",e)),50);
 }
 async function tryAdvanceDealing(){
  if(!currentRoom||currentRoom.status!=="game"||!isActivePlayer())return false;
@@ -1364,7 +1412,10 @@ function scheduleRoundRecovery(){
 
 async function autoGameWork(){
  if(!currentRoom||!uid)return;
- if(currentRoom.status==="lobby"&&currentRoom.readyCheck&&uid===currentRoom.hostId&&Date.now()>=Number(currentRoom.readyCheck.deadline||0)){await finishReadyCheck();return;}
+ if(currentRoom.status==="lobby"&&currentRoom.readyCheck&&(uid===currentRoom.hostId||(currentRoom.readyCheck.order||[]).includes(uid))){
+  const rc=currentRoom.readyCheck,ids=rc.order||[],readyCount=ids.filter(id=>rc.ready?.[id]).length;
+  if((ids.length>=2&&readyCount===ids.length)||Date.now()>=Number(rc.deadline||0)){await finishReadyCheck();return;}
+ }
  const g=game(),roundToken=String(g.roundToken||`legacy_${Number(g.roundNo||1)}`);
  // عند ظهور جولة جديدة نصفر أي مؤقت/كشف محلي من الجولة السابقة لكل جهاز.
  if(roundToken&&seenRoundToken!==roundToken){
@@ -1775,7 +1826,10 @@ async function autoWithdrawForInactivity(){return performRoundWithdrawal({automa
 function render(){if(!currentRoom)return;if(currentRoom.status==="lobby")return renderLobby();if(currentRoom.status==="game"){if(game().phase==="finished")return renderResults();renderGame();if(game().phase==="reveal")setTimeout(maybeFinishReveal,300)}}
 function renderLobby(){
  const ps=playerEntries(),host=uid===currentRoom.hostId,rc=currentRoom.readyCheck;
- if(rc){const left=Math.max(0,Math.ceil((Number(rc.deadline||0)-Date.now())/1000)),selected=(rc.order||[]).includes(uid),ready=!!rc.ready?.[uid];app.innerHTML=`<div class="refGameShell"><div class="refBrand"><div class="refTitle">شيك شيك</div></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>جاهزين نبدأ؟</h2><p>اضغط «ابدأ اللعب» خلال 20 ثانية. اللي يتأخر يتحول متفرج.</p><div class="refWaiting">${left} ثانية</div>${selected?`<button id="readyPlay" class="btn green" ${ready?"disabled":""}>${ready?"✅ جاهز":"▶ ابدأ اللعب"}</button>`:`<div class="notice">👀 أنت متفرج في هذه المباراة</div>`}</div></div></div>`;if(document.getElementById("readyPlay"))document.getElementById("readyPlay").onclick=confirmReadyToPlay;clearTimeout(window.__readyCheckTimer);window.__readyCheckTimer=setTimeout(()=>{if(uid===currentRoom?.hostId)finishReadyCheck();else render()},Math.min(1000,Math.max(100,left*1000)));return;} 
+ if(rc){const left=Math.max(0,Math.ceil((Number(rc.deadline||0)-Date.now())/1000)),selected=(rc.order||[]).includes(uid),ready=!!rc.ready?.[uid];app.innerHTML=`<div class="refGameShell"><div class="refBrand"><div class="refTitle">شيك شيك</div></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>جاهزين نبدأ؟</h2><p>اضغط «ابدأ اللعب» خلال 20 ثانية. اللي يتأخر يتحول متفرج.</p><div class="refWaiting">${left} ثانية</div>${selected?`<button id="readyPlay" class="btn green" ${ready?"disabled":""}>${ready?"✅ جاهز":"▶ ابدأ اللعب"}</button>`:`<div class="notice">👀 أنت متفرج في هذه المباراة</div>`}</div></div></div>`;if(document.getElementById("readyPlay"))document.getElementById("readyPlay").onclick=confirmReadyToPlay;clearTimeout(window.__readyCheckTimer);window.__readyCheckTimer=setTimeout(()=>{
+ const rr=currentRoom?.readyCheck;if(!rr)return render();const ids=rr.order||[],cnt=ids.filter(id=>rr.ready?.[id]).length;
+ if(uid===currentRoom?.hostId||ids.includes(uid)){if((ids.length>=2&&cnt===ids.length)||Date.now()>=Number(rr.deadline||0))finishReadyCheck().catch(e=>console.warn(e));else render()}else render();
+},500);return;} 
  const shown=ps.slice(0,4),rest=ps.slice(4);
  const seats=Array.from({length:4},(_,i)=>{
    const item=shown[i];
@@ -1905,7 +1959,7 @@ async function sendChat(forced){const inp=document.getElementById("chatInput"),t
 async function sendSystem(text){try{await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid:"system",name:"النظام",text,ts:Date.now()})}catch{}}
 function renderChat(){const box=document.getElementById("chatBox");if(!box)return;const arr=Object.values(latestChat).sort((a,b)=>(a.ts||0)-(b.ts||0));box.innerHTML=arr.map(m=>`<p><b>${esc(m.name)}:</b> ${esc(m.text)}</p>`).join("");box.scrollTop=box.scrollHeight}
 
-onAuthStateChanged(auth,u=>{if(u){uid=u.uid;if(roomCode)subscribe(roomCode);else home()}});ensureAuth().catch(e=>home("فشل تسجيل الدخول: "+(e.code||e.message)));
+let authBooted=false;onAuthStateChanged(auth,async u=>{if(authBooted&&u&&uid===u.uid)return;authBooted=true;if(!u){uid=null;authScreen();return}if(u.isAnonymous){try{await signOut(auth)}catch{}authScreen();return}try{await loadPlayerAccount(u)}catch(e){authScreen("login","تعذر تحميل الحساب: "+authErrorText(e))}});
 </script>
 </body>
 </html>
