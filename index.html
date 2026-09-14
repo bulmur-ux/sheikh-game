@@ -767,6 +767,105 @@ body:has(.lobbyShell) #app{margin:0!important}
   .decisionActions{width:min(330px,48vw)!important}
 }
 </style>
+
+<style id="approved-reference-layout-v1">
+/* Approved landscape composition: preserve game logic, change presentation only. */
+@media (orientation:landscape) and (min-width:650px) and (max-height:500px){
+  .refBrand{top:2px!important;z-index:100!important}.refTitle{font-size:21px!important;padding:4px 30px!important}
+  .refLeftTop{left:7px!important;top:7px!important;width:128px!important;padding:6px!important}
+  .refLeftBottom{left:7px!important;top:142px!important;width:128px!important;max-height:calc(100dvh - 150px)!important;padding:6px!important;overflow:auto!important}
+  .refSpectatorTitle{font-size:10px!important}.refSpectatorRow{font-size:9px!important;padding:4px 1px!important}
+  .refRightTop{right:7px!important;top:7px!important;width:150px!important;padding:5px!important}
+  .refTopTools{display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:3px!important;margin:0!important}
+  .refTopTools button{min-width:0!important;min-height:37px!important;font-size:14px!important;padding:3px 0!important}.refTopTools small{font-size:6.5px!important;white-space:nowrap!important}
+  .refRightTop .refRulesTitle,.refRightTop>.small{display:none!important}
+  .refRightTop #withdrawRound{font-size:8px!important;padding:5px!important;margin-top:4px!important}
+  .refRightChat{right:7px!important;top:57px!important;bottom:7px!important;width:150px!important}
+  /* audio/radio launchers live in the top rail; keep chat focused on messages */
+  .refRightChat .voiceBar,.refRightChat .entertainRow{display:none!important}
+  .refRightChat .chat{height:auto!important;flex:1 1 auto!important;min-height:80px!important;margin:4px 0!important}
+  .refTable{left:142px!important;right:164px!important;top:44px!important;bottom:116px!important;border-radius:26px!important}
+  .refTable:before{inset:12% 7% 10%!important}.refTable:after{inset:16% 11% 15%!important}
+  .refSeat.top{top:7px!important}.refSeat.left{left:7px!important;top:48%!important}.refSeat.right{right:7px!important;top:48%!important}.refSeat.bottom{bottom:6px!important}
+  .refSeat .refAvatar{width:44px!important;height:44px!important}.refSeatLabel{font-size:9px!important;min-width:74px!important}.refSeatCards .cardBack{width:20px!important;height:29px!important}
+  .refCenterPiles{top:45%!important;gap:24px!important}.refPile .cardBack,.refPile .cardFace{width:68px!important;height:96px!important}.refPileLabel{font-size:8px!important}
+  .refTurnTimer{position:absolute!important;left:50%!important;top:8px!important;transform:translateX(-50%)!important;min-width:110px!important;padding:5px 10px!important;border-radius:14px!important}.refTurnTimer small{font-size:8px!important}.refTurnTimer b{font-size:21px!important}
+  .refBottom{left:146px!important;right:168px!important;bottom:3px!important;height:112px!important;grid-template-columns:92px minmax(0,1fr) 116px!important;gap:5px!important}
+  .refIntro{height:102px!important}.refHandWrap .hand{gap:8px!important;flex-wrap:nowrap!important}.refHandWrap .slot{width:70px!important;min-width:70px!important;min-height:100px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:68px!important;height:97px!important}
+  .refHandWrap .cardFace .simpleRank{font-size:37px!important}.refHandWrap .cardFace .simpleSuit{font-size:31px!important}.refHandWrap .cardFace .faceRank{font-size:20px!important}.refHandWrap .cardFace .faceSuitSmall{font-size:15px!important}
+  .refActions .btn{min-height:37px!important;font-size:9px!important;padding:5px 3px!important}
+  .decisionActions{position:fixed!important;left:auto!important;right:164px!important;bottom:8px!important;transform:none!important;width:250px!important;grid-template-columns:1fr 1fr!important}
+  .decisionActions .notice{grid-column:1/-1!important}.decisionActions .btn{min-height:44px!important;font-size:12px!important}
+}
+@media (orientation:landscape) and (min-width:650px) and (max-height:390px){
+  .refLeftBottom{top:125px!important}.refRightChat{top:52px!important}.refTable{top:40px!important;bottom:105px!important}.refBottom{height:102px!important}.refHandWrap .slot{width:62px!important;min-width:62px!important;min-height:89px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:60px!important;height:86px!important}
+}
+</style>
+
+<style id="landscape-distribution-clean-v8">
+/* Layout-only refinement: keep approved background and all existing card artwork */
+@media (orientation:landscape) and (min-width:650px) and (max-height:520px){
+  .refGameShell{overflow:hidden!important}
+  .refTitle{top:4px!important;left:50%!important;transform:translateX(-50%)!important;font-size:24px!important;padding:5px 34px!important;z-index:90!important}
+
+  /* Left rail: round/score then spectators, like the approved reference */
+  .refLeftTop{left:8px!important;top:8px!important;width:170px!important;padding:7px!important}
+  .refLeftBottom{left:8px!important;top:162px!important;width:170px!important;max-height:138px!important;padding:7px!important;overflow:auto!important}
+  .refSpectatorTitle{font-size:12px!important}.refSpectatorRow{font-size:10px!important;padding:4px 0!important}
+
+  /* Right rail: compact tools above a full-height chat */
+  .refRightTop{right:8px!important;top:8px!important;width:182px!important;padding:6px!important}
+  .refTopTools{gap:4px!important}.refTopTools button{font-size:15px!important;padding:5px 2px!important}.refTopTools small{font-size:7px!important}
+  .refRulesTitle{font-size:11px!important}.refRules{font-size:8.5px!important;line-height:1.28!important}
+  .refRightChat{right:8px!important;top:150px!important;bottom:7px!important;width:182px!important}
+  .refRightChat .voiceBar{grid-template-columns:1fr 1fr!important}.refRightChat .voiceBar button{font-size:7.5px!important;padding:4px 2px!important}
+  .refRightChat .chat{height:calc(100% - 136px)!important;min-height:60px!important}.refRightChat .chat p,.refRightChat .chat b{font-size:10px!important}
+
+  /* Main stage: reserve clean left/right rails, keep current scene/background */
+  .refTable{left:186px!important;right:198px!important;top:46px!important;bottom:4px!important;border-radius:30px!important}
+  .refTable:before{inset:15% 8% 21%!important;border-radius:17px!important}
+  .refTable:after{inset:19% 13% 26%!important}
+
+  /* 4 active players: top / left / right / self bottom */
+  .refSeat{min-width:100px!important;z-index:10!important}
+  .refSeat .refAvatar{width:50px!important;height:50px!important}.refSeatLabel{min-width:84px!important;font-size:10px!important;padding:3px 6px!important}
+  .refSeatCards{height:26px!important}.refSeatCards .cardBack{width:24px!important;height:34px!important;margin:0 -5px!important}
+  .refSeat.top{top:38px!important;left:50%!important;transform:translateX(-50%)!important}
+  .refSeat.left{left:14px!important;top:48%!important;transform:translateY(-50%)!important}
+  .refSeat.right{right:14px!important;top:48%!important;transform:translateY(-50%)!important}
+  .refSeat.bottom{left:50%!important;bottom:92px!important;transform:translateX(-50%)!important}
+
+  /* Deck + field centered and readable */
+  .refCenterPiles{left:50%!important;top:46%!important;transform:translate(-50%,-50%)!important;gap:20px!important}
+  .refPile .cardBack,.refPile .cardFace{width:68px!important;height:96px!important}.refPileLabel{font-size:9px!important}.pileCount{font-size:9px!important}
+
+  /* Turn timer always visible, not mixed with cards */
+  .refTurnTimer{top:39px!important;left:50%!important;transform:translateX(-50%)!important;min-width:86px!important;font-size:14px!important;padding:4px 10px!important;z-index:25!important}
+
+  /* Bottom: intro left, 4-card hand large center, actions right */
+  .refBottom{left:192px!important;right:204px!important;bottom:0!important;height:105px!important;grid-template-columns:128px minmax(310px,1fr) 160px!important;gap:8px!important;align-items:end!important;z-index:35!important}
+  .refIntro{height:92px!important;padding:6px!important}.refIntro b{font-size:10px!important}.refIntro strong{font-size:23px!important}.refIntro button{font-size:10px!important;padding:7px!important}
+  .refHandWrap{display:flex!important;flex-direction:column!important;justify-content:flex-end!important;align-items:center!important;padding:0 4px 2px!important;background:linear-gradient(180deg,transparent,#120806d9 52%)!important;overflow:visible!important}
+  .refHandTitle{align-self:flex-start!important;font-size:10px!important;margin:0 0 2px 2px!important}
+  .refHandWrap .hand{display:flex!important;justify-content:center!important;align-items:flex-end!important;gap:8px!important;overflow:visible!important;width:100%!important}
+  .refHandWrap .slot{width:70px!important;min-width:70px!important;min-height:92px!important;flex:0 0 70px!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:68px!important;height:94px!important;border-radius:8px!important}
+  .refHandWrap .slotNum{top:-10px!important;font-size:11px!important;min-width:23px!important;height:23px!important;line-height:19px!important}
+  .refActions{gap:5px!important;padding-bottom:3px!important}.refActions .btn{min-height:41px!important;font-size:10px!important;padding:6px 4px!important;border-radius:9px!important}
+  .refLastAction{bottom:88px!important;max-width:48%!important}
+}
+
+@media (orientation:landscape) and (min-width:650px) and (max-height:430px){
+  .refTitle{font-size:20px!important;padding:4px 26px!important}
+  .refLeftTop,.refLeftBottom{width:152px!important}.refLeftBottom{top:142px!important;max-height:112px!important}
+  .refRightTop,.refRightChat{width:166px!important}.refRightChat{top:138px!important}
+  .refTable{left:166px!important;right:178px!important;top:42px!important}
+  .refBottom{left:172px!important;right:184px!important;height:92px!important;grid-template-columns:108px minmax(270px,1fr) 140px!important}
+  .refSeat.top{top:34px!important}.refSeat.bottom{bottom:80px!important}
+  .refHandWrap .slot{width:60px!important;min-width:60px!important;flex-basis:60px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:58px!important;height:82px!important}
+  .refIntro{height:79px!important}.refActions .btn{min-height:35px!important;font-size:9px!important}
+}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -1407,7 +1506,7 @@ function renderGame(){
  const pendingPreview=pending?`<div class="refPendingPreview"><div class="refPendingLabel">${myHand?.pendingSource==="deck"?"الورقة المسحوبة":"ورقة الميدان"}</div><div class="cardFace ${cardClass(pending)}">${cardFaceHtml(pending)}</div></div>`:"";
  const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div>${pendingPreview}<div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
  const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
- app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${g.totalRounds||1}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span></div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refChatFocus">💬<small>دردشة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
+ app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${g.totalRounds||1}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span></div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
  wireCommon();
  const rs=document.getElementById("refSfx");if(rs)rs.onclick=toggleSfx;const rv=document.getElementById("refVoice");if(rv)rv.onclick=()=>startLiveVoice();const rc=document.getElementById("refChatFocus");if(rc)rc.onclick=()=>document.getElementById("chatInput")?.focus();const wr=document.getElementById("withdrawRound");if(wr)wr.onclick=withdrawFromRound;
  const sp=document.getElementById("startPeek");if(sp)sp.onclick=startInitialPeek;
@@ -1473,7 +1572,7 @@ function showRulesModal(){
  const close=()=>el.remove();document.getElementById("rulesClose").onclick=close;el.addEventListener("click",e=>{if(e.target===el)close()});
 }
 function chatPanel(){return `<div class="panel chatPanel"><b>شات الغرفة</b><div class="voiceBar"><button id="sfxTest" class="btn alt">🔊 اختبار الصوت</button><button id="sfxToggle" class="btn alt">${sfxMuted?"🔇 تشغيل المؤثرات":"🔕 كتم المؤثرات"}</button><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><div class="entertainRow"><button id="funSounds" class="btn soundLauncher">😂 🔊 الأصوات</button><button id="radioOpenBtn" class="btn alt">📻 الإذاعة</button></div><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
-function wireCommon(){document.addEventListener("pointerdown",()=>{primeRoomAudio();unlockAudio()},{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const ro=document.getElementById("radioOpenBtn");if(ro)ro.onclick=showRadioPanel;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();const chatInput=document.getElementById("chatInput");if(chatInput)chatInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
+function wireCommon(){document.addEventListener("pointerdown",()=>{primeRoomAudio();unlockAudio()},{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=()=>{localStorage.removeItem("sheikh_room");roomCode="";home()};const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const rfs=document.getElementById("refFunSounds");if(rfs)rfs.onclick=showSoundBoard;const ro=document.getElementById("radioOpenBtn");if(ro)ro.onclick=showRadioPanel;const rr=document.getElementById("refRadio");if(rr)rr.onclick=showRadioPanel;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();const chatInput=document.getElementById("chatInput");if(chatInput)chatInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
 function voiceRemoteCount(){return voiceController?.remoteCount?.()||0}
 function updateVoiceUi(){const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount(),present=Object.values(currentRoom?.voiceUsers||{}).filter(v=>v?.active).length-1;const waiting=voiceActive&&n===0&&present>0;el.innerHTML=`<span class="voiceDot ${(voiceActive||voiceStarting)?(n>0?"on":"warn"):""}"></span>${voiceStarting?"جاري فتح المايك...":voiceActive?`المايك شغال • متصل ${n}/${Math.max(0,present)}${waiting?" • جاري الاتصال...":""}`:"الصوت المباشر متوقف"}`}
  const j=document.getElementById("voiceJoin"),m=document.getElementById("voiceMute"),l=document.getElementById("voiceLeave");if(j)j.textContent=voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر";if(m){m.disabled=!voiceActive;m.textContent=voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}if(l)l.disabled=!voiceActive}
