@@ -1,4 +1,4 @@
-// شيك شيك - نظام المايك المستقل (محسّن للاتصال الحر بين مختلف مناطق الدولة بدون اشتراكات)
+// شيك شيك - نظام المايك المستقل (مدعوم بخوادم TURN و STUN المجانية للربط الفوري)
 (function(){
 
   function createVoiceController(o){
@@ -160,7 +160,7 @@
 
         setTimeout(()=>sync(), 200);
         setTimeout(()=>sync(), 1000);
-        setTimeout(()=>sync(), 2500); // محاولة إضافية لضمان التقاط الإشارة بين الشبكات البعيدة
+        setTimeout(()=>sync(), 2500);
 
         clearInterval(voiceSyncTimer);
         voiceSyncTimer = setInterval(()=>{
@@ -286,20 +286,25 @@
       const uid = getUid();
       const roomCode = getRoomCode();
 
-      // تجميع أقوى خوادم STUN المجانية المفتوحة عالمياً لتجاوز الـ NAT
+      // دمج خوادم STUN و TURN المجانية المتاحة لتجاوز الجدران النارية نهائياً
       const pc = new RTCPeerConnection({
         iceServers:[
           {
             urls:[
               "stun:stun.l.google.com:19302",
               "stun:stun1.l.google.com:19302",
-              "stun:stun2.l.google.com:19302",
-              "stun:stun3.l.google.com:19302",
-              "stun:stun4.l.google.com:19302",
-              "stun:stun.stunprotocol.org:3478",
-              "stun:stun.services.mozilla.com",
               "stun:stun.cloudflare.com:3478"
             ]
+          },
+          {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          },
+          {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject"
           }
         ],
         iceCandidatePoolSize: 10
