@@ -1,4 +1,4 @@
-// شيك شيك - نظام المايك المستقل (محدث ليدعم الشبكات المختلفة عبر TURN)
+// شيك شيك - نظام المايك المستقل (محدث بخوادم STUN المجانية الموسعة)
 (function(){
 
   function createVoiceController(o){
@@ -515,17 +515,13 @@
                 "stun:stun.l.google.com:19302",
                 "stun:stun1.l.google.com:19302",
                 "stun:stun2.l.google.com:19302",
+                "stun:stun3.l.google.com:19302",
+                "stun:stun4.l.google.com:19302",
+                "stun:stun.stunprotocol.org:3478",
+                "stun:stun.services.mozilla.com",
                 "stun:stun.cloudflare.com:3478"
               ]
             }
-            /* 
-              أضف بيانات خادم الـ TURN هنا لاحقاً لضمان عمل الاتصال بين الشبكات المختلفة (البيت والمكتب):
-              {
-                urls: "turn:your-turn-server.com:3478",
-                username: "user",
-                credential: "password"
-              }
-            */
           ],
 
           iceCandidatePoolSize:10
