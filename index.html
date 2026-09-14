@@ -269,11 +269,129 @@ button {
     <p>لعبة المجلس أونلاين</p>
   </header>
   <div class="stripe"></div>
-  
-  <div class="panel center">
-    <h2>أهلاً بك في اللعبة</h2>
-    <p class="small">الملف يعمل بشكل ممتاز والتصميم تراثي متكامل.</p>
+
+  <!-- قسم إدخال الاسم وإنشاء/انضمام للعبة -->
+  <div id="lobbySection" class="panel">
+    <div class="gap"></div>
+    <label for="playerName">اسم اللاعب</label>
+    <input type="text" id="playerName" placeholder="اكتب اسمك هنا..." maxlength="15">
+    <div class="gap"></div>
+    <div class="row">
+      <button class="btn" id="createRoomBtn">إنشاء جلسة</button>
+      <button class="btn alt" id="showJoinBtn">انضمام لجلسة</button>
+    </div>
+    <div id="joinArea" class="hidden" style="margin-top: 12px;">
+      <label for="roomCodeInput">رمز الجلسة</label>
+      <input type="text" id="roomCodeInput" placeholder="مثال: 1234" maxlength="6" style="text-align: center; letter-spacing: 4px;">
+      <div class="gap"></div>
+      <button class="btn green" id="joinRoomBtn">دخول المجلس</button>
+    </div>
+    <div id="lobbyError" class="err"></div>
   </div>
+
+  <!-- قسم غرفة الانتظار -->
+  <div id="roomSection" class="panel hidden">
+    <h2>رمز الجلسة</h2>
+    <div class="code" id="displayRoomCode">----</div>
+    <label>اللاعبون المتواجدون في المجلس:</label>
+    <ul class="players" id="playersList"></ul>
+    <div id="hostControls" class="hidden">
+      <button class="btn green" id="startGameBtn">ابدأ اللعبة</button>
+      <div class="gap"></div>
+    </div>
+    <button class="btn danger" id="leaveRoomBtn">مغادرة الجلسة</button>
+    <div id="roomStatus" class="status">بانتظار انضمام باقي اللاعبين...</div>
+  </div>
+
+  <!-- قسم واجهة اللعب -->
+  <div id="gameSection" class="panel hidden">
+    <div class="gameTop">
+      <div class="pile">
+        <div class="pileTitle">كومة السحب</div>
+        <div class="cardBack" id="drawPileBtn" title="اسحب ورقة"></div>
+        <div class="small" id="drawCount" style="margin-top:6px;">0 ورقة</div>
+      </div>
+      <div class="pile">
+        <div class="pileTitle">الورقة الحالية</div>
+        <div class="cardFace" id="currentCard">-</div>
+      </div>
+    </div>
+    
+    <div class="gap"></div>
+    <div class="panel" style="background:#fff; margin:0;">
+      <div class="pileTitle">أوراقك في اليد</div>
+      <div id="myHand" style="display:flex; gap:8px; overflow:auto; padding:6px 0; min-height:125px;"></div>
+    </div>
+
+    <div class="gap"></div>
+    <div class="row">
+      <button class="btn blue" id="callSheekBtn">شيك شيك!</button>
+      <button class="btn alt" id="passTurnBtn">تخطي الدور</button>
+    </div>
+
+    <div class="gap"></div>
+    <label>دردشة المجلس</label>
+    <div class="quick">
+      <button type="button" onclick="sendQuickChat('يا هلا بالربع')">يا هلا بالربع</button>
+      <button type="button" onclick="sendQuickChat('عطني الورقة')">عطني الورقة</button>
+      <button type="button" onclick="sendQuickChat('شيك شيك!')">شيك شيك!</button>
+      <button type="button" onclick="sendQuickChat('حظ هقوة')">حظ هقوة</button>
+    </div>
+    <div class="chat" id="chatBox"></div>
+    <div class="row">
+      <input type="text" id="chatInput" placeholder="اكتب رسالتك..." maxlength="100">
+      <button class="btn" id="sendChatBtn" style="width: 90px;">إرسال</button>
+    </div>
+  </div>
+
 </div>
+
+<script>
+  const el = id => document.getElementById(id);
+  
+  el('showJoinBtn').addEventListener('click', () => {
+    el('joinArea').classList.toggle('hidden');
+  });
+
+  el('createRoomBtn').addEventListener('click', () => {
+    const name = el('playerName').value.trim();
+    if (!name) {
+      el('lobbyError').textContent = 'الرجاء إدخال اسم اللاعب أولاً.';
+      return;
+    }
+    el('lobbyError').textContent = '';
+    el('lobbySection').classList.add('hidden');
+    el('roomSection').classList.remove('hidden');
+    el('displayRoomCode').textContent = '8821';
+    el('hostControls').classList.remove('hidden');
+    el('playersList').innerHTML = `<li><span>${name} (أنت - المضيف)</span> <span class="badge">جاهز</span></li>`;
+  });
+
+  el('startGameBtn').addEventListener('click', () => {
+    el('roomSection').classList.add('hidden');
+    el('gameSection').classList.remove('hidden');
+    
+    let handHtml = '';
+    ['٧ ♥', 'Q ♣', 'A ♦', '10 ♠'].forEach(c => {
+      handHtml += `<div class="cardFace" style="cursor:pointer; font-size:22px;">${c}</div>`;
+    });
+    el('myHand').innerHTML = handHtml;
+    el('currentCard').textContent = 'K ♠';
+  });
+
+  window.sendQuickChat = function(msg) {
+    const chatBox = el('chatBox');
+    chatBox.innerHTML += `<p><b>أنت:</b> ${msg}</p>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  };
+
+  el('sendChatBtn').addEventListener('click', () => {
+    const txt = el('chatInput').value.trim();
+    if (txt) {
+      sendQuickChat(txt);
+      el('chatInput').value = '';
+    }
+  });
+</script>
 </body>
 </html>
