@@ -966,59 +966,24 @@ body:has(.lobbyShell) #app{margin:0!important}
 .refSeatLabel{position:relative}
 </style>
 
-<style id="complete-landscape-clean-v10">
-/* Final consolidated landscape pass: presentation only; keep game logic intact. */
-.roundOutMini{width:22px!important;height:22px!important;min-width:22px!important;padding:0!important;border-radius:50%!important;background:#c58a2d!important;color:#24170c!important;border:1px solid #ffe0a1!important;font-size:12px!important;line-height:20px!important;font-weight:900!important}
-.hostPlayerTools{display:inline-flex!important;gap:3px!important;margin-inline-start:5px!important;vertical-align:middle!important}
-@media (orientation:landscape) and (min-width:650px) and (max-height:520px){
-  html,body{width:100%!important;height:100%!important;overflow:hidden!important}
-  body:has(.refGameShell) .wrap,body:has(.lobbyScene) .wrap{width:100vw!important;max-width:none!important;height:100dvh!important;margin:0!important;padding:0!important}
-  body:has(.refGameShell) #app,body:has(.lobbyScene) #app{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important;padding:0!important;margin:0!important}
-  .refGameShell{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important}
-  .refBrand{top:4px!important;left:50%!important;transform:translateX(-50%) scale(.78)!important;z-index:50!important}
-  .refLeftTop{left:8px!important;top:8px!important;width:118px!important;max-height:47vh!important;overflow:auto!important;padding:7px!important}
-  .refLeftBottom{left:8px!important;top:auto!important;bottom:8px!important;width:118px!important;max-height:43vh!important;overflow:auto!important;padding:7px!important}
-  .refRightTop{right:8px!important;top:8px!important;width:154px!important;padding:6px!important;z-index:55!important}
-  .refTopTools{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:4px!important}
-  .refTopTools button{min-width:0!important;padding:5px 2px!important;font-size:14px!important;border-radius:9px!important}
-  .refTopTools button small{display:block!important;font-size:8px!important;line-height:1.05!important}
-  .refRulesTitle,.refRightTop>.small{display:none!important}
-  .refRightTop #withdrawRound{margin-top:5px!important;padding:6px!important;font-size:9px!important}
-  .refRightChat{right:8px!important;top:112px!important;bottom:8px!important;width:154px!important;overflow:hidden!important}
-  .refRightChat .chatPanel{height:100%!important;margin:0!important;padding:6px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
-  .refRightChat .voiceBar,.refRightChat .entertainRow{display:none!important}
-  .refRightChat .chat{flex:1 1 auto!important;height:auto!important;min-height:54px!important;margin:5px 0!important;padding:5px!important;overflow:auto!important;font-size:10px!important}
-  .refRightChat .quick{gap:3px!important;margin-bottom:4px!important}
-  .refRightChat .quick button{padding:4px 5px!important;font-size:8px!important}
-  .refRightChat .row{gap:3px!important}
-  .refRightChat #chatInput{padding:6px!important;font-size:10px!important;min-width:0!important}
-  .refRightChat #send{flex:0 0 44px!important;padding:6px 2px!important;font-size:9px!important}
-  .refTable{left:132px!important;right:166px!important;top:42px!important;bottom:96px!important;width:auto!important;height:auto!important;transform:none!important}
-  .refSeat.top{top:2px!important}.refSeat.left{left:2px!important}.refSeat.right{right:2px!important}.refSeat.bottom{bottom:2px!important}
-  .refSeatLabel{font-size:9px!important;white-space:nowrap!important}
-  .refAvatar{width:34px!important;height:34px!important;font-size:16px!important}
-  .refSeatCards .cardBack{width:22px!important;height:31px!important;margin-inline-start:-9px!important}
-  .refCenterPiles{gap:14px!important}
-  .refCenterPiles .cardFace,.refCenterPiles .cardBack{width:58px!important;height:82px!important}
-  .refPileLabel{font-size:9px!important}
-  .refTurnTimer{top:4px!important;left:50%!important;transform:translateX(-50%)!important;min-width:76px!important;padding:4px 8px!important;z-index:20!important}
-  .refTurnTimer small{font-size:8px!important}.refTurnTimer b{font-size:20px!important}
-  .refLastAction{bottom:4px!important;max-width:72%!important;font-size:9px!important;padding:4px 7px!important}
-  .refBottom{left:136px!important;right:170px!important;bottom:4px!important;height:88px!important;display:grid!important;grid-template-columns:76px minmax(230px,1fr) minmax(132px,auto)!important;gap:6px!important;align-items:end!important;z-index:60!important}
-  .refIntro{min-width:70px!important;padding:5px!important;font-size:9px!important}
-  .refHandWrap{min-width:0!important;padding:3px 5px!important}
-  .refHandTitle{font-size:9px!important;margin-bottom:2px!important}
-  .refHandWrap .hand{display:flex!important;justify-content:center!important;gap:7px!important;overflow:visible!important}
-  .refHandWrap .hand .cardFace,.refHandWrap .hand .cardBack{width:52px!important;height:73px!important;flex:0 0 52px!important}
-  .refActions{display:flex!important;flex-wrap:wrap!important;justify-content:flex-end!important;gap:4px!important;max-width:210px!important}
-  .refActions .btn{width:auto!important;min-width:62px!important;padding:7px 8px!important;font-size:9px!important}
-  .decisionActions{position:relative!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px!important;min-width:160px!important}
-  .decisionActions .notice{grid-column:1/-1!important;margin:0!important;padding:4px 6px!important;font-size:8px!important;line-height:1.2!important}
-  .decisionActions .btn{min-width:76px!important;font-size:10px!important}
-  .refPendingPreview{transform:translate(-50%,-6px)!important}
-  .refPendingPreview .cardFace{width:50px!important;height:70px!important}
-  .refWithdrawBottom{display:none!important}
+<style id="complete-layout-clean-v1">
+/* Final consolidated layout. Keeps approved background/table and isolates portrait vs landscape. */
+.hostSeatActions{display:inline-flex;gap:3px;margin-inline-start:5px;vertical-align:middle}.hostSeatActions button,.roundOutMini,.kickGameMini{border:0;border-radius:7px;padding:3px 5px;font-size:10px;line-height:1;background:#321b12;color:#fff;box-shadow:none}.roundOutMini{background:#7a5318}.kickGameMini{background:#8b1f2b}
+@media (orientation:landscape) and (min-width:650px){
+ html,body{overflow:hidden!important;width:100%!important;height:100%!important}.refGameShell{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important}
+ .refTitle{top:4px!important;font-size:24px!important;padding:5px 30px!important}
+ .refLeftTop{left:6px!important;top:6px!important;width:176px!important;padding:7px!important}.refLeftBottom{left:6px!important;top:174px!important;width:176px!important;bottom:8px!important;max-height:none!important;overflow:auto!important}
+ .refRightTop{right:6px!important;top:6px!important;width:198px!important;padding:7px!important}.refTopTools{grid-template-columns:repeat(3,1fr)!important;gap:4px!important}.refTopTools button{padding:6px 2px!important;font-size:16px!important}.refTopTools small{font-size:8px!important}.refRulesTitle,.refRightTop>.small{display:none!important}
+ .refRightChat{right:6px!important;top:126px!important;bottom:6px!important;width:198px!important;height:auto!important;margin:0!important}.refRightChat>.panel{padding:7px!important}.refRightChat .voiceBar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:3px!important;margin:5px 0!important}.refRightChat .voiceBar button{padding:5px 2px!important;font-size:9px!important}.refRightChat .chat{height:auto!important;min-height:70px!important;flex:1!important;margin:4px 0!important}.refRightChat .row #chatInput{min-width:0!important;padding:7px!important;font-size:11px!important}.refRightChat .row #send{flex:0 0 50px!important;padding:7px 2px!important;font-size:10px!important}
+ .refTable{left:190px!important;right:212px!important;top:48px!important;bottom:104px!important;border-width:5px!important}.refSeat .refAvatar{width:50px!important;height:50px!important;font-size:20px!important}.refSeatLabel{font-size:10px!important;padding:4px 7px!important;min-width:92px!important}.refSeat.top{top:8px!important}.refSeat.bottom{bottom:7px!important}.refSeat.left{left:12px!important}.refSeat.right{right:12px!important}.refSeatCards .cardBack{width:23px!important;height:34px!important}
+ .refCenterPiles{gap:18px!important;top:49%!important}.refCenterPiles .cardBack,.refCenterPiles .cardFace{width:66px!important;height:94px!important}.refPileLabel{font-size:10px!important}.refTurnTimer{top:6px!important;font-size:16px!important;padding:5px 10px!important;min-width:82px!important}.refLastAction{font-size:10px!important;max-width:70%!important;overflow:hidden!important;text-overflow:ellipsis!important}
+ .refBottom{left:190px!important;right:212px!important;bottom:0!important;height:102px!important;grid-template-columns:130px 1fr 174px!important;gap:6px!important}.refIntro{height:94px!important;padding:5px!important}.refIntro strong{font-size:20px!important}.refHandWrap{padding:0 4px 4px!important;overflow:visible!important}.refHandWrap .hand{gap:6px!important}.refHandWrap .slot{width:62px!important;min-width:62px!important;min-height:84px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:60px!important;height:84px!important}.refHandWrap .slotNum{top:-9px!important;font-size:10px!important}.refActions{gap:4px!important;padding-bottom:4px!important}.refActions .btn{min-height:38px!important;padding:6px 4px!important;font-size:10px!important}.decisionActions .notice{grid-column:1/-1!important;font-size:9px!important;padding:4px!important;margin:0!important}.refWithdrawBottom{position:absolute!important;left:4px!important;bottom:4px!important;width:82px!important;min-height:32px!important;font-size:9px!important;padding:5px!important}.refRightTop #withdrawRound{display:none!important}
+ .refPendingPreview .cardFace{width:52px!important;height:74px!important}.hostSeatActions button{font-size:9px!important;padding:2px 4px!important}
 }
+@media (orientation:landscape) and (min-width:650px) and (max-height:430px){
+ .refLeftTop{width:158px!important}.refLeftBottom{width:158px!important;top:158px!important}.refRightTop,.refRightChat{width:180px!important}.refRightChat{top:112px!important}.refTable{left:170px!important;right:192px!important;top:42px!important;bottom:90px!important}.refBottom{left:170px!important;right:192px!important;height:90px!important;grid-template-columns:110px 1fr 154px!important}.refHandWrap .slot{width:54px!important;min-width:54px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:52px!important;height:73px!important}.refCenterPiles .cardBack,.refCenterPiles .cardFace{width:58px!important;height:82px!important}.refSeat .refAvatar{width:44px!important;height:44px!important}.refSeatLabel{font-size:9px!important}.refActions .btn{min-height:34px!important;font-size:9px!important}.refTurnTimer{font-size:14px!important}
+}
+@media (orientation:portrait),(max-width:649px){.hostSeatActions{display:inline-flex}.refWithdrawBottom{width:100%;margin-top:6px}}
 </style>
 </head>
 <body>
@@ -1245,52 +1210,52 @@ function home(msg=""){
 function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
 async function createRoom(){const n=document.getElementById("name").value.trim();if(!n){document.getElementById("err").textContent="اكتب اسم اللاعب أولاً";return}try{await ensureAuth();uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false}}});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
 async function joinRoom(){const n=document.getElementById("name").value.trim(),c=document.getElementById("code").value.trim().toUpperCase();if(!n||!c){document.getElementById("err").textContent="اكتب الاسم وكود الغرفة";return}try{await ensureAuth();uid=auth.currentUser.uid;const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())throw new Error("الغرفة غير موجودة");const r=s.val(),ps=r.players||{};if(r.status!=="lobby"&&!ps[uid])throw new Error("اللعبة بدأت");if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);subscribe(c)}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
-async function handleHostKickRequest(nextRoom){
- const roundReq=nextRoom?.roundRemoveRequests?.[uid];
- const kickReq=nextRoom?.kickRequests?.[uid];
- if((!roundReq&&!kickReq)||processingKickRequest)return false;
- processingKickRequest=true;currentRoom=nextRoom;
+async function handleHostRoundRemoveRequest(nextRoom){
+ const req=nextRoom?.roundRemoveRequests?.[uid];
+ if(!req)return false;
+ currentRoom=nextRoom;
  try{
   const g=nextRoom?.game||{};
-  if(roundReq){
-   if((g.turnOrder||[]).includes(uid)&&["memorize","playing"].includes(g.phase)){
-    await performRoundWithdrawal({automatic:true,hostRemoved:true,reason:"↩️ صاحب الغرفة أخرجك من الجولة فقط"});
-   }
-   try{await remove(ref(db,`rooms/${roomCode}/public/roundRemoveRequests/${uid}`))}catch{}
-   toast("↩️ تم إخراجك من الجولة فقط — أنت الآن متفرج");
-   return false;
+  if((g.turnOrder||[]).includes(uid)&&["memorize","playing"].includes(g.phase)){
+   await performRoundWithdrawal({automatic:true,kicked:true,reason:"🚪 صاحب الغرفة أخرجك من الجولة — أنت الآن متفرج"});
   }
-  if(kickReq){
-   if((g.turnOrder||[]).includes(uid)&&["memorize","playing"].includes(g.phase)){
-    await performRoundWithdrawal({automatic:true,kicked:true,reason:"🚫 صاحب الغرفة أخرجك من الجولة والغرفة"});
-   }
-   try{await remove(ref(db,`rooms/${roomCode}/public/kickRequests/${uid}`))}catch{}
-   try{await remove(ref(db,`rooms/${roomCode}/public/players/${uid}`))}catch{}
-   try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`))}catch{}
-   try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`))}catch{}
-   localStorage.removeItem("sheikh_room");
-   roomCode="";myHand=null;
-   home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");
-   return true;
-  }
-  return false;
- }finally{processingKickRequest=false}
+  try{await remove(ref(db,`rooms/${roomCode}/public/roundRemoveRequests/${uid}`))}catch{}
+  toast("🚪 تم إخراجك من الجولة — أنت الآن متفرج");
+  return true;
+ }catch(e){console.warn("round remove",e);return false}
 }
-function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}const nextRoom=s.val();if(await handleHostKickRequest(nextRoom))return;if(uid&&!nextRoom?.players?.[uid]){localStorage.removeItem("sheikh_room");roomCode="";home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");return}currentRoom=nextRoom;await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()});unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()))}
-
 async function removePlayerFromRound(targetUid){
  if(uid!==currentRoom?.hostId){toast("فقط صاحب الغرفة يقدر يخرج لاعب من الجولة");return}
  if(!targetUid||targetUid===uid){toast("ما تقدر تستخدم هذا الخيار على نفسك");return}
- const target=currentRoom?.players?.[targetUid],g=game();if(!target)return;
- const inRound=(g.turnOrder||[]).includes(targetUid)&&["memorize","playing"].includes(g.phase);
- if(!inRound){toast("هذا اللاعب مو داخل الجولة الحالية");return}
- if(!confirm(`تبي تخرج ${target.name||"اللاعب"} من الجولة فقط؟\nبيصير متفرج داخل الغرفة، وورقة بترجع للميدان والباقي للسحبة.`))return;
- try{
-  await set(ref(db,`rooms/${roomCode}/public/roundRemoveRequests/${targetUid}`),{by:uid,at:Date.now(),name:target.name||"لاعب"});
-  await sendSystem(`↩️ صاحب الغرفة طلب إخراج ${target.name||"لاعب"} من الجولة فقط`);
-  toast(`جاري إخراج ${target.name||"اللاعب"} من الجولة...`);
- }catch(e){toast("تعذر إخراج اللاعب من الجولة")}
+ const g=game(),target=currentRoom?.players?.[targetUid];
+ if(!target||(g.turnOrder||[]).includes(targetUid)===false){toast("اللاعب مو داخل الجولة");return}
+ if(!["memorize","playing"].includes(g.phase)){toast("الإخراج من الجولة متاح أثناء الجولة فقط");return}
+ if(!confirm(`إخراج ${target.name||"اللاعب"} من الجولة فقط؟\nبيبقى داخل الغرفة كمتفرج، ورقة للميدان والباقي للسحبة.`))return;
+ await set(ref(db,`rooms/${roomCode}/public/roundRemoveRequests/${targetUid}`),{by:uid,at:Date.now(),name:target.name||"لاعب"});
+ await sendSystem(`🚪 صاحب الغرفة طلب إخراج ${target.name||"لاعب"} من الجولة فقط`);
+ toast(`جاري إخراج ${target.name||"اللاعب"} من الجولة...`);
 }
+
+async function handleHostKickRequest(nextRoom){
+ const req=nextRoom?.kickRequests?.[uid];
+ if(!req||processingKickRequest)return false;
+ processingKickRequest=true;currentRoom=nextRoom;
+ try{
+  const g=nextRoom?.game||{};
+  if((g.turnOrder||[]).includes(uid)&&["memorize","playing"].includes(g.phase)){
+   await performRoundWithdrawal({automatic:true,kicked:true,reason:"🚫 صاحب الغرفة أخرجك من الجولة والغرفة"});
+  }
+  try{await remove(ref(db,`rooms/${roomCode}/public/kickRequests/${uid}`))}catch{}
+  try{await remove(ref(db,`rooms/${roomCode}/public/players/${uid}`))}catch{}
+  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`))}catch{}
+  try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${uid}`))}catch{}
+  localStorage.removeItem("sheikh_room");
+  roomCode="";myHand=null;
+  home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");
+  return true;
+ }finally{processingKickRequest=false}
+}
+function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}const nextRoom=s.val();await handleHostRoundRemoveRequest(nextRoom);if(await handleHostKickRequest(nextRoom))return;if(uid&&!nextRoom?.players?.[uid]){localStorage.removeItem("sheikh_room");roomCode="";home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");return}currentRoom=nextRoom;await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()});unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()))}
 
 async function kickPlayer(targetUid){
  if(uid!==currentRoom?.hostId){toast("فقط صاحب الغرفة يقدر يطلع لاعب");return}
@@ -1644,7 +1609,7 @@ async function maybeFinishReveal(){
  }catch(e){console.warn("finish reveal",e)}finally{revealFinalizing=false}
 }
 
-async function performRoundWithdrawal({automatic=false,reason="",kicked=false,hostRemoved=false}={}){
+async function performRoundWithdrawal({automatic=false,reason="",kicked=false}={}){
  const g=game();
  if(!isActivePlayer()||!["memorize","playing"].includes(g.phase))return false;
  if(!automatic&&!confirm("تأكيد الانسحاب؟ ورقة واحدة بترجع للميدان وباقي أوراقك بترجع لرزمة السحب، وبتكمل كمتفرج."))return false;
@@ -1679,7 +1644,7 @@ async function performRoundWithdrawal({automatic=false,reason="",kicked=false,ho
   if(state.timeoutMisses)delete state.timeoutMisses[myUid];
   if(state.decisionUid===myUid){state.decisionUid=null;state.decisionUntil=null}
   state.swapRequest=null;state.jackSwap=null;state.hasDrawn=null;state.timeoutClaim=null;
-  state.lastAction=hostRemoved?`${myLabel} أُخرج من الجولة بواسطة المضيف — ورقة للميدان والباقي لرزمة السحب`:automatic?`${myLabel} خرج تلقائياً بعد 4 مرات بدون لعب — ورقة للميدان والباقي لرزمة السحب`:`${myLabel} انسحب من الجولة — ورقة للميدان والباقي لرزمة السحب`;
+  state.lastAction=automatic?`${myLabel} خرج تلقائياً بعد 4 مرات بدون لعب — ورقة للميدان والباقي لرزمة السحب`:`${myLabel} انسحب من الجولة — ورقة للميدان والباقي لرزمة السحب`;
   state.turnStartedAt=Date.now();state.turnSeq=Number(state.turnSeq||0)+1;
   if(nextOrder.length<=1){state.phase="reveal";state.ending=true;state.decisionUid=null;state.decisionUntil=null}
   return state;
@@ -1687,11 +1652,8 @@ async function performRoundWithdrawal({automatic=false,reason="",kicked=false,ho
  await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{role:"spectator",cardCount:0,ready:true,introDone:true,introStarted:false});
  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
  if(kicked){
-  await sendSystem(`🚫 صاحب الغرفة أخرج ${myName} من الجولة والغرفة — ورقة رجعت للميدان والباقي لرزمة السحب`);
-  toast(reason||"🚫 تم إخراجك من الجولة والغرفة بواسطة صاحب الغرفة");
- }else if(hostRemoved){
-  await sendSystem(`↩️ صاحب الغرفة أخرج ${myName} من الجولة فقط — صار متفرج، وورقة رجعت للميدان والباقي لرزمة السحب`);
-  toast(reason||"↩️ تم إخراجك من الجولة فقط — أنت الآن متفرج");
+  await sendSystem(`🚫 صاحب الغرفة أخرج ${myName} من الجولة — ورقة رجعت للميدان والباقي لرزمة السحب`);
+  toast(reason||"🚫 تم إخراجك من الجولة بواسطة صاحب الغرفة");
  }else if(automatic){
   await sendSystem(`🚫 ${myName} خرج تلقائياً من الجولة بعد 4 مرات بدون لعب — ورقة رجعت للميدان والباقي لرزمة السحب`);
   toast(reason||"🚫 تم إخراجك من الجولة بعد 4 مرات بدون لعب");
@@ -1714,8 +1676,8 @@ function renderLobby(){
    const [id,p]=item,selected=i<Math.min(4,ps.length),initial=host?selected:true;
    return `<label class="lobbySeat s${i} ${initial?'active':''} seatPick" data-seatwrap="${id}">${host?`<input type="checkbox" data-active="${id}" ${initial?'checked':''}>`:''}<div class="lobbyAvatar">${esc((p.name||'؟').trim().charAt(0)||'؟')}</div><div class="lobbySeatInfo"><strong>${esc(p.name)}${id===currentRoom.hostId?' 👑':''}${id===uid?' • أنت':''}</strong><span class="pickState">${host?'مختار للعب':'في الغرفة'}</span></div></label>`;
  }).join('');
- const playerList=ps.map(([id,p],i)=>`<div class="miniPerson"><span class="miniDot"></span><span>${esc(p.name)}${id===uid?' • أنت':''}</span>${id===currentRoom.hostId?'<span class="crown">👑</span>':''}${host&&id!==uid?`<button class="kickMini" data-kick="${id}" title="إخراج من الغرفة">✕</button>`:''}</div>`).join('');
- const spectatorList=rest.length?rest.map(([id,p])=>`<div class="miniPerson"><span>👀</span><span>${esc(p.name)}</span>${host&&id!==uid?`<button class="kickMini" data-kick="${id}" title="إخراج من الغرفة">✕</button>`:''}</div>`).join(''):`<div class="small center">الباقي يصيرون متفرجين بعد اختيار اللاعبين</div>`;
+ const playerList=ps.map(([id,p],i)=>`<div class="miniPerson"><span class="miniDot"></span><span>${esc(p.name)}${id===uid?' • أنت':''}</span>${id===currentRoom.hostId?'<span class="crown">👑</span>':''}${host&&id!==uid?`<button class="kickMini" data-kick="${id}" title="طرد من الغرفة">✕</button>`:''}</div>`).join('');
+ const spectatorList=rest.length?rest.map(([id,p])=>`<div class="miniPerson"><span>👀</span><span>${esc(p.name)}</span>${host&&id!==uid?`<button class="kickMini" data-kick="${id}" title="طرد من الغرفة">✕</button>`:''}</div>`).join(''):`<div class="small center">الباقي يصيرون متفرجين بعد اختيار اللاعبين</div>`;
  app.innerHTML=`<div class="lobbyScene">
    <div class="lobbyHeader"><div class="lobbyBrand"><span class="lobbyFlag left"></span><span class="lobbyFalcon" aria-hidden="true"></span><div class="lobbyTitlePlaque">شيك شيك</div><span class="lobbyFlag right"></span></div><div class="lobbySubtitle">الشيك • السكور • لعبة المجلس أونلاين</div><div class="lobbyTools">${rulesButtonHtml()}<button id="sfxTop" class="toolBtn" title="الصوت">🔊<small>الصوت</small></button><button id="voiceTop" class="toolBtn" title="المايك">🎙️<small>المايك</small></button><button id="funTop" class="toolBtn" title="التأثيرات">😂<small>التأثيرات</small></button><button id="radioTop" class="toolBtn" title="الإذاعة">📻<small>الإذاعة</small></button><button class="toolBtn" onclick="document.getElementById('chatInput')?.focus()">💬<small>الشات</small></button></div></div>
    <div class="roomCodeBox"><div class="roomCodeLabel">كود الغرفة</div><div class="roomCodeRow"><div class="roomCodeValue">${esc(roomCode)}</div><button id="copy" class="copyMini">📋 نسخ</button></div></div>
@@ -1746,7 +1708,7 @@ function renderGame(){
  }
  const otherIds=active.filter(id=>id!==uid),positions=["top","left","right"],scores=active.map(id=>`<div class="refScoreRow"><span>${esc(currentRoom.players?.[id]?.name||"لاعب")}</span><b>${totals[id]||0}</b></div>`).join("");
  const spectators=playerEntries().filter(([id])=>!active.includes(id));
- const otherSeats=otherIds.map((id,i)=>{const p=currentRoom.players?.[id]||{},n=Math.max(0,p.cardCount||0),backs=Array.from({length:Math.min(n,5)},()=>`<span class="cardBack"></span>`).join("");return `<div class="refSeat ${positions[i]||"top"} ${id===tuid?'turn':''}"><div class="refSeatCards">${backs}</div><div class="refAvatar">${esc((p.name||"ل").trim().charAt(0)||"ل")}</div><div class="refSeatLabel"><b>${esc(p.name||"لاعب")}</b>${n} ورقة${host&&id!==uid?`<span class="hostPlayerTools"><button class="roundOutMini" data-round-out="${id}" title="إخراج من الجولة فقط">↩</button><button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button></span>`:""}</div></div>`}).join("");
+ const otherSeats=otherIds.map((id,i)=>{const p=currentRoom.players?.[id]||{},n=Math.max(0,p.cardCount||0),backs=Array.from({length:Math.min(n,5)},()=>`<span class="cardBack"></span>`).join("");return `<div class="refSeat ${positions[i]||"top"} ${id===tuid?'turn':''}"><div class="refSeatCards">${backs}</div><div class="refAvatar">${esc((p.name||"ل").trim().charAt(0)||"ل")}</div><div class="refSeatLabel"><b>${esc(p.name||"لاعب")}</b>${n} ورقة${host&&id!==uid?`<span class="hostSeatActions"><button class="roundOutMini" data-round-out="${id}" title="إخراج من الجولة فقط">🚪</button><button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button></span>`:""}</div></div>`}).join("");
  const mySeat=isActivePlayer()?`<div class="refSeat bottom ${uid===tuid?'turn':''}"><div class="refAvatar">${esc((myName||"أ").trim().charAt(0)||"أ")}</div><div class="refSeatLabel"><b>${esc(myName)}</b>${countCards(myHand?.cards)} ورقة</div></div>`:"";
  const pending=myHand?.pending,turn=isMyTurn(),memorizing=g.phase==="memorize",deciding=turn&&g.decisionUid===uid&&Number(g.decisionUntil||0)>Date.now();
  const controls=deciding?`<div class="refActions decisionActions"><div class="notice good" style="max-width:280px"><b>خلصت لعبك</b><br>عندك 5 ثواني: شيك أو مرّر الدور.</div><button id="check" class="btn green" ${!g.ending?'':'disabled'}>✓ شيك</button><button id="passTurn" class="btn alt">تمرير الدور ▶</button></div>`:pending?`<div class="refActions">${myHand?.pendingSource==="deck"&&pending?.r==="J"&&isRed(pending)?`<button id="useJack" class="btn blue">J تبديل</button>`:""}${myHand?.pendingSource==="deck"&&pending?.r==="Q"&&isRed(pending)?`<button id="useQ" class="btn blue">Q كشف</button>`:""}${myHand?.pendingSource==="deck"&&pending?.r==="K"&&isRed(pending)?`<button id="useK" class="btn blue">K سحب 2</button>`:""}${myHand?.pendingSource!=="field"?(pending?.r==="JOKER"?`<div class="notice" style="max-width:260px">🃏 احتفظ بالجوكر: اختر «بدّل بهذي» تحت إحدى أوراقك.</div>`:`<button id="throw" class="btn danger">رمي الورقة</button>`):""}</div>`:`<div class="refActions"><button id="check" class="btn green" ${turn&&!g.ending&&!memorizing?'':'disabled'}>✓ شيك</button><button id="playHand" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>رمي ورقة</button><button id="takeField" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>أخذ الميدان</button><button id="draw" class="btn danger" ${turn&&!memorizing?'':'disabled'}>سحب ورقة</button></div>`;
@@ -1814,7 +1776,7 @@ function showRulesModal(){
     <li><b>الجوكر:</b> يبقى بين أوراقك حتى نهاية الجولة. الأسود يلغي أعلى ورقة عند الحساب، والملون يلغي أعلى ورقتين. أكثر من جوكر تتجمع قوتهم.</li>
     <li><b>القوى الخاصة:</b> قوة J/Q/K الأحمر تعمل فقط إذا انْسحبت الورقة من الرزمة، وليس إذا أخذتها من الميدان.</li>
     <li><b>إذا خلصت الرزمة:</b> تُخلط أوراق الميدان القديمة وتعود كرزمة سحب جديدة، وأوراق اللاعبين ما تتغير.</li>
-    <li><b>شيك:</b> تبدأ نهاية الجولة حسب نظام اللعبة، ثم تُكشف الأوراق وتُحسب النقاط.</li><li><b>تحكم صاحب الغرفة:</b> يقدر يخرج لاعب من الجولة فقط فيصير متفرج، أو يطرده من الغرفة بالكامل. عند خروج لاعب أثناء الجولة تنزل ورقة للميدان والباقي يرجع لرزمة السحب.</li>
+    <li><b>شيك:</b> تبدأ نهاية الجولة حسب نظام اللعبة، ثم تُكشف الأوراق وتُحسب النقاط.</li>
    </ol>
    <div class="rulesSpecial"><b>🔢 حساب النقاط:</b><br>A = 1 • من 2 إلى 9 بقيمتها • 10 الأحمر = 0 • 10 الأسود = 10 • J / Q / K = 10 • الجوكر = 0 مع تطبيق قوة الإلغاء.</div>
  </div>`;
