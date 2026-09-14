@@ -1,10 +1,7 @@
 // شيك شيك - نظام المايك المستقل
-// مبني على نسخة المايك التي كانت تعمل في "تجربة المايك.html"
-
+// لا تعدّل هذا الملف إلا إذا كان التعديل خاصاً بالمايك/WebRTC.
 (function(){
-
   function createVoiceController(o){
-
     const {
       db, ref, get, set, update, push, remove,
       getRoomCode, getUid, getName, getCurrentRoom,
@@ -12,25 +9,17 @@
       onStateChange, onUiRefresh
     } = o;
 
-    let voiceActive = false;
-    let voiceStarting = false;
-    let voiceMuted = false;
-
-    let localVoiceStream = null;
-    let voiceSyncBusy = false;
-    let voiceSessionId = "";
-    let voiceSyncTimer = null;
-
-    const voicePeers = new Map();
+    let voiceActive=false, voiceStarting=false, voiceMuted=false;
+    let localVoiceStream=null, voiceSyncBusy=false, voiceSessionId="", voiceSyncTimer=null;
+    const voicePeers=new Map();
 
     function publishState(){
       onStateChange?.({
-        active: voiceActive,
-        starting: voiceStarting,
-        muted: voiceMuted,
-        remoteCount: voiceRemoteCount()
+        active:voiceActive,
+        starting:voiceStarting,
+        muted:voiceMuted,
+        remoteCount:voiceRemoteCount()
       });
-
       onUiRefresh?.();
     }
 
@@ -39,79 +28,57 @@
     }
 
     function voiceRemoteCount(){
-      let n = 0;
-
+      let n=0;
       for(const pc of voicePeers.values()){
-        if(pc.connectionState === "connected"){
-          n++;
-        }
+        if(pc.connectionState==="connected") n++;
       }
-
       return n;
     }
 
-    function isActive(){
-      return voiceActive;
-    }
-
-    function isStarting(){
-      return voiceStarting;
-    }
-
-    function isMuted(){
-      return voiceMuted;
-    }
+    function isActive(){ return voiceActive; }
+    function isStarting(){ return voiceStarting; }
+    function isMuted(){ return voiceMuted; }
 
     async function clearMyVoiceSignals(){
-
       try{
+        const currentRoom=getCurrentRoom();
+        const uid=getUid();
+        const roomCode=getRoomCode();
 
-        const currentRoom = getCurrentRoom();
-        const uid = getUid();
-        const roomCode = getRoomCode();
-
-        const players =
-          Object.keys(currentRoom?.players || {})
-          .filter(id => id !== uid);
+        const players=Object.keys(currentRoom?.players||{})
+          .filter(id=>id!==uid);
 
         await Promise.all(
-
-          players.map(other =>
-
+          players.map(other=>
             remove(
               ref(
                 db,
                 `rooms/${roomCode}/public/voiceSignals/${pairIdFor(uid,other)}`
               )
             ).catch(()=>{})
-
           )
-
         );
-
       }catch{}
-
     }
 
     async function start(){
-
-      if(voiceActive || voiceStarting){
-
+      if(voiceActive||voiceStarting){
         toast(
           voiceActive
             ? "المايك شغال بالفعل"
             : "جاري فتح المايك..."
         );
-
         return;
       }
 
-      voiceStarting = true;
+      try{
+        stopRadio?.(false);
+      }catch{}
 
+      voiceStarting=true;
       publishState();
 
       try{
-
         if(!window.isSecureContext){
           throw new Error("المايك يحتاج HTTPS");
         }
@@ -120,65 +87,42 @@
           throw new Error("المتصفح لا يدعم المايك");
         }
 
-        // وقف الراديو قبل فتح المايك
-        try{
-          stopRadio?.(false);
-        }catch{}
-
-        // مهم جداً للآيفون
-        // نفس طريقة النسخة التي كانت تعمل
+        // مهم للآيفون / Safari
+        // نقفل WebAudio بالكامل قبل طلب المايك
         await releaseWebAudio?.();
 
         await sleep(250);
 
-        localVoiceStream =
+        localVoiceStream=
           await navigator.mediaDevices.getUserMedia({
-
             audio:{
               echoCancellation:true,
               noiseSuppression:true,
               autoGainControl:true
             },
-
             video:false
-
           });
 
-        const tracks =
-          localVoiceStream.getAudioTracks();
+        const tracks=localVoiceStream.getAudioTracks();
 
         if(!tracks.length){
-
-          throw new Error(
-            "لم يتم العثور على مايك"
-          );
-
+          throw new Error("لم يتم العثور على مايك");
         }
 
-        tracks.forEach(
-          t => t.enabled = true
-        );
+        tracks.forEach(t=>t.enabled=true);
 
-        const uid = getUid();
-        const roomCode = getRoomCode();
-        const myName = getName();
+        const uid=getUid();
+        const roomCode=getRoomCode();
+        const myName=getName();
 
-        voiceSessionId =
-          uid + "_" + Date.now();
+        voiceSessionId=uid+"_"+Date.now();
 
-        voiceActive = true;
-        voiceStarting = false;
-        voiceMuted = false;
+        voiceActive=true;
+        voiceStarting=false;
+        voiceMuted=false;
 
-        for(
-          const pc
-          of voicePeers.values()
-        ){
-
-          try{
-            pc.close();
-          }catch{}
-
+        for(const pc of voicePeers.values()){
+          try{ pc.close(); }catch{}
         }
 
         voicePeers.clear();
@@ -186,46 +130,29 @@
         await clearMyVoiceSignals();
 
         await update(
-
           ref(
             db,
             `rooms/${roomCode}/public/voiceUsers/${uid}`
           ),
-
           {
-            name: myName,
-            active: true,
-            muted: false,
-            session: voiceSessionId,
-            ts: Date.now()
+            name:myName,
+            active:true,
+            muted:false,
+            session:voiceSessionId,
+            ts:Date.now()
           }
-
         );
 
         publishState();
 
-        setTimeout(
-          ()=>sync(),
-          150
-        );
+        setTimeout(()=>sync(),150);
+        setTimeout(()=>sync(),900);
 
-        setTimeout(
-          ()=>sync(),
-          900
-        );
+        clearInterval(voiceSyncTimer);
 
-        clearInterval(
-          voiceSyncTimer
-        );
-
-        voiceSyncTimer =
-          setInterval(()=>{
-
-            if(voiceActive){
-              sync();
-            }
-
-          },1000);
+        voiceSyncTimer=setInterval(()=>{
+          if(voiceActive) sync();
+        },1000);
 
         toast(
           "🎙️ المايك مفتوح — المؤثرات تتوقف أثناء المحادثة"
@@ -233,92 +160,57 @@
 
       }catch(e){
 
-        voiceStarting = false;
-        voiceActive = false;
-        voiceSessionId = "";
+        voiceStarting=false;
+        voiceActive=false;
+        voiceSessionId="";
 
         if(localVoiceStream){
-
-          for(
-            const t
-            of localVoiceStream.getTracks()
-          ){
-
-            try{
-              t.stop();
-            }catch{}
-
+          for(const t of localVoiceStream.getTracks()){
+            try{ t.stop(); }catch{}
           }
-
-          localVoiceStream = null;
-
+          localVoiceStream=null;
         }
 
         publishState();
 
-        const raw =
-          String(e?.message || "");
+        const raw=String(e?.message||"");
 
-        let msg =
-          e?.name === "NotAllowedError"
-
-          ? "اسمح للمايك من إعدادات Safari للموقع"
-
-          : e?.name === "NotFoundError"
-
-          ? "ما حصلت مايك في الجهاز"
-
-          : "تعذر تشغيل المايك";
+        let msg=
+          e?.name==="NotAllowedError"
+            ? "اسمح للمايك من إعدادات Safari للموقع"
+            : e?.name==="NotFoundError"
+              ? "ما حصلت مايك في الجهاز"
+              : "تعذر تشغيل المايك";
 
         if(raw){
-          msg += " — " + raw;
+          msg+=" — "+raw;
         }
 
         toast(msg);
-
       }
-
     }
 
     async function toggleMute(){
+      if(!voiceActive||!localVoiceStream) return;
 
-      if(
-        !voiceActive ||
-        !localVoiceStream
-      ){
-        return;
-      }
+      voiceMuted=!voiceMuted;
 
-      voiceMuted =
-        !voiceMuted;
-
-      for(
-        const t
-        of localVoiceStream.getAudioTracks()
-      ){
-
-        t.enabled =
-          !voiceMuted;
-
+      for(const t of localVoiceStream.getAudioTracks()){
+        t.enabled=!voiceMuted;
       }
 
       try{
-
         await update(
-
           ref(
             db,
             `rooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
           ),
-
           {
-            muted: voiceMuted,
-            active: true,
-            ts: Date.now()
+            muted:voiceMuted,
+            active:true,
+            ts:Date.now()
           }
-
         );
-
       }catch{}
 
       publishState();
@@ -328,63 +220,35 @@
           ? "تم كتم المايك"
           : "تم فتح المايك"
       );
-
     }
 
-    async function stop(
-      removeState = true
-    ){
+    async function stop(removeState=true){
+      const was=voiceActive;
 
-      const was =
-        voiceActive;
+      voiceActive=false;
+      voiceStarting=false;
+      voiceMuted=false;
 
-      voiceActive = false;
-      voiceStarting = false;
-      voiceMuted = false;
-
-      clearInterval(
-        voiceSyncTimer
-      );
-
-      voiceSyncTimer = null;
+      clearInterval(voiceSyncTimer);
+      voiceSyncTimer=null;
 
       if(localVoiceStream){
-
-        for(
-          const t
-          of localVoiceStream.getTracks()
-        ){
-
-          try{
-            t.stop();
-          }catch{}
-
+        for(const t of localVoiceStream.getTracks()){
+          try{ t.stop(); }catch{}
         }
-
-        localVoiceStream = null;
-
+        localVoiceStream=null;
       }
 
-      for(
-        const pc
-        of voicePeers.values()
-      ){
-
-        try{
-          pc.close();
-        }catch{}
-
+      for(const pc of voicePeers.values()){
+        try{ pc.close(); }catch{}
       }
 
       voicePeers.clear();
 
-      const box =
-        document.getElementById(
-          "voiceAudios"
-        );
+      const box=document.getElementById("voiceAudios");
 
       if(box){
-        box.innerHTML = "";
+        box.innerHTML="";
       }
 
       if(
@@ -392,258 +256,146 @@
         getRoomCode() &&
         getUid()
       ){
-
         try{
-
           await remove(
-
             ref(
               db,
               `rooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
             )
-
           );
 
           await clearMyVoiceSignals();
 
         }catch{}
-
       }
 
-      voiceSessionId = "";
+      voiceSessionId="";
 
       publishState();
 
-      if(
-        was &&
-        removeState
-      ){
-
+      if(was&&removeState){
         toast(
           "تم إيقاف الصوت المباشر — اضغط اختبار الصوت لتشغيل المؤثرات 🔊"
         );
-
       }
-
     }
 
-    function attachRemoteAudio(
-      otherUid,
-      stream
-    ){
+    function attachRemoteAudio(otherUid,stream){
+      const box=document.getElementById("voiceAudios");
 
-      const box =
-        document.getElementById(
-          "voiceAudios"
-        );
+      if(!box) return;
 
-      if(!box){
-        return;
-      }
-
-      let a =
-        document.getElementById(
-          "voice_" + otherUid
-        );
+      let a=document.getElementById(
+        "voice_"+otherUid
+      );
 
       if(!a){
-
-        a =
-          document.createElement(
-            "audio"
-          );
-
-        a.id =
-          "voice_" + otherUid;
-
-        a.autoplay = true;
-
-        a.playsInline = true;
-
+        a=document.createElement("audio");
+        a.id="voice_"+otherUid;
+        a.autoplay=true;
+        a.playsInline=true;
         box.appendChild(a);
-
       }
 
-      a.srcObject =
-        stream;
+      a.srcObject=stream;
+      a.muted=false;
+      a.volume=1;
 
-      a.muted =
-        false;
-
-      a.volume =
-        1;
-
-      const p =
-        a.play();
+      const p=a.play();
 
       if(p?.catch){
-
         p.catch(()=>{
-
           toast(
             "اضغط تشغيل المايك مرة ثانية لتفعيل صوت اللاعبين"
           );
-
         });
-
       }
-
     }
 
-    async function makePeer(
-      otherUid
-    ){
-
+    async function makePeer(otherUid){
       if(
         voicePeers.has(otherUid) ||
         !localVoiceStream
       ){
-
-        return voicePeers.get(
-          otherUid
-        );
-
+        return voicePeers.get(otherUid);
       }
 
-      const uid =
-        getUid();
+      const uid=getUid();
+      const roomCode=getRoomCode();
 
-      const roomCode =
-        getRoomCode();
+      const pc=new RTCPeerConnection({
+        iceServers:[
+          {
+            urls:[
+              "stun:stun.l.google.com:19302",
+              "stun:stun1.l.google.com:19302",
+              "stun:stun2.l.google.com:19302",
+              "stun:stun.cloudflare.com:3478"
+            ]
+          }
+        ],
+        iceCandidatePoolSize:10
+      });
 
-      const pc =
-        new RTCPeerConnection({
+      voicePeers.set(otherUid,pc);
 
-          iceServers:[
+      pc._addedRemoteIce=new Set();
 
-            {
-
-              urls:[
-
-                "stun:stun.l.google.com:19302",
-
-                "stun:stun1.l.google.com:19302",
-
-                "stun:stun2.l.google.com:19302",
-
-                "stun:stun.cloudflare.com:3478"
-
-              ]
-
-            }
-
-          ],
-
-          iceCandidatePoolSize:10
-
-        });
-
-      voicePeers.set(
-        otherUid,
-        pc
-      );
-
-      pc._addedRemoteIce =
-        new Set();
-
-      for(
-        const t
-        of localVoiceStream.getTracks()
-      ){
-
+      for(const t of localVoiceStream.getTracks()){
         pc.addTrack(
           t,
           localVoiceStream
         );
-
       }
 
-      pc.ontrack =
-        e => {
+      pc.ontrack=e=>{
+        const st=
+          e.streams?.[0] ||
+          new MediaStream([e.track]);
 
-          const st =
-            e.streams?.[0] ||
-            new MediaStream(
-              [e.track]
+        attachRemoteAudio(
+          otherUid,
+          st
+        );
+      };
+
+      pc.onicecandidate=e=>{
+        if(e.candidate){
+          try{
+            set(
+              push(
+                ref(
+                  db,
+                  `rooms/${roomCode}/public/voiceSignals/${pairIdFor(uid,otherUid)}/candidates/${uid}`
+                )
+              ),
+              e.candidate.toJSON()
             );
+          }catch{}
+        }
+      };
 
-          attachRemoteAudio(
-            otherUid,
-            st
-          );
+      pc.onconnectionstatechange=()=>{
+        publishState();
 
-        };
+        if(
+          ["failed","closed","disconnected"]
+          .includes(pc.connectionState)
+        ){
+          try{ pc.close(); }catch{}
 
-      pc.onicecandidate =
-        e => {
+          voicePeers.delete(otherUid);
 
-          if(e.candidate){
-
-            try{
-
-              set(
-
-                push(
-
-                  ref(
-                    db,
-                    `rooms/${roomCode}/public/voiceSignals/${pairIdFor(uid,otherUid)}/candidates/${uid}`
-                  )
-
-                ),
-
-                e.candidate.toJSON()
-
-              );
-
-            }catch{}
-
-          }
-
-        };
-
-      pc.onconnectionstatechange =
-        ()=>{
-
-          publishState();
-
-          if(
-
-            [
-              "failed",
-              "closed",
-              "disconnected"
-            ]
-
-            .includes(
-              pc.connectionState
-            )
-
-          ){
-
-            try{
-              pc.close();
-            }catch{}
-
-            voicePeers.delete(
-              otherUid
+          if(voiceActive){
+            setTimeout(
+              ()=>sync(),
+              900
             );
-
-            if(voiceActive){
-
-              setTimeout(
-                ()=>sync(),
-                900
-              );
-
-            }
-
           }
-
-        };
+        }
+      };
 
       return pc;
-
     }
 
     async function addRemoteIce(
@@ -651,27 +403,21 @@
       pair,
       otherUid
     ){
-
       try{
-
-        const snap =
+        const snap=
           await get(
-
             ref(
               db,
               `rooms/${getRoomCode()}/public/voiceSignals/${pair}/candidates/${otherUid}`
             )
-
           );
 
-        const all =
-          snap.val() || {};
+        const all=snap.val()||{};
 
         for(
           const [k,c]
           of Object.entries(all)
         ){
-
           if(
             pc._addedRemoteIce?.has(k)
           ){
@@ -679,7 +425,6 @@
           }
 
           try{
-
             await pc.addIceCandidate(
               new RTCIceCandidate(c)
             );
@@ -687,16 +432,13 @@
             pc._addedRemoteIce?.add(k);
 
           }catch{}
-
         }
 
       }catch{}
-
     }
 
     async function sync(){
-
-      const currentRoom =
+      const currentRoom=
         getCurrentRoom();
 
       if(
@@ -705,106 +447,75 @@
         !currentRoom ||
         voiceSyncBusy
       ){
-
         return;
-
       }
 
-      voiceSyncBusy =
-        true;
+      voiceSyncBusy=true;
 
       try{
+        const uid=getUid();
+        const roomCode=getRoomCode();
 
-        const uid =
-          getUid();
+        const vu=
+          currentRoom.voiceUsers||{};
 
-        const roomCode =
-          getRoomCode();
-
-        const vu =
-          currentRoom.voiceUsers || {};
-
-        const players =
+        const players=
           Object.keys(vu)
-          .filter(
-            id =>
-              id !== uid &&
+            .filter(id=>
+              id!==uid &&
               vu[id]?.active
-          );
-
-        for(
-          const otherUid
-          of players
-        ){
-
-          let pc =
-            await makePeer(
-              otherUid
             );
 
-          if(!pc){
-            continue;
-          }
+        for(const otherUid of players){
 
-          const pair =
+          let pc=
+            await makePeer(otherUid);
+
+          if(!pc) continue;
+
+          const pair=
             pairIdFor(
               uid,
               otherUid
             );
 
-          const sig =
-            currentRoom
-            .voiceSignals?.[pair]
+          const sig=
+            currentRoom.voiceSignals?.[pair]
             || {};
 
-          const initiator =
-            uid < otherUid;
+          const initiator=
+            uid<otherUid;
 
           if(initiator){
 
-            const liveOffer =
+            const liveOffer=
               (
                 await get(
-
                   ref(
                     db,
                     `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
                   )
-
                 )
               ).val();
 
             if(
-
               (
                 !liveOffer ||
-                liveOffer.session !==
-                voiceSessionId
-              )
-
-              &&
-
-              pc.signalingState ===
-              "stable"
-
+                liveOffer.session!==voiceSessionId
+              ) &&
+              pc.signalingState==="stable"
             ){
-
               await remove(
-
                 ref(
                   db,
                   `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
                 )
-
               ).catch(()=>{});
 
-              const offer =
+              const offer=
                 await pc.createOffer({
-
                   offerToReceiveAudio:true,
-
                   iceRestart:true
-
                 });
 
               await pc.setLocalDescription(
@@ -812,72 +523,41 @@
               );
 
               await set(
-
                 ref(
                   db,
                   `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
                 ),
-
                 {
-
-                  type:
-                    pc.localDescription.type,
-
-                  sdp:
-                    pc.localDescription.sdp,
-
-                  from:
-                    uid,
-
-                  session:
-                    voiceSessionId,
-
-                  ts:
-                    Date.now()
-
+                  type:pc.localDescription.type,
+                  sdp:pc.localDescription.sdp,
+                  from:uid,
+                  session:voiceSessionId,
+                  ts:Date.now()
                 }
-
               );
-
             }
 
-            const latest =
+            const latest=
               (
                 await get(
-
                   ref(
                     db,
                     `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
                   )
-
                 )
               ).val();
 
             if(
-
               latest?.sdp &&
-
-              latest.session ===
-              voiceSessionId &&
-
+              latest.session===voiceSessionId &&
               !pc.currentRemoteDescription
-
             ){
-
               await pc.setRemoteDescription(
-
                 new RTCSessionDescription({
-
-                  type:
-                    latest.type,
-
-                  sdp:
-                    latest.sdp
-
+                  type:latest.type,
+                  sdp:latest.sdp
                 })
-
               );
-
             }
 
             await addRemoteIce(
@@ -888,44 +568,29 @@
 
           }else{
 
-            const offer =
-
+            const offer=
               sig.offer ||
-
               (
                 await get(
-
                   ref(
                     db,
                     `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
                   )
-
                 )
               ).val();
 
             if(
-
               offer?.sdp &&
-
               !pc.currentRemoteDescription
-
             ){
-
               await pc.setRemoteDescription(
-
                 new RTCSessionDescription({
-
-                  type:
-                    offer.type,
-
-                  sdp:
-                    offer.sdp
-
+                  type:offer.type,
+                  sdp:offer.sdp
                 })
-
               );
 
-              const ans =
+              const ans=
                 await pc.createAnswer();
 
               await pc.setLocalDescription(
@@ -933,33 +598,18 @@
               );
 
               await set(
-
                 ref(
                   db,
                   `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
                 ),
-
                 {
-
-                  type:
-                    pc.localDescription.type,
-
-                  sdp:
-                    pc.localDescription.sdp,
-
-                  from:
-                    uid,
-
-                  session:
-                    offer.session || "",
-
-                  ts:
-                    Date.now()
-
+                  type:pc.localDescription.type,
+                  sdp:pc.localDescription.sdp,
+                  from:uid,
+                  session:offer.session||"",
+                  ts:Date.now()
                 }
-
               );
-
             }
 
             await addRemoteIce(
@@ -967,54 +617,34 @@
               pair,
               otherUid
             );
-
           }
-
         }
 
       }catch(e){
-
         console.warn(
           "voice sync",
           e
         );
 
       }finally{
-
-        voiceSyncBusy =
-          false;
-
+        voiceSyncBusy=false;
         publishState();
-
       }
-
     }
 
     return {
-
       start,
-
       stop,
-
       toggleMute,
-
       sync,
-
-      remoteCount:
-        voiceRemoteCount,
-
+      remoteCount:voiceRemoteCount,
       isActive,
-
       isStarting,
-
       isMuted
-
     };
-
   }
 
-  window.SheikhVoice = {
+  window.SheikhVoice={
     createVoiceController
   };
-
 })();
