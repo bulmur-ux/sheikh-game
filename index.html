@@ -574,7 +574,7 @@ let uid=null,roomCode=localStorage.getItem("sheikh_room")||"",myName=localStorag
 let unsubRoom=null,unsubChat=null,unsubHand=null,unsubFunny=null,latestChat={},localRevealUntil={},pendingStartTimer=null,processingSwap=false,processingJack=false;
 let voiceActive=false,voiceStarting=false,voiceMuted=false;
 let voiceController=null;
-let turnCountdownTimer=null,handlingTurnTimeout=false;
+let turnCountdownTimer=null,handlingTurnTimeout=false,revealFinalizing=false;
 let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null,audioUnlocked=false;
 let funnyAudio=null,lastFunnyEventId="",funnyEventPrimed=false,lastFunnySendAt=0,funnySubscribeAt=0;
 const FALLBACK_FUN_SOUNDS={
@@ -808,7 +808,7 @@ async function autoGameWork(){
  }
  if(g.phase==="dealing"&&uid===currentRoom.hostId){
   const ps=activePlayerEntries();
-  if(ps.length&&ps.every(([id,p])=>p.ready&&p.cardCount===4)){
+  if(ps.length&&ps.every(([id,p])=>g.dealt?.[id]&&p.ready&&Number(p.cardCount)===4)){
    await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"memorize",turnIndex:0});
    await sendSystem("كل لاعب يضغط ابدأ ليشوف أول ورقتين 10 ثواني");
   }
@@ -829,8 +829,9 @@ async function autoGameWork(){
  if(g.jackSwap)await processJackSwap(g.jackSwap);
  if(g.phase==="reveal"&&isActivePlayer()&&myHand&&!currentRoom.reveals?.[uid]){
   const cards=myHand.cards||[];
-  await set(ref(db,`rooms/${roomCode}/public/reveals/${uid}`),{name:myName,cards,score:scoreHand(cards),submittedAt:Date.now()});
+  await set(ref(db,`rooms/${roomCode}/public/reveals/${uid}`),{name:myName,cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)});
  }
+ if(g.phase==="reveal")setTimeout(maybeFinishReveal,80);
 }
 async function claimInitialHand(){
  let claimed=null;
@@ -1071,7 +1072,38 @@ async function handleTurnTimeout(){
  }catch(e){console.warn("turn timeout",e)}finally{handlingTurnTimeout=false}
 }
 
-async function maybeFinishReveal(){if(game().phase!=="reveal")return;const g=game(),order=g.turnOrder||[],rev=currentRoom.reveals||{};if(order.length&&order.every(id=>rev[id]&&Array.isArray(rev[id].cards))){const scores={},totals={...(g.cumulativeScores||{})};for(const id of order){const cards=rev[id]?.cards||[],roundScore=id===g.emptyWinner?0:scoreHand(cards);scores[id]={name:currentRoom.players?.[id]?.name||rev[id]?.name||"لاعب",score:roundScore,cards};totals[id]=(Number(totals[id])||0)+roundScore}await update(ref(db,`rooms/${roomCode}/public/game`),{results:scores,cumulativeScores:totals,phase:"finished",finishedAt:Date.now()});sfx("reveal")}}
+async function maybeFinishReveal(){
+ if(revealFinalizing||game().phase!=="reveal"||!roomCode)return;
+ revealFinalizing=true;
+ try{
+  const [gameSnap,revealSnap,playersSnap]=await Promise.all([
+   get(ref(db,`rooms/${roomCode}/public/game`)),
+   get(ref(db,`rooms/${roomCode}/public/reveals`)),
+   get(ref(db,`rooms/${roomCode}/public/players`))
+  ]);
+  const g=gameSnap.val()||{};
+  if(g.phase!=="reveal")return;
+  const rev=revealSnap.val()||{},players=playersSnap.val()||{};
+  const order=(Array.isArray(g.turnOrder)?g.turnOrder:[]).filter(id=>players?.[id]?.role!=="spectator");
+  if(!order.length)return;
+  const missing=order.filter(id=>!rev[id]);
+  if(missing.length)return;
+  const scores={},totals={...(g.cumulativeScores||{})};
+  for(const id of order){
+   const cards=Array.isArray(rev[id]?.cards)?rev[id].cards:[];
+   const roundScore=id===g.emptyWinner?0:Number.isFinite(Number(rev[id]?.score))?Number(rev[id].score):scoreHand(cards);
+   scores[id]={name:players?.[id]?.name||rev[id]?.name||"لاعب",score:roundScore,cards};
+   totals[id]=(Number(totals[id])||0)+roundScore;
+  }
+  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public/game`),state=>{
+   if(!state||state.phase!=="reveal")return;
+   state.results=scores;state.cumulativeScores=totals;state.phase="finished";state.finishedAt=Date.now();
+   state.turnStartedAt=0;state.timeoutClaim=null;state.decisionUid=null;state.decisionUntil=null;
+   return state;
+  });
+  if(tx.committed)sfx("reveal");
+ }catch(e){console.warn("finish reveal",e)}finally{revealFinalizing=false}
+}
 
 async function performRoundWithdrawal({automatic=false,reason=""}={}){
  const g=game();
