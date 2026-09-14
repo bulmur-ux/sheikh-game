@@ -866,6 +866,88 @@ body:has(.lobbyShell) #app{margin:0!important}
   .refIntro{height:79px!important}.refActions .btn{min-height:35px!important;font-size:9px!important}
 }
 </style>
+
+<style id="landscape-final-structure-v9">
+/* FINAL LANDSCAPE STRUCTURE — presentation only. Keep approved background/card art. */
+@media (orientation:landscape) and (min-width:650px) and (max-height:520px){
+  body:has(.refGameShell){overflow:hidden!important;background:#120806!important}
+  .refGameShell{height:100dvh!important;min-height:100dvh!important;overflow:hidden!important}
+
+  /* title centered, compact */
+  .refBrand{top:3px!important;left:50%!important;transform:translateX(-50%)!important;width:auto!important;z-index:80!important}
+  .refTitle{font-size:21px!important;padding:4px 30px!important;white-space:nowrap!important}
+  .refUaeFlag{width:42px!important;height:25px!important}
+  .refFalcon{display:none!important}
+
+  /* LEFT: score then spectators */
+  .refLeftTop{left:7px!important;top:7px!important;width:150px!important;padding:6px!important;border-radius:12px!important}
+  .refLeftBottom{left:7px!important;top:132px!important;bottom:7px!important;width:150px!important;max-height:none!important;padding:7px!important;overflow:auto!important;border-radius:12px!important}
+  .refRoundGrid{gap:4px!important}.refStat{padding:4px!important}.refStat b{font-size:8px!important}.refStat strong{font-size:13px!important}
+  .refScoreList{font-size:8px!important;line-height:1.35!important}.refSpectatorTitle{font-size:10px!important}.refSpectatorRow{font-size:9px!important;padding:5px 1px!important}
+
+  /* TOP-RIGHT: every media tool is its own button */
+  .refRightTop{right:7px!important;top:7px!important;width:252px!important;padding:5px!important;border-radius:12px!important;background:rgba(10,7,5,.93)!important}
+  .refTopTools{display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:4px!important;margin:0!important}
+  .refTopTools button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;min-width:0!important;height:42px!important;padding:3px 1px!important;border:1px solid #b98731!important;border-radius:9px!important;background:#17100c!important;color:#fff!important;font-size:15px!important}
+  .refTopTools button small{display:block!important;font-size:6.5px!important;line-height:1!important;margin-top:2px!important;white-space:nowrap!important}
+  .refRightTop .refRulesTitle,.refRightTop>.small{display:none!important}
+  .refRightTop #withdrawRound{position:fixed!important;right:265px!important;top:8px!important;width:90px!important;margin:0!important;padding:6px 3px!important;font-size:8px!important;z-index:90!important}
+
+  /* RIGHT: chat is always visible and only chat lives here */
+  .refRightChat{right:7px!important;top:62px!important;bottom:7px!important;width:252px!important;padding:0!important;border-radius:12px!important;overflow:hidden!important}
+  .refRightChat>.panel{height:100%!important;display:flex!important;flex-direction:column!important;padding:7px!important}
+  .refRightChat>.panel>b{font-size:12px!important;flex:0 0 auto!important}
+  .refRightChat .voiceBar,.refRightChat .entertainRow{display:none!important}
+  .refRightChat .chat{display:block!important;visibility:visible!important;flex:1 1 auto!important;height:auto!important;min-height:70px!important;margin:5px 0!important;padding:6px!important;overflow:auto!important}
+  .refRightChat .chat p,.refRightChat .chat b{font-size:9px!important;line-height:1.35!important}
+  .refRightChat .quick{display:none!important}
+  .refRightChat .row{display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;gap:4px!important;flex:0 0 auto!important}
+  .refRightChat .row input{min-width:0!important;font-size:9px!important;padding:7px!important}
+  .refRightChat .row #send{width:44px!important;min-width:44px!important;font-size:8px!important;padding:4px 1px!important}
+
+  /* CENTER: largest possible table, 4 players only */
+  .refTable{left:164px!important;right:266px!important;top:48px!important;bottom:106px!important;border-radius:30px!important}
+  .refTable:before{inset:11% 6% 10%!important;border-radius:24px!important}.refTable:after{inset:16% 11% 15%!important}
+  .refSeat{min-width:84px!important;z-index:12!important}.refSeat .refAvatar{width:45px!important;height:45px!important}.refSeatLabel{min-width:76px!important;font-size:9px!important;padding:3px 5px!important}
+  .refSeatCards{height:25px!important}.refSeatCards .cardBack{width:22px!important;height:31px!important;margin:0 -5px!important}
+  .refSeat.top{top:5px!important}.refSeat.left{left:6px!important;top:50%!important}.refSeat.right{right:6px!important;top:50%!important}.refSeat.bottom{bottom:5px!important}
+  .refCenterPiles{left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;gap:18px!important}.refPile .cardBack,.refPile .cardFace{width:64px!important;height:91px!important}.refPileLabel{font-size:8px!important}
+
+  /* TURN CLOCK: one clear clock, above the player's hand */
+  .refTurnTimer{position:fixed!important;left:168px!important;top:auto!important;bottom:8px!important;transform:none!important;width:100px!important;min-width:100px!important;padding:6px!important;border:2px solid #d7a43f!important;border-radius:12px!important;background:#130c08f2!important;z-index:75!important;text-align:center!important}
+  .refTurnTimer small{font-size:8px!important}.refTurnTimer b{font-size:20px!important}
+
+  /* BOTTOM: 4 cards large and actions fixed on the right of the hand */
+  .refBottom{left:274px!important;right:266px!important;bottom:2px!important;height:102px!important;display:grid!important;grid-template-columns:minmax(280px,1fr) 158px!important;gap:7px!important;align-items:end!important;z-index:45!important}
+  .refBottom>.refIntro{display:none!important}
+  .refHandWrap{grid-column:1!important;display:flex!important;flex-direction:column!important;justify-content:flex-end!important;align-items:center!important;padding:0 3px 2px!important;background:linear-gradient(180deg,transparent,#100705df 50%)!important;overflow:visible!important}
+  .refHandTitle{font-size:9px!important;align-self:flex-start!important;margin:0 0 1px!important}
+  .refHandWrap .hand{display:flex!important;justify-content:center!important;align-items:flex-end!important;gap:7px!important;flex-wrap:nowrap!important;overflow:visible!important;width:100%!important}
+  .refHandWrap .slot{width:68px!important;min-width:68px!important;flex:0 0 68px!important;min-height:94px!important}.refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:66px!important;height:92px!important;border-radius:8px!important}
+  .refHandWrap .slotNum{top:-9px!important;font-size:10px!important;min-width:21px!important;height:21px!important;line-height:18px!important}
+  .refActions{grid-column:2!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important;padding:0 0 3px!important}.refActions .btn{min-height:43px!important;font-size:9px!important;padding:5px 2px!important;border-radius:9px!important}
+
+  /* after a play: Check + Pass always visible */
+  .decisionActions{position:fixed!important;left:auto!important;right:266px!important;bottom:7px!important;transform:none!important;width:255px!important;grid-template-columns:1fr 1fr!important;gap:6px!important;padding:7px!important;z-index:100!important}
+  .decisionActions .notice{grid-column:1/-1!important;font-size:9px!important}.decisionActions .btn{min-height:43px!important;font-size:11px!important}
+}
+
+/* Lobby landscape: same visual hierarchy, without changing lobby/game logic */
+@media (orientation:landscape) and (min-width:650px) and (max-height:520px){
+  body:has(.lobbyShell){overflow:hidden!important}
+  .lobbyShell{height:100dvh!important;min-height:100dvh!important;padding:4px 7px!important;overflow:hidden!important}
+  .lobbyHeader{position:absolute!important;left:50%!important;top:3px!important;transform:translateX(-50%)!important;width:auto!important;z-index:20!important;margin:0!important}
+  .lobbyBrand{min-height:0!important}.lobbyTitlePlaque{font-size:20px!important;padding:4px 28px!important}.lobbyFlag{width:42px!important;height:25px!important}.lobbyFalcon,.lobbySubtitle{display:none!important}
+  .lobbyTools{position:fixed!important;right:7px!important;top:7px!important;display:grid!important;grid-template-columns:repeat(6,40px)!important;gap:4px!important;margin:0!important;z-index:30!important}
+  .lobbyTools .toolBtn,.lobbyTools #rulesTop{width:40px!important;height:42px!important;padding:2px!important;font-size:14px!important;border-radius:8px!important}.lobbyTools small{font-size:6px!important}
+  .roomCodeBox{position:fixed!important;top:52px!important;left:50%!important;transform:translateX(-50%)!important;width:310px!important;margin:0!important;padding:5px!important;z-index:18!important}.roomCodeBox .code{font-size:20px!important;padding:6px!important;margin:2px 0!important}
+  .lobbySetup{position:fixed!important;left:7px!important;top:7px!important;width:185px!important;margin:0!important;padding:7px!important;z-index:20!important}.setupGrid{grid-template-columns:1fr!important;gap:5px!important}.setupBox{padding:5px!important}.setupBox label{font-size:9px!important}.setupBox select{padding:6px!important;font-size:12px!important}.lobbyHint{font-size:7px!important}.lobbyMainActions{margin-top:5px!important}.lobbyMainActions .btn{min-height:34px!important;font-size:10px!important;padding:5px!important}.lobbyCapacity{font-size:7px!important}
+  .lobbyTable{position:fixed!important;left:200px!important;right:270px!important;top:91px!important;bottom:5px!important;width:auto!important;height:auto!important;min-height:0!important;max-width:none!important;margin:0!important;border-radius:48%/40%!important}
+  .lobbySeat{width:90px!important}.lobbySeat.s0{top:5px!important}.lobbySeat.s1{left:4px!important}.lobbySeat.s2{right:4px!important}.lobbySeat.s3{bottom:5px!important}.lobbyAvatar{width:43px!important;height:43px!important}.lobbySeatInfo{font-size:8px!important;padding:3px!important}.lobbySeatInfo strong{font-size:9px!important}.lobbyCenterDeck .cardBack,.lobbyCenterCard{width:58px!important;height:82px!important}.lobbyCenterDeck{gap:10px!important}
+  .lobbyBottomGrid{position:fixed!important;right:7px!important;top:56px!important;bottom:7px!important;width:255px!important;margin:0!important;display:flex!important;flex-direction:column!important;gap:5px!important;z-index:20!important}.lobbyList{min-height:0!important;padding:6px!important}.lobbyList h3{font-size:10px!important;margin-bottom:3px!important}.miniPerson{font-size:8px!important;padding:3px!important;margin:2px 0!important}.lobbyChatWrap{display:block!important;grid-column:auto!important;flex:1 1 auto!important;min-height:0!important}.lobbyChatWrap .panel{height:100%!important;display:flex!important;flex-direction:column!important;padding:6px!important}.lobbyChatWrap .voiceBar,.lobbyChatWrap .entertainRow{display:none!important}.lobbyChatWrap .chat{display:block!important;flex:1 1 auto!important;height:auto!important;min-height:55px!important;margin:4px 0!important}.lobbyChatWrap .quick{display:none!important}.lobbyChatWrap .row{display:grid!important;grid-template-columns:minmax(0,1fr) 42px!important;gap:4px!important}.lobbyChatWrap #send{width:42px!important;min-width:42px!important;padding:4px!important;font-size:8px!important}.lobbyChatWrap #chatInput{font-size:9px!important;padding:6px!important}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -1468,7 +1550,7 @@ function renderLobby(){
  const playerList=ps.map(([id,p],i)=>`<div class="miniPerson"><span class="miniDot"></span><span>${esc(p.name)}${id===uid?' • أنت':''}</span>${id===currentRoom.hostId?'<span class="crown">👑</span>':''}</div>`).join('');
  const spectatorList=rest.length?rest.map(([id,p])=>`<div class="miniPerson"><span>👀</span><span>${esc(p.name)}</span></div>`).join(''):`<div class="small center">الباقي يصيرون متفرجين بعد اختيار اللاعبين</div>`;
  app.innerHTML=`<div class="lobbyScene">
-   <div class="lobbyHeader"><div class="lobbyBrand"><span class="lobbyFlag left"></span><span class="lobbyFalcon" aria-hidden="true"></span><div class="lobbyTitlePlaque">شيك شيك</div><span class="lobbyFlag right"></span></div><div class="lobbySubtitle">الشيك • السكور • لعبة المجلس أونلاين</div><div class="lobbyTools">${rulesButtonHtml()}<button id="sfxTop" class="toolBtn" title="المؤثرات">🔊<small>الصوت</small></button><button id="voiceTop" class="toolBtn" title="المايك">🎙️<small>المايك</small></button><button class="toolBtn" onclick="document.getElementById('chatInput')?.focus()">💬<small>الشات</small></button></div></div>
+   <div class="lobbyHeader"><div class="lobbyBrand"><span class="lobbyFlag left"></span><span class="lobbyFalcon" aria-hidden="true"></span><div class="lobbyTitlePlaque">شيك شيك</div><span class="lobbyFlag right"></span></div><div class="lobbySubtitle">الشيك • السكور • لعبة المجلس أونلاين</div><div class="lobbyTools">${rulesButtonHtml()}<button id="sfxTop" class="toolBtn" title="الصوت">🔊<small>الصوت</small></button><button id="voiceTop" class="toolBtn" title="المايك">🎙️<small>المايك</small></button><button id="funTop" class="toolBtn" title="التأثيرات">😂<small>التأثيرات</small></button><button id="radioTop" class="toolBtn" title="الإذاعة">📻<small>الإذاعة</small></button><button class="toolBtn" onclick="document.getElementById('chatInput')?.focus()">💬<small>الشات</small></button></div></div>
    <div class="roomCodeBox"><div class="roomCodeLabel">كود الغرفة</div><div class="roomCodeRow"><div class="roomCodeValue">${esc(roomCode)}</div><button id="copy" class="copyMini">📋 نسخ</button></div></div>
    <div class="lobbyTable">${seats}<div class="lobbyCenterDeck"><div><div class="cardBack" aria-label="رزمة الورق"></div><div class="lobbyDeckLabel"><span class="lobbyDeckCount">54</span><br>رزمة الورق</div></div><div><div class="lobbyCenterCard"><div class="cardFace black">${cardFaceHtml({r:"K",s:"S"})}</div></div><div class="lobbyDeckLabel">ورقة الميدان</div></div></div></div>
    ${host?`<div class="lobbySetup"><div class="setupGrid"><div class="setupBox"><label>👥 عدد اللاعبين</label><select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select><div class="lobbyHint">اختر 2 إلى 4، والباقي متفرجين</div></div><div class="setupBox"><label>🃏 عدد الجولات</label><select id="roundCount"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option><option value="7">7</option><option value="10">10</option></select></div></div><div class="lobbyMainActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="leave" class="btn danger">خروج</button></div><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`:`<div class="lobbySetup center"><div class="notice">👑 المضيف يختار 2 إلى 4 لاعبين، والباقي متفرجين.</div><button id="leave" class="btn danger">خروج</button><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`}
@@ -1483,7 +1565,7 @@ function renderLobby(){
    const start=document.getElementById('start');if(start)start.onclick=startGame;
  }
  const st=document.getElementById('sfxTop');if(st)st.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem('sheikh_sfx_muted','0');updateSfxUi()}await unlockAudio();sfx('correct');toast('اختبار الصوت 🔊')};
- const vt=document.getElementById('voiceTop');if(vt)vt.onclick=()=>startLiveVoice();
+ const vt=document.getElementById('voiceTop');if(vt)vt.onclick=()=>voiceActive?stopLiveVoice(true):startLiveVoice();const ft=document.getElementById('funTop');if(ft)ft.onclick=showSoundBoard;const rt=document.getElementById('radioTop');if(rt)rt.onclick=showRadioPanel;
 }
 function renderGame(){
  const g=game(),active=g.turnOrder||[],tuid=turnUid(),tname=currentRoom.players?.[tuid]?.name||"",totals=g.cumulativeScores||{};
@@ -1508,7 +1590,7 @@ function renderGame(){
  const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${g.totalRounds||1}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span></div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
  wireCommon();
- const rs=document.getElementById("refSfx");if(rs)rs.onclick=toggleSfx;const rv=document.getElementById("refVoice");if(rv)rv.onclick=()=>startLiveVoice();const rc=document.getElementById("refChatFocus");if(rc)rc.onclick=()=>document.getElementById("chatInput")?.focus();const wr=document.getElementById("withdrawRound");if(wr)wr.onclick=withdrawFromRound;
+ const rs=document.getElementById("refSfx");if(rs)rs.onclick=toggleSfx;const rv=document.getElementById("refVoice");if(rv)rv.onclick=()=>voiceActive?stopLiveVoice(true):startLiveVoice();const rc=document.getElementById("refChatFocus");if(rc)rc.onclick=()=>document.getElementById("chatInput")?.focus();const wr=document.getElementById("withdrawRound");if(wr)wr.onclick=withdrawFromRound;
  const sp=document.getElementById("startPeek");if(sp)sp.onclick=startInitialPeek;
  if(document.getElementById("draw"))document.getElementById("draw").onclick=drawCard;
  if(document.getElementById("takeField"))document.getElementById("takeField").onclick=takeFieldCard;
