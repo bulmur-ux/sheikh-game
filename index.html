@@ -1298,7 +1298,23 @@ async function kickPlayer(targetUid){
 
 async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active),totalRounds=Math.max(1,Math.min(10,Number(document.getElementById("roundCount")?.value||3)));if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}const readyCheck={order,totalRounds,startedAt:Date.now(),deadline:Date.now()+20000,ready:{}};await set(ref(db,`rooms/${roomCode}/public/readyCheck`),readyCheck);await sendSystem("⏱️ عندكم 20 ثانية للضغط على «ابدأ اللعب» — المتأخر يتحول متفرج");}
 async function confirmReadyToPlay(){const rc=currentRoom?.readyCheck;if(!rc||(rc.order||[]).includes(uid)===false)return;await set(ref(db,`rooms/${roomCode}/public/readyCheck/ready/${uid}`),true);toast("✅ تم تأكيد جاهزيتك");}
-async function finishReadyCheck(){if(uid!==currentRoom?.hostId)return;const rc=currentRoom?.readyCheck;if(!rc||Date.now()<Number(rc.deadline||0))return;const readyOrder=(rc.order||[]).filter(id=>rc.ready?.[id]);if(readyOrder.length<2){await remove(ref(db,`rooms/${roomCode}/public/readyCheck`));toast("يلزم لاعبان جاهزان على الأقل — لم تبدأ المباراة");await sendSystem("لم تبدأ المباراة: أقل من لاعبين أكدوا الجاهزية");return}const totals={};for(const id of readyOrder)totals[id]=0;await remove(ref(db,`rooms/${roomCode}/public/readyCheck`));await beginRound(readyOrder,1,Number(rc.totalRounds||3),totals);}
+async function finishReadyCheck(){
+ // صاحب الغرفة هو الأساس، لكن أي لاعب مختار يستطيع إنقاذ البداية بعد انتهاء المهلة إذا انقطع جهاز المضيف.
+ const rc=currentRoom?.readyCheck;if(!rc||Date.now()<Number(rc.deadline||0))return;
+ const canFinish=uid===currentRoom?.hostId||(rc.order||[]).includes(uid);if(!canFinish)return;
+ const readyOrder=(rc.order||[]).filter(id=>rc.ready?.[id]);
+ if(readyOrder.length<2){
+  // الحذف بمعاملة يمنع أكثر من جهاز من تنفيذ نفس الإنهاء.
+  let cleared=false;await runTransaction(ref(db,`rooms/${roomCode}/public/readyCheck`),x=>{if(!x||Date.now()<Number(x.deadline||0))return x;cleared=true;return null});
+  if(cleared){toast("يلزم لاعبان جاهزان على الأقل — لم تبدأ المباراة");try{await sendSystem("لم تبدأ المباراة: أقل من لاعبين أكدوا الجاهزية")}catch{}}
+  return;
+ }
+ // نحجز الانتقال مرة واحدة فقط حتى لو حاول أكثر من جهاز في نفس اللحظة.
+ let won=false;const claim=await runTransaction(ref(db,`rooms/${roomCode}/public/readyCheck`),x=>{if(!x||x.finishing||Date.now()<Number(x.deadline||0))return x;const r=(x.order||[]).filter(id=>x.ready?.[id]);if(r.length<2)return x;x.finishing=uid;won=true;return x});
+ if(!won)return;
+ const live=claim.snapshot.val()||rc;const order=(live.order||[]).filter(id=>live.ready?.[id]);const totals={};for(const id of order)totals[id]=0;
+ await remove(ref(db,`rooms/${roomCode}/public/readyCheck`));await beginRound(order,1,Number(live.totalRounds||3),totals);
+}
 async function beginRound(order,roundNo,totalRounds,totals){
  // كل جولة لها رمز مستقل حتى لا تحمل أي يد/حالة من الجولة السابقة.
  clearTimeout(pendingStartTimer);pendingStartTimer=null;localRevealUntil={};seenRoundToken="";
@@ -1312,6 +1328,40 @@ async function beginRound(order,roundNo,totalRounds,totals){
  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
  toast(`بدأت الجولة ${roundNo} من ${totalRounds}`)
 }
+async function tryAdvanceDealing(){
+ if(!currentRoom||currentRoom.status!=="game"||!isActivePlayer())return false;
+ let advanced=false;
+ const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),pub=>{
+  advanced=false;
+  if(!pub?.game||pub.game.phase!=="dealing")return pub;
+  const g=pub.game,token=String(g.roundToken||"");if(!token)return pub;
+  const order=Array.isArray(g.turnOrder)?g.turnOrder:[];if(order.length<2)return pub;
+  const players=pub.players||{};
+  const allDealt=order.every(id=>{const p=players[id];return p&&p.role==="player"&&String(p.dealToken||"")===token&&Number(p.dealRoundNo||0)===Number(g.roundNo||1)&&p.ready===true&&Number(p.cardCount)===4});
+  if(!allDealt)return pub;
+  g.phase="memorize";g.memorizeUntil=Date.now()+10000;g.turnIndex=0;g.turnStartedAt=0;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;g.dealt=g.dealt||{};for(const id of order)g.dealt[id]=token;
+  advanced=true;return pub;
+ });
+ if(advanced&&tx.committed){try{await sendSystem("👁️ تم كشف أول ورقتين للجميع لمدة 10 ثوانٍ — بعدها يبدأ اللعب تلقائياً")}catch{}}
+ return advanced;
+}
+async function tryAdvanceMemorize(){
+ if(!currentRoom||currentRoom.status!=="game"||!isActivePlayer())return false;
+ let advanced=false;
+ const tx=await runTransaction(ref(db,`rooms/${roomCode}/public/game`),g=>{
+  advanced=false;if(!g||g.phase!=="memorize")return g;
+  const until=Number(g.memorizeUntil||0);if(!until||until>Date.now())return g;
+  g.phase="playing";g.memorizeUntil=0;g.turnIndex=0;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;g.timeoutClaim=null;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;advanced=true;return g;
+ });
+ if(advanced&&tx.committed){try{await sendSystem("🎮 بدأ اللعب — لكل لاعب 60 ثانية")}catch{}}
+ return advanced;
+}
+function scheduleRoundRecovery(){
+ clearTimeout(window.__roundRecoveryTimer);
+ const g=game();if(!currentRoom||currentRoom.status!=="game"||!g||!isActivePlayer())return;
+ window.__roundRecoveryTimer=setTimeout(async()=>{try{const gg=game();if(gg?.phase==="dealing")await tryAdvanceDealing();else if(gg?.phase==="memorize")await tryAdvanceMemorize();}catch(e){console.warn("round recovery",e)}finally{scheduleRoundRecovery()}},1200);
+}
+
 async function autoGameWork(){
  if(!currentRoom||!uid)return;
  if(currentRoom.status==="lobby"&&currentRoom.readyCheck&&uid===currentRoom.hostId&&Date.now()>=Number(currentRoom.readyCheck.deadline||0)){await finishReadyCheck();return;}
@@ -1327,21 +1377,12 @@ async function autoGameWork(){
   if(isActivePlayer()&&myHand&&!handMatches){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null;localRevealUntil={};}
   if(isActivePlayer()&&!myHand)await claimInitialHand();
  }
- if(g.phase==="dealing"&&uid===currentRoom.hostId){
-  const ps=activePlayerEntries(),token=String(g.roundToken||"");
-  if(ps.length&&token&&ps.every(([id,p])=>String(g.dealt?.[id]||"")===token&&String(p.dealToken||"")===token&&Number(p.dealRoundNo||0)===Number(g.roundNo||1)&&p.ready&&Number(p.cardCount)===4)){
-   const memorizeUntil=Date.now()+10000;
-   await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"memorize",memorizeUntil,turnIndex:0,turnStartedAt:0,decisionUid:null,decisionUntil:null,hasDrawn:null});
-   await sendSystem("👁️ تم كشف أول ورقتين للجميع لمدة 10 ثوانٍ — بعدها يبدأ اللعب تلقائياً");
-  }
+ if(g.phase==="dealing"){
+  // لا نعتمد على جهاز المضيف وحده. أي لاعب داخل الجولة يقدر ينقلها للحفظ بمعاملة ذرّية.
+  await tryAdvanceDealing();
  }
  if(g.phase==="memorize"){
   // الحفظ تلقائي للجميع: أول ورقتين مكشوفتان 10 ثوانٍ، ولا ننتظر أي زر من اللاعبين.
-  if(uid===currentRoom.hostId){
-   const token=String(g.roundToken||""),ps=activePlayerEntries();
-   const invalid=ps.some(([id,p])=>String(g.dealt?.[id]||"")!==token||String(p.dealToken||"")!==token||Number(p.cardCount)!==4);
-   if(invalid){await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"dealing",memorizeUntil:0,turnStartedAt:0});return;}
-  }
   const memorizeUntil=Number(g.memorizeUntil||0);
   if(isActivePlayer()&&myHand&&String(myHand.roundToken||"")===String(g.roundToken||"")&&countCards(myHand.cards)===4){
    if(memorizeUntil>Date.now()){
@@ -1353,21 +1394,11 @@ async function autoGameWork(){
     clearTimeout(pendingStartTimer);pendingStartTimer=setTimeout(()=>finishInitialPeek(String(g.roundToken||"")),Math.max(0,memorizeUntil-Date.now()+80));
    }else if(!myHand.introDone){await finishInitialPeek(String(g.roundToken||""));}
   }
-  if(uid===currentRoom.hostId&&memorizeUntil){
-   if(memorizeUntil<=Date.now()){
-    await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"playing",memorizeUntil:0,turnIndex:0,turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1||1,timeoutClaim:null,decisionUid:null,decisionUntil:null,hasDrawn:null});
-    await sendSystem("🎮 بدأ اللعب — لكل لاعب 60 ثانية");
-   }else{
+  if(memorizeUntil){
+   if(memorizeUntil<=Date.now())await tryAdvanceMemorize();
+   else{
     clearTimeout(window.__memorizeHostTimer);
-    window.__memorizeHostTimer=setTimeout(async()=>{
-     try{
-      const snap=await get(ref(db,`rooms/${roomCode}/public/game`)),gg=snap.val();
-      if(gg&&gg.phase==="memorize"&&String(gg.roundToken||"")===String(g.roundToken||"")){
-       await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"playing",memorizeUntil:0,turnIndex:0,turnStartedAt:Date.now(),turnSeq:Number(gg.turnSeq||0)+1,timeoutClaim:null,decisionUid:null,decisionUntil:null,hasDrawn:null});
-       await sendSystem("🎮 بدأ اللعب — لكل لاعب 60 ثانية");
-      }
-     }catch(e){console.warn(e)}
-    },Math.max(0,memorizeUntil-Date.now()+120));
+    window.__memorizeHostTimer=setTimeout(()=>tryAdvanceMemorize().catch(e=>console.warn(e)),Math.max(0,memorizeUntil-Date.now()+120));
    }
   }
  }
@@ -1379,6 +1410,7 @@ async function autoGameWork(){
   await set(ref(db,`rooms/${roomCode}/public/reveals/${uid}`),{name:myName,cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)});
  }
  if(g.phase==="reveal")setTimeout(maybeFinishReveal,80);
+ scheduleRoundRecovery();
 }
 async function claimInitialHand(){
  let claimed=null,claimedRoundNo=0,claimedToken="";
@@ -1775,7 +1807,7 @@ function renderLobby(){
 function renderGame(){
  const g=game(),active=g.turnOrder||[],tuid=turnUid(),tname=currentRoom.players?.[tuid]?.name||"",totals=g.cumulativeScores||{},host=uid===currentRoom.hostId;
  if(g.phase==="dealing"){
-  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>توزيع الأوراق</h2><p>${isActivePlayer()?"جاري توزيع 4 أوراق لكل لاعب...":"👀 أنت متفرج في هذه الجولة"}</p><div class="refWaiting">${activePlayerEntries().filter(x=>x[1].ready).length} / ${active.length} جاهزين</div></div></div></div>`;return;
+  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>توزيع الأوراق</h2><p>${isActivePlayer()?"جاري توزيع 4 أوراق لكل لاعب...":"👀 أنت متفرج في هذه الجولة"}</p><div class="refWaiting">${activePlayerEntries().filter(([,p])=>p.ready===true&&Number(p.cardCount)===4&&String(p.dealToken||"")===String(g.roundToken||"")).length} / ${active.length} تم التوزيع</div></div></div></div>`;return;
  }
  if(g.phase==="reveal"){
   const rev=currentRoom.reveals||{},done=active.filter(id=>rev[id]).length;
