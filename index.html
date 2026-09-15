@@ -2449,5 +2449,20 @@ function renderChat(){const box=document.getElementById("chatBox");if(!box)retur
 
 let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress)return;if(authBooted&&u&&uid===u.uid)return;authBooted=true;if(!u){uid=null;authScreen();return}if(u.isAnonymous){try{await signOut(auth)}catch{}authScreen();return}try{await loadPlayerAccount(u)}catch(e){authScreen("login","تعذر تحميل الحساب: "+authErrorText(e))}});
 </script>
+
+<script>
+/* SHEIKH ADMIN ACCESS HELPERS */
+window.SheikhAdminAccess = {
+  has(admin, permission){
+    return !!(admin && (admin.superAdmin === true || admin.permissions?.[permission] === true));
+  },
+  badge(admin){
+    if(!admin) return "";
+    if(admin.superAdmin === true) return admin.badge || "👑";
+    return admin.badge || "🛡️";
+  }
+};
+</script>
+
 </body>
 </html>
