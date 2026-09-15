@@ -1094,6 +1094,34 @@ body:has(.gameStage){background:#160d08!important;}
  body:not(:has(.gameStage)) .authMsg{font-size:10px!important;line-height:1.15!important;margin-top:3px!important;min-height:12px!important;}
 }
 </style>
+
+<style id="auth-landscape-final-polish">
+/* Final compact landscape layout: full brand + greeting + form visible at Safari 100%. */
+@media (orientation:landscape) and (min-width:650px) and (max-height:520px){
+ body:not(:has(.gameStage)) .wrap{padding-top:0!important;}
+ body:not(:has(.gameStage)) .stripe{height:3px!important;}
+ body:not(:has(.gameStage)) header{height:40px!important;padding:2px 10px 0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:10px!important;}
+ body:not(:has(.gameStage)) header h1{font-size:22px!important;line-height:1!important;margin:0!important;gap:6px!important;white-space:nowrap!important;}
+ body:not(:has(.gameStage)) header h1::before{width:30px!important;height:30px!important;flex-basis:30px!important;border-radius:8px!important;}
+ body:not(:has(.gameStage)) header p{font-size:10px!important;line-height:1!important;margin:0!important;white-space:nowrap!important;}
+ body:not(:has(.gameStage)) #app{padding:0 12px 6px!important;}
+ body:not(:has(.gameStage)) .authShell{width:min(90vw,760px)!important;margin:0 auto!important;}
+ body:not(:has(.gameStage)) .authBrand{display:flex!important;align-items:center!important;justify-content:center!important;gap:12px!important;padding:0 0 4px!important;white-space:nowrap!important;}
+ body:not(:has(.gameStage)) .authBrand h2{font-size:18px!important;line-height:1!important;margin:0!important;}
+ body:not(:has(.gameStage)) .authBrand p{font-size:10px!important;line-height:1!important;margin:0!important;}
+ body:not(:has(.gameStage)) .authShell>.panel{padding:7px 12px 8px!important;border-radius:14px!important;}
+ body:not(:has(.gameStage)) .authTabs{max-width:500px!important;margin:0 auto 5px!important;}
+ body:not(:has(.gameStage)) .authTabs button{min-height:34px!important;height:34px!important;padding:4px 8px!important;font-size:13px!important;}
+ body:not(:has(.gameStage)) .authField{margin-bottom:4px!important;}
+ body:not(:has(.gameStage)) .authField label{font-size:10px!important;margin-bottom:1px!important;}
+ body:not(:has(.gameStage)) .authShell input{min-height:34px!important;height:34px!important;padding:4px 10px!important;font-size:13px!important;}
+ body:not(:has(.gameStage)) .eyeBtn{top:1px!important;height:32px!important;width:36px!important;font-size:16px!important;}
+ body:not(:has(.gameStage)) .authShell .btn{min-height:34px!important;height:34px!important;padding:4px 10px!important;font-size:13px!important;}
+ body:not(:has(.gameStage)) .authLink{font-size:10px!important;padding:4px 3px!important;}
+ body:not(:has(.gameStage)) .authMsg{font-size:9px!important;margin-top:2px!important;min-height:10px!important;}
+ body:not(:has(.gameStage)) .authHint{font-size:8px!important;margin-top:1px!important;}
+}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
