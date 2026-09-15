@@ -83,6 +83,13 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
  .tabs{grid-template-columns:repeat(2,1fr)}.adminEmail{max-width:190px}.itemHead{align-items:flex-start;flex-direction:column}
  .actions{width:100%}.actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.permGrid{grid-template-columns:1fr}
 }
+
+/* Flexible admin/member management */
+.memberSearch{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}.memberSearch input{flex:1;min-width:190px}
+.filterRow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.filterBtn{background:#17100d;color:#d8c49d;border:1px solid #4f381c;border-radius:999px;padding:7px 11px;font-weight:800}.filterBtn.active{background:#5a3b12;color:#ffe29a;border-color:#a8792b}
+.memberCard{border:1px solid #4f381c;border-radius:14px;padding:10px;margin:8px 0;background:#110c09}.memberTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.memberName{font-weight:900;color:#fff1c6}.memberMeta{font-size:11px;color:#aa9878;line-height:1.6}.rankMini{width:30px;height:30px;object-fit:contain;vertical-align:middle;margin-inline-end:5px}.adminRoleMini{width:32px;height:32px;object-fit:contain}
+.adminEditor{border:1px solid #8a6429;border-radius:16px;padding:12px;background:#0b0806;margin:10px 0}.adminEditor h3{margin:0 0 8px;color:#ffe29a}.roleGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:9px 0}.roleChoice{display:flex;align-items:center;gap:7px;border:1px solid #4f381c;border-radius:12px;padding:8px;background:#17100d}.roleChoice img{width:34px;height:34px;object-fit:contain}.permGrid.flexPerms{grid-template-columns:repeat(2,1fr)}
+@media(max-width:600px){.roleGrid,.permGrid.flexPerms{grid-template-columns:1fr}.memberTop{align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -146,17 +153,13 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 
     <div id="panel-admins" class="panel superOnly">
       <div class="section">
-        <div class="sectionTitle"><h2>إدارة المشرفين</h2></div>
-        <div class="formBox">
-          <div class="field"><label>UID للمشرف</label><input id="newAdminUid" class="ltr" placeholder="Firebase UID"></div>
-          <div class="field"><label>الاسم أو البريد للتعريف</label><input id="newAdminLabel" placeholder="مثال: محمد / admin@email.com"></div>
-          <div class="permGrid">
-            <label class="check"><input id="permRooms" type="checkbox" checked> إدارة الغرف واللاعبين</label>
-            <label class="check"><input id="permBan" type="checkbox" checked> حظر وفك حظر اللاعبين</label>
-          </div>
-          <button id="addAdminBtn" class="btn btnGold btnWide">إضافة / تحديث الأدمن</button>
-          <div class="note">المشرف لازم يكون عنده حساب Email/Password في Firebase أولاً. أنت فقط تقدر تضيف أو تلغي المشرفين.</div>
-        </div>
+        <div class="sectionTitle"><h2>👥 الأعضاء والمشرفون</h2><button id="refreshMembers" class="btn btnDark refresh">تحديث ↻</button></div>
+        <div class="note" style="margin:0 0 8px">اختر العضو من المسجلين، ثم عيّن رتبته الإدارية والصلاحيات. لا تحتاج UID.</div>
+        <div class="memberSearch"><input id="memberSearch" placeholder="ابحث باسم المستخدم أو رقم العضوية"><button id="clearMemberSearch" class="btn btnDark">مسح</button></div>
+        <div class="filterRow"><button class="filterBtn active" data-member-filter="all">الكل</button><button class="filterBtn" data-member-filter="online">المتصلون</button><button class="filterBtn" data-member-filter="admins">المشرفون</button><button class="filterBtn" data-member-filter="banned">المحظورون</button></div>
+        <div id="memberEditor"></div>
+        <div id="membersList"><div class="empty">جاري تحميل الأعضاء...</div></div>
+        <div class="sectionTitle" style="margin-top:18px"><h2>المشرفون الحاليون</h2></div>
         <div id="adminsList"><div class="empty">جاري تحميل المشرفين...</div></div>
       </div>
     </div>
@@ -187,15 +190,21 @@ import { getDatabase, ref, get, onValue, remove, update, set, push, query, limit
 const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomain:"al-sheikh-game.firebaseapp.com",databaseURL:"https://al-sheikh-game-default-rtdb.firebaseio.com",projectId:"al-sheikh-game",storageBucket:"al-sheikh-game.firebasestorage.app",messagingSenderId:"739452149085",appId:"1:739452149085:web:778619aa18fed1c698dcb4"};
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb);
 const $=id=>document.getElementById(id);
-let currentAdmin=null,currentRooms={},currentBans={},stops=[];
+let currentAdmin=null,currentRooms={},currentBans={},currentUsers={},currentAdmins={},currentPresence={},memberFilter="all",editingAdminUid="",stops=[];
 let monitorVoice=null,monitorVoiceCode="",monitorVoiceStealth=true,monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]))}
 function msg(text,type='err'){const el=$('loginMsg');el.className='msg '+type;el.textContent=text}
 function cleanup(){stops.forEach(fn=>{try{fn()}catch{}});stops=[]}
 function isSuper(){return currentAdmin?.superAdmin===true}
-function canRooms(){return isSuper()||currentAdmin?.permissions?.manageRooms===true}
-function canBan(){return isSuper()||currentAdmin?.permissions?.banPlayers===true}
+const ADMIN_ROLES={generalModerator:{name:"مشرف عام",icon:"ranks/admin_02_general_mod.png"},roomModerator:{name:"مشرف غرف",icon:"ranks/admin_03_room_mod.png"},assistantModerator:{name:"مشرف مساعد",icon:"ranks/admin_04_assistant_mod.png"}};
+const PLAYER_RANKS=[{name:"مبتدئ",min:0,max:499,icon:"ranks/player_01_beginner.png"},{name:"لاعب",min:500,max:1499,icon:"ranks/player_02_player.png"},{name:"متمرس",min:1500,max:3499,icon:"ranks/player_03_experienced.png"},{name:"خبير",min:3500,max:6999,icon:"ranks/player_04_expert.png"},{name:"محترف",min:7000,max:null,icon:"ranks/player_05_pro.png"}];
+const PERM_DEFS={enterAsModerator:"دخول الغرف كمشرف",hiddenMonitor:"المراقبة المخفية",listenVoice:"الاستماع للصوت",adminTalk:"التحدث كإدارة",warnPlayers:"إرسال تحذير",muteChat:"كتم الشات",disableVoice:"تعطيل المايك",kickPlayers:"إخراج لاعب",banPlayers:"حظر لاعب",closeRooms:"إغلاق غرفة",globalAnnouncements:"الإعلانات العامة",viewLogs:"مشاهدة السجلات"};
+function rankForXp(xp=0){xp=Math.max(0,Number(xp)||0);return PLAYER_RANKS.find(r=>xp>=r.min&&(r.max===null||xp<=r.max))||PLAYER_RANKS[0]}
+function hasPerm(k){if(isSuper())return true;const p=currentAdmin?.permissions||{};if(p[k]===true)return true;if(["enterAsModerator","warnPlayers","muteChat","disableVoice","kickPlayers","closeRooms"].includes(k)&&p.manageRooms===true)return true;return false}
+function canRooms(){return hasPerm("closeRooms")||hasPerm("kickPlayers")}
+function canBan(){return hasPerm("banPlayers")}
+
 
 async function fetchAdmin(user){
   const s=await get(ref(db,`admins/${user.uid}`));
@@ -208,7 +217,7 @@ async function fetchAdmin(user){
 function showLogin(){cleanup();$('loginView').style.display='block';$('dashView').style.display='none'}
 function showDash(user){
   $('loginView').style.display='none';$('dashView').style.display='block';$('adminEmail').textContent=user.email||user.uid;
-  $('roleBadge').textContent=isSuper()?'👑 SUPER ADMIN':'🛡️ ADMIN';
+  const rr=ADMIN_ROLES[currentAdmin?.role];$('roleBadge').textContent=isSuper()?'👑 SUPER ADMIN':`${rr?.name||'مشرف'}`;
   document.querySelectorAll('.superOnly').forEach(el=>el.style.display=isSuper()?'':'none');
   subscribeAll();
 }
@@ -327,7 +336,7 @@ async function setAdminMonitor(code,stealth){
 }
 async function moderationAction(kind,code,uid,name){
   if(!canRooms())return;
-  const now=Date.now(),base=`rooms/${code}/public/moderation/${uid}`;
+  const now=Date.now(),base=`moderation/${code}/${uid}`;
   if(kind==='warn'){
     const reason=prompt(`رسالة التحذير إلى ${name}:`,'يرجى الالتزام بقوانين الغرفة.')??null;if(reason===null)return;
     await set(push(ref(db,`${base}/warnings`)),{room:code,message:reason,by:auth.currentUser.uid,createdAt:now});await logAction('تحذير لاعب',`${name} في الغرفة ${code}: ${reason}`);return;
@@ -352,14 +361,30 @@ function renderBans(){
     </div></div>`).join('');
 }
 function renderAdmins(data){
-  const list=$('adminsList'),e=Object.entries(data||{});
+  currentAdmins=data||{};const list=$('adminsList'),e=Object.entries(currentAdmins);
   if(!e.length){list.innerHTML='<div class="empty">لا يوجد مشرفون</div>';return}
-  list.innerHTML=e.map(([uid,a])=>`
-    <div class="item"><div class="itemHead">
-      <div><div class="itemTitle">${esc(a.label||a.role||'Admin')} ${a.superAdmin?'👑':''}</div>
-      <div class="itemMeta">UID: ${esc(uid)}<br>${a.superAdmin?'Super Admin':(a.active?'نشط':'معطل')}</div></div>
-      <div class="actions">${!a.superAdmin?`<button class="btn btnRed" data-remove-admin="${esc(uid)}">إلغاء الأدمن</button>`:''}</div>
-    </div></div>`).join('');
+  list.innerHTML=e.map(([uid,a])=>{const u=currentUsers[uid]||{},role=a.superAdmin?{name:'سوبر أدمن',icon:'ranks/admin_01_superadmin.png'}:(ADMIN_ROLES[a.role]||ADMIN_ROLES.assistantModerator);return `
+    <div class="item"><div class="itemHead"><div style="display:flex;gap:9px;align-items:center"><img class="adminRoleMini" src="${role.icon}" alt=""><div><div class="itemTitle">${esc(u.username||a.label||'مشرف')} ${a.superAdmin?'👑':''}</div><div class="itemMeta">${role.name} • ${u.memberNo?'عضوية '+esc(u.memberNo):''}</div></div></div>
+    <div class="actions">${!a.superAdmin?`<button class="btn btnGold" data-edit-admin="${esc(uid)}">⚙️ الصلاحيات</button><button class="btn btnRed" data-remove-admin="${esc(uid)}">إلغاء الإشراف</button>`:''}</div></div></div>`}).join('');
+}
+function isOnlineUid(uid){return !!(currentPresence?.[uid]?.online||currentPresence?.[uid]?.state==='online'||currentPresence?.[uid]?.lastSeen&&Date.now()-Number(currentPresence[uid].lastSeen)<120000)}
+function renderMembers(){
+ const list=$('membersList');if(!list)return;const q=($('memberSearch')?.value||'').trim().toLowerCase();
+ let e=Object.entries(currentUsers||{}).filter(([uid,u])=>{const text=`${u.username||''} ${u.memberNo||''}`.toLowerCase();if(q&&!text.includes(q))return false;if(memberFilter==='admins'&&!currentAdmins[uid])return false;if(memberFilter==='banned'&&!currentBans[uid])return false;if(memberFilter==='online'&&!isOnlineUid(uid))return false;return true});
+ e.sort((a,b)=>(Number(a[1]?.memberNo)||999999)-(Number(b[1]?.memberNo)||999999));
+ if(!e.length){list.innerHTML='<div class="empty">لا توجد نتائج</div>';return}
+ list.innerHTML=e.map(([uid,u])=>{const r=rankForXp(u.xp||0),a=currentAdmins[uid],ar=a?.superAdmin?{name:'سوبر أدمن',icon:'ranks/admin_01_superadmin.png'}:ADMIN_ROLES[a?.role];return `<div class="memberCard"><div class="memberTop"><div><div class="memberName"><img class="rankMini" src="${r.icon}" alt="">${esc(u.username||'بدون اسم')}</div><div class="memberMeta">رقم العضوية: ${esc(u.memberNo||'—')} • ${r.name} • ${Number(u.xp||0)} XP ${isOnlineUid(uid)?'• 🟢 متصل':''} ${currentBans[uid]?'• 🔴 محظور':''}${ar?`<br><img class="adminRoleMini" src="${ar.icon}" alt=""> ${ar.name}`:''}</div></div><div class="actions">${a?.superAdmin?'<span class="pill gold">Super Admin</span>':`<button class="btn ${a?'btnGold':'btnBlue'}" data-assign-admin="${esc(uid)}">${a?'⚙️ تعديل الإشراف':'🛡️ تعيين مشرف'}</button>`}</div></div></div>`}).join('');
+}
+function openAdminEditor(uid){
+ if(!isSuper())return;editingAdminUid=uid;const u=currentUsers[uid]||{},a=currentAdmins[uid]||{},role=a.role||'assistantModerator',perms=a.permissions||{};const box=$('memberEditor');
+ box.innerHTML=`<div class="adminEditor"><h3>إشراف: ${esc(u.username||'العضو')} ${u.memberNo?'#'+esc(u.memberNo):''}</h3><div class="roleGrid">${Object.entries(ADMIN_ROLES).map(([k,r])=>`<label class="roleChoice"><input type="radio" name="adminRole" value="${k}" ${role===k?'checked':''}><img src="${r.icon}" alt=""><b>${r.name}</b></label>`).join('')}</div><div class="permGrid flexPerms">${Object.entries(PERM_DEFS).map(([k,label])=>`<label class="check"><input type="checkbox" data-perm="${k}" ${perms[k]===true?'checked':''}> ${label}</label>`).join('')}</div><div class="actions"><button id="saveAdminEditor" class="btn btnGold">حفظ الصلاحيات</button><button id="cancelAdminEditor" class="btn btnDark">إلغاء</button></div><div class="note">إدارة المشرفين وتغيير صلاحياتهم تبقى للسوبر أدمن فقط ولا يمكن تفويضها.</div></div>`;
+ $('cancelAdminEditor').onclick=()=>{editingAdminUid='';box.innerHTML=''};
+ $('saveAdminEditor').onclick=saveAdminEditor;box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function saveAdminEditor(){
+ if(!isSuper()||!editingAdminUid)return;const uid=editingAdminUid,u=currentUsers[uid]||{};const role=document.querySelector('input[name="adminRole"]:checked')?.value||'assistantModerator';const permissions={};document.querySelectorAll('#memberEditor [data-perm]').forEach(x=>permissions[x.dataset.perm]=x.checked);
+ const existing=currentAdmins[uid]||{};const data={...existing,active:true,role,label:u.username||existing.label||'مشرف',memberNo:u.memberNo||null,permissions,updatedAt:Date.now(),updatedBy:auth.currentUser.uid};if(!existing.createdAt){data.createdAt=Date.now();data.createdBy=auth.currentUser.uid}
+ try{await set(ref(db,`admins/${uid}`),data);await logAction(existing.active?'تحديث صلاحيات مشرف':'تعيين مشرف',`${u.username||uid} — ${ADMIN_ROLES[role]?.name||role}`);editingAdminUid='';$('memberEditor').innerHTML='';alert('تم حفظ رتبة وصلاحيات المشرف ✅')}catch(err){alert(err.message)}
 }
 function renderLogs(data){
   const list=$('logsList'),e=Object.entries(data||{}).sort((a,b)=>(b[1]?.createdAt||0)-(a[1]?.createdAt||0));
@@ -383,9 +408,13 @@ function subscribeAll(){
       currentRooms=next;renderRooms();renderMonitor();
     },e=>$('roomsList').innerHTML=`<div class="empty">تعذر قراءة فهرس الغرف: ${esc(e.message)}</div>`));
   }else{$('roomsList').innerHTML='<div class="empty">ما عندك صلاحية إدارة الغرف.</div>'}
-  stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans()},()=>{}));
-  stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>renderLogs(s.val()||{}),()=>{}));
-  if(isSuper())stops.push(onValue(ref(db,'admins'),s=>renderAdmins(s.val()||{}),()=>{}));
+  stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans();if(isSuper())renderMembers()},()=>{}));
+  if(hasPerm('viewLogs'))stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>renderLogs(s.val()||{}),()=>{}));else $('logsList').innerHTML='<div class="empty">ما عندك صلاحية مشاهدة السجل.</div>';
+  if(isSuper()){
+    stops.push(onValue(ref(db,'users'),s=>{currentUsers=s.val()||{};renderMembers();renderAdmins(currentAdmins)},e=>$('membersList').innerHTML=`<div class="empty">تعذر قراءة الأعضاء: ${esc(e.message)}</div>`));
+    stops.push(onValue(ref(db,'admins'),s=>{currentAdmins=s.val()||{};renderAdmins(currentAdmins);renderMembers()},()=>{}));
+    stops.push(onValue(ref(db,'presence'),s=>{currentPresence=s.val()||{};renderMembers()},()=>{}));
+  }
 }
 document.querySelector('.tabs').addEventListener('click',e=>{
   const b=e.target.closest('[data-tab]');if(!b)return;
@@ -416,14 +445,14 @@ $('roomsList').addEventListener('click',async e=>{
 $('monitorRooms').addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   try{
-    if(t.dataset.voiceListen){await joinMonitorVoice(t.dataset.voiceListen,true);const box=$(`monitor-${t.dataset.voiceListen}`);if(box)box.classList.add('open');return}
-    if(t.dataset.adminTalk){await toggleAdminTalk(t.dataset.adminTalk);const box=$(`monitor-${t.dataset.adminTalk}`);if(box)box.classList.add('open');return}
+    if(t.dataset.voiceListen){if(!hasPerm('listenVoice'))return alert('ما عندك صلاحية الاستماع للصوت');await joinMonitorVoice(t.dataset.voiceListen,true);const box=$(`monitor-${t.dataset.voiceListen}`);if(box)box.classList.add('open');return}
+    if(t.dataset.adminTalk){if(!hasPerm('adminTalk'))return alert('ما عندك صلاحية التحدث كإدارة');await toggleAdminTalk(t.dataset.adminTalk);const box=$(`monitor-${t.dataset.adminTalk}`);if(box)box.classList.add('open');return}
     if(t.dataset.voiceLeave){await leaveMonitorVoice();return}
-    if(t.dataset.watch){await setAdminMonitor(t.dataset.watch,false);return}
-    if(t.dataset.stealth){await setAdminMonitor(t.dataset.stealth,true);return}
-    if(t.dataset.warn){await moderationAction('warn',t.dataset.warn,t.dataset.uid,t.dataset.name);return}
-    if(t.dataset.muteChat){await moderationAction('muteChat',t.dataset.muteChat,t.dataset.uid,t.dataset.name);return}
-    if(t.dataset.muteVoice){await moderationAction('muteVoice',t.dataset.muteVoice,t.dataset.uid,t.dataset.name);return}
+    if(t.dataset.watch){if(!hasPerm('enterAsModerator'))return alert('ما عندك صلاحية دخول المراقبة');await setAdminMonitor(t.dataset.watch,false);return}
+    if(t.dataset.stealth){if(!hasPerm('hiddenMonitor'))return alert('ما عندك صلاحية المراقبة المخفية');await setAdminMonitor(t.dataset.stealth,true);return}
+    if(t.dataset.warn){if(!hasPerm('warnPlayers'))return alert('ما عندك صلاحية التحذير');await moderationAction('warn',t.dataset.warn,t.dataset.uid,t.dataset.name);return}
+    if(t.dataset.muteChat){if(!hasPerm('muteChat'))return alert('ما عندك صلاحية كتم الشات');await moderationAction('muteChat',t.dataset.muteChat,t.dataset.uid,t.dataset.name);return}
+    if(t.dataset.muteVoice){if(!hasPerm('disableVoice'))return alert('ما عندك صلاحية تعطيل المايك');await moderationAction('muteVoice',t.dataset.muteVoice,t.dataset.uid,t.dataset.name);return}
     if(t.dataset.kick){const code=t.dataset.kick,uid=t.dataset.uid,name=t.dataset.name;if(!confirm(`إخراج ${name} من الغرفة ${code}؟`))return;const ch={};ch[`rooms/${code}/public/players/${uid}`]=null;ch[`rooms/${code}/privateHands/${uid}`]=null;await update(ref(db),ch);await logAction('إخراج لاعب',`${name} من الغرفة ${code}`);return}
     if(t.dataset.ban){const code=t.dataset.ban,uid=t.dataset.uid,name=t.dataset.name;const reason=prompt(`سبب حظر ${name} (اختياري):`,'')??null;if(reason===null)return;if(!confirm(`حظر ${name} وإخراجه من الغرفة؟`))return;const ch={};ch[`bans/${uid}`]={name,reason,createdAt:Date.now(),by:auth.currentUser.uid};ch[`rooms/${code}/public/players/${uid}`]=null;ch[`rooms/${code}/privateHands/${uid}`]=null;await update(ref(db),ch);await logAction('حظر لاعب',`${name} (${uid})`);return}
   }catch(err){alert(err.message)}
@@ -435,18 +464,14 @@ $('bansList').addEventListener('click',async e=>{
   try{await remove(ref(db,`bans/${uid}`));await logAction('فك حظر',`${name} (${uid})`)}catch(err){alert(err.message)}
 });
 $('adminsList').addEventListener('click',async e=>{
-  const t=e.target.closest('[data-remove-admin]');if(!t)return;
-  const uid=t.dataset.removeAdmin;if(!confirm('إلغاء صلاحية هذا الأدمن؟'))return;
-  try{await remove(ref(db,`admins/${uid}`));await logAction('إلغاء أدمن',uid)}catch(err){alert(err.message)}
+  const edit=e.target.closest('[data-edit-admin]');if(edit){openAdminEditor(edit.dataset.editAdmin);return}
+  const t=e.target.closest('[data-remove-admin]');if(!t)return;const uid=t.dataset.removeAdmin;if(!confirm('إلغاء الإشراف عن هذا العضو؟'))return;
+  try{await remove(ref(db,`admins/${uid}`));await logAction('إلغاء إشراف',currentUsers[uid]?.username||uid)}catch(err){alert(err.message)}
 });
-$('addAdminBtn').onclick=async()=>{
-  if(!isSuper())return;
-  const uid=$('newAdminUid').value.trim(),label=$('newAdminLabel').value.trim();
-  if(!uid){alert('اكتب UID للمشرف.');return}
-  if(uid===auth.currentUser.uid){alert('هذا حساب Super Admin الحالي.');return}
-  const data={active:true,role:'admin',label:label||'Admin',permissions:{manageRooms:$('permRooms').checked,banPlayers:$('permBan').checked},createdAt:Date.now(),createdBy:auth.currentUser.uid};
-  try{await set(ref(db,`admins/${uid}`),data);await logAction('إضافة/تحديث أدمن',`${label||uid} (${uid})`);$('newAdminUid').value='';$('newAdminLabel').value='';alert('تم حفظ صلاحيات الأدمن ✅')}catch(err){alert(err.message)}
-};
+$('membersList').addEventListener('click',e=>{const t=e.target.closest('[data-assign-admin]');if(t)openAdminEditor(t.dataset.assignAdmin)});
+$('memberSearch').addEventListener('input',renderMembers);$('clearMemberSearch').onclick=()=>{$('memberSearch').value='';renderMembers()};
+document.querySelector('.filterRow').addEventListener('click',e=>{const b=e.target.closest('[data-member-filter]');if(!b)return;memberFilter=b.dataset.memberFilter;document.querySelectorAll('[data-member-filter]').forEach(x=>x.classList.toggle('active',x===b));renderMembers()});
+$('refreshMembers').onclick=()=>subscribeAll();
 $('closeAllBtn').onclick=async()=>{
   if(!canRooms())return;const n=Object.keys(currentRooms||{}).length;if(!n){alert('لا توجد غرف مفتوحة.');return}
   if(!confirm(`إغلاق جميع الغرف (${n})؟`))return;
@@ -471,30 +496,5 @@ onAuthStateChanged(auth,async user=>{
   try{currentAdmin=await fetchAdmin(user);if(currentAdmin)showDash(user);else{await signOut(auth);showLogin()}}catch{showLogin()}
 });
 </script>
-
-<script>
-/* SHEIKH FLEX ADMIN PERMISSIONS */
-window.SHEIKH_ADMIN_ROLES = {
-  superAdmin: {label:"السوبر أدمن", badge:"👑", locked:true},
-  generalModerator: {label:"مشرف عام", badge:"🛡️"},
-  roomModerator: {label:"مشرف غرف", badge:"🔰"},
-  assistantModerator: {label:"مشرف مساعد", badge:"⭐"}
-};
-window.SHEIKH_ADMIN_PERMISSION_DEFS = {
-  enterAsModerator:"دخول الغرف كمشرف",
-  hiddenMonitor:"المراقبة المخفية",
-  listenVoice:"الاستماع للصوت",
-  adminTalk:"التحدث كإدارة",
-  warnPlayers:"إرسال تحذير",
-  muteChat:"كتم الشات",
-  disableVoice:"تعطيل المايك",
-  kickPlayers:"إخراج لاعب",
-  banPlayers:"حظر لاعب",
-  closeRooms:"إغلاق غرفة",
-  globalAnnouncements:"الإعلانات العامة",
-  viewLogs:"مشاهدة السجلات"
-};
-</script>
-
 </body>
 </html>
