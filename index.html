@@ -1237,6 +1237,33 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
  body:has(.homePage) .homePage{margin-top:0!important;}
 }
 </style>
+
+<style id="home-landscape-final-lock">
+/* Final locked home landscape layout. Scoped only to the signed-in home page. */
+@media (orientation:landscape) and (min-width:650px) and (max-height:600px){
+ body:has(.homePage) .wrap>header{
+  position:relative!important;top:auto!important;left:auto!important;right:auto!important;transform:none!important;
+  z-index:5!important;pointer-events:auto!important;width:100%!important;height:auto!important;min-height:48px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:12px!important;
+  padding:4px 0 3px!important;margin:0 auto 4px!important;background:transparent!important;
+ }
+ body:has(.homePage) .wrap>header h1{
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  color:#f4d06f!important;font-size:25px!important;line-height:1!important;white-space:nowrap!important;text-shadow:0 2px 8px #000!important;
+ }
+ body:has(.homePage) .wrap>header h1::before{
+  content:""!important;width:38px!important;height:38px!important;flex:0 0 38px!important;
+  background:url("icon-512.png") center/contain no-repeat!important;border-radius:10px!important;filter:drop-shadow(0 3px 6px #0008)!important;
+ }
+ body:has(.homePage) .wrap>header p{
+  display:block!important;position:static!important;margin:0!important;padding:0!important;
+  color:#eadcc7!important;font-size:10px!important;line-height:1.15!important;white-space:nowrap!important;text-shadow:0 2px 6px #000!important;
+ }
+ body:has(.homePage) #app{position:static!important;width:100%!important;height:auto!important;overflow:visible!important;padding:0!important;}
+ body:has(.homePage) .homePage{margin:0 auto 10px!important;}
+}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
