@@ -324,7 +324,7 @@ async function setAdminMonitor(code,stealth){
 }
 async function moderationAction(kind,code,uid,name){
   if(!canRooms())return;
-  const now=Date.now(),base=`moderation/${uid}`;
+  const now=Date.now(),base=`moderation/${code}/${uid}`;
   if(kind==='warn'){
     const reason=prompt(`رسالة التحذير إلى ${name}:`,'يرجى الالتزام بقوانين الغرفة.')??null;if(reason===null)return;
     await set(push(ref(db,`${base}/warnings`)),{room:code,message:reason,by:auth.currentUser.uid,createdAt:now});await logAction('تحذير لاعب',`${name} في الغرفة ${code}: ${reason}`);return;
@@ -366,7 +366,19 @@ function renderLogs(data){
 function subscribeAll(){
   cleanup();
   if(canRooms()){
-    stops.push(onValue(ref(db,'rooms'),s=>{currentRooms=s.val()||{};renderRooms();renderMonitor()},e=>$('roomsList').innerHTML=`<div class="empty">تعذر قراءة الغرف: ${esc(e.message)}</div>`));
+    stops.push(onValue(ref(db,'roomIndex'),async s=>{
+      const index=s.val()||{},next={};
+      await Promise.all(Object.keys(index).map(async code=>{
+        try{
+          const [pubSnap,chatSnap]=await Promise.all([
+            get(ref(db,`rooms/${code}/public`)),
+            get(ref(db,`rooms/${code}/chat`))
+          ]);
+          if(pubSnap.exists()) next[code]={public:pubSnap.val(),chat:chatSnap.val()||{}};
+        }catch(e){}
+      }));
+      currentRooms=next;renderRooms();renderMonitor();
+    },e=>$('roomsList').innerHTML=`<div class="empty">تعذر قراءة فهرس الغرف: ${esc(e.message)}</div>`));
   }else{$('roomsList').innerHTML='<div class="empty">ما عندك صلاحية إدارة الغرف.</div>'}
   stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans()},()=>{}));
   stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>renderLogs(s.val()||{}),()=>{}));
@@ -435,7 +447,7 @@ $('addAdminBtn').onclick=async()=>{
 $('closeAllBtn').onclick=async()=>{
   if(!canRooms())return;const n=Object.keys(currentRooms||{}).length;if(!n){alert('لا توجد غرف مفتوحة.');return}
   if(!confirm(`إغلاق جميع الغرف (${n})؟`))return;
-  try{await remove(ref(db,'rooms'));await logAction('إغلاق جميع الغرف',`${n} غرفة`)}catch(err){alert(err.message)}
+  try{const ch={};for(const code of Object.keys(currentRooms||{})){ch[`rooms/${code}`]=null;ch[`roomIndex/${code}`]=null}await update(ref(db),ch);await logAction('إغلاق جميع الغرف',`${n} غرفة`)}catch(err){alert(err.message)}
 };
 $('refreshRooms').onclick=()=>subscribeAll();$('refreshMonitor').onclick=()=>subscribeAll();$('refreshBans').onclick=()=>subscribeAll();$('refreshLogs').onclick=()=>subscribeAll();
 $('backRoomsBtn').onclick=()=>{document.querySelector('[data-tab="rooms"]').click()};
