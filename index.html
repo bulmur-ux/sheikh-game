@@ -1318,6 +1318,25 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
   .decisionActions .decisionButtons .btn{min-height:28px!important;font-size:7px!important;padding:3px!important}
 }
 </style>
+
+<style id="emirati-deck-v1">
+/* طقم شيك شيك الإماراتي — شكل فقط، لا يغيّر منطق اللعب */
+.cardFace{background:linear-gradient(145deg,#fff9e8,#ead5a4)!important;border:2px solid #c79436!important;box-shadow:0 4px 12px #0006,inset 0 0 0 2px #fff1bd!important}
+.cardFace .emirCard{position:absolute!important;inset:4px!important;border:1px solid #b7832f!important;border-radius:8px!important;background:radial-gradient(circle at 50% 38%,#fffdf4 0,#f8e9c6 66%,#e9cc8c 100%)!important;overflow:hidden!important}
+.cardFace .emirCard:before,.cardFace .emirCard:after{content:"";position:absolute;width:26px;height:26px;border:2px solid #c4933a;transform:rotate(45deg);opacity:.45}.cardFace .emirCard:before{left:-15px;top:-15px}.cardFace .emirCard:after{right:-15px;bottom:-15px}
+.cardFace .faceCorner{z-index:4!important}.cardFace .faceRank{font-family:Georgia,serif!important;font-size:20px!important}.cardFace .faceSuitSmall{font-size:15px!important}
+.cardFace .emirNumber,.cardFace .emirAce,.cardFace .emirCourt,.cardFace .emirJoker{position:absolute;inset:18% 10% 10%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2}
+.cardFace .emirBigSuit{font-size:42px!important;line-height:.85}.cardFace .emirNumber b{font:900 18px/1 Georgia,serif}.cardFace .emirNumber small{font-size:6px;color:#a77b34;margin-top:3px;font-weight:900}
+.cardFace .emirAceSuit{font-size:48px;line-height:1}.cardFace .emirAceMark{position:absolute;font-size:18px;filter:sepia(1);bottom:4px}
+.cardFace .emirPortrait{width:78%;height:72%;border:1px solid #c49a4d;border-radius:45% 45% 12px 12px;background:linear-gradient(180deg,#f7e6bd,#c99c4d);display:flex;align-items:center;justify-content:center;position:relative;box-shadow:inset 0 0 0 2px #fff4c8}.cardFace .emirPortrait>span{font-size:38px;filter:saturate(.75)}.cardFace .emirPortrait i{position:absolute;right:3px;bottom:1px;font-style:normal;font-size:17px}.cardFace .faceCourtName{font-size:6px!important;margin-top:2px!important;color:#8b6429!important;letter-spacing:.5px!important}
+.cardFace .emirJokerStar{font-size:38px;line-height:1}.cardFace .emirJoker b{font:900 12px/1 Georgia,serif;letter-spacing:1px}.cardFace .emirJoker small{font-size:7px}.cardFace .emirFalcon{font-size:18px;margin-top:2px;filter:grayscale(.4)}
+.cardFace .emirCardSeal{position:absolute;left:5px;bottom:4px;width:15px;height:15px;border-radius:50%;display:grid;place-items:center;background:#7b1627;color:#f7d477;border:1px solid #c89a3c;font-size:8px;font-weight:900}
+.cardFace.red,.cardFace .emirRed{color:#a80f20!important}.cardFace.black,.cardFace .emirBlack{color:#15100d!important}
+.cardBack{background:#6f0e22!important;background-image:linear-gradient(135deg,rgba(255,215,110,.10) 25%,transparent 25%,transparent 50%,rgba(255,215,110,.10) 50%,rgba(255,215,110,.10) 75%,transparent 75%),url('icon-512.png')!important;background-size:14px 14px,72% auto!important;background-position:center,center!important;background-repeat:repeat,no-repeat!important;border:2px solid #d5a53e!important;box-shadow:0 4px 12px #0007,inset 0 0 0 3px #7d1629,inset 0 0 0 5px #d5a53e!important}
+.cardBack:after{content:"شيك شيك";position:absolute;left:7px;right:7px;bottom:7px;padding:2px 1px;border-radius:6px;background:rgba(74,8,22,.88);border:1px solid #d5a53e;color:#ffe5a0;font-size:7px;font-weight:950;text-align:center;text-shadow:0 1px 2px #000}
+@media (orientation:landscape) and (max-height:500px){.refHandWrap .cardFace .emirBigSuit{font-size:29px!important}.refHandWrap .cardFace .emirAceSuit{font-size:33px!important}.refHandWrap .cardFace .emirPortrait>span{font-size:26px!important}.refHandWrap .cardFace .faceRank{font-size:15px!important}.refHandWrap .cardBack:after{font-size:5px!important;bottom:4px!important}}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -1502,6 +1521,23 @@ function rankInline(xp=0,withText=true){const r=rankForXp(xp);return `<span clas
 function rankProgress(xp=0){const r=rankForXp(xp);if(r.max===null)return 100;return Math.max(0,Math.min(100,((Number(xp)-r.min)/(r.max-r.min+1))*100))}
 function careerStats(p={}){const x=p.stats||{};return {gamesPlayed:Number(x.gamesPlayed||0),wins:Number(x.wins||0),losses:Number(x.losses||0),roundsPlayed:Number(x.roundsPlayed||0),totalPoints:Number(x.totalPoints||0)}}
 function careerStatsHtml(p={}){const x=careerStats(p);return `<div class="memberCareer"><div class="careerStat"><b>${x.gamesPlayed}</b><span>مباراة</span></div><div class="careerStat"><b>${x.wins}</b><span>فوز</span></div><div class="careerStat"><b>${x.losses}</b><span>خسارة</span></div><div class="careerStat"><b>${x.roundsPlayed}</b><span>جولة</span></div><div class="careerStat"><b>${x.totalPoints}</b><span>نقطة</span></div></div>`}
+async function commitRoundCareerStats(g){
+ if(uid!==currentRoom?.hostId||!g||g.phase!=="finished")return false;
+ const roundNo=Number(g.roundNo||1),roundToken=String(g.roundToken||"");if(!roundToken)return false;
+ const results=g.results||{};let changed=false;
+ for(const [id,x] of Object.entries(results)){
+  const points=Number(x?.score||0);
+  const tx=await runTransaction(ref(db,`users/${id}`),profile=>{
+   if(!profile)return profile;profile.stats=profile.stats||{};profile.stats.rounds=profile.stats.rounds||{};
+   if(profile.stats.rounds[roundToken])return profile;
+   profile.stats.roundsPlayed=Number(profile.stats.roundsPlayed||0)+1;
+   profile.stats.totalPoints=Number(profile.stats.totalPoints||0)+points;
+   profile.stats.rounds[roundToken]={at:Date.now(),roundNo,points};return profile;
+  });if(tx.committed)changed=true;
+ }
+ if(changed)try{await update(ref(db,`rooms/${roomCode}/public/game`),{roundStatsCommittedToken:roundToken,roundStatsCommittedAt:Date.now()})}catch{}
+ return changed;
+}
 async function commitMatchCareerStats(g){
  if(uid!==currentRoom?.hostId||!g||g.phase!=="finished"||(g.roundNo||1)<(g.totalRounds||1))return false;
  const matchId=String(g.matchId||g.roundToken||"");if(!matchId)return false;
@@ -1513,7 +1549,7 @@ async function commitMatchCareerStats(g){
   const tx=await runTransaction(ref(db,`users/${id}`),profile=>{
    if(!profile)return profile;profile.stats=profile.stats||{};profile.stats.matches=profile.stats.matches||{};
    if(profile.stats.matches[matchId])return profile;
-   profile.stats.gamesPlayed=Number(profile.stats.gamesPlayed||0)+1;profile.stats.wins=Number(profile.stats.wins||0)+(won?1:0);profile.stats.losses=Number(profile.stats.losses||0)+(won?0:1);profile.stats.roundsPlayed=Number(profile.stats.roundsPlayed||0)+rounds;profile.stats.totalPoints=Number(profile.stats.totalPoints||0)+points;
+   profile.stats.gamesPlayed=Number(profile.stats.gamesPlayed||0)+1;profile.stats.wins=Number(profile.stats.wins||0)+(won?1:0);profile.stats.losses=Number(profile.stats.losses||0)+(won?0:1);
    const earnedXp=50+(won?100:25)+(rounds*10);profile.xp=Number(profile.xp||0)+earnedXp;profile.stats.matches[matchId]={at:Date.now(),won,rounds,points,xp:earnedXp};return profile;
   });if(tx.committed)changed=true;
  }
@@ -1575,7 +1611,26 @@ function releaseFunnyAudio(){
  try{a.pause();a.removeAttribute("src");a.load();a.volume=.9}catch{}
  funnyAudio=a
 }
-async function sendFunnySound(key){await primeRoomAudio();const item=FUN_SOUNDS[key];if(!item||!roomCode||!uid)return;const now=Date.now();if(now-lastFunnySendAt<2500){toast("انتظر شوي قبل الصوت الثاني 😄");return}lastFunnySendAt=now;try{await set(ref(db,`rooms/${roomCode}/public/funnySound`),{id:uid+"_"+now,key,name:myName,ts:now});closeModal()}catch(e){toast("تعذر إرسال الصوت")}}
+async function sendFunnySound(key,btn=null){
+ const item=FUN_SOUNDS[key];if(!item||!roomCode||!uid)return;
+ const now=Date.now();if(now-lastFunnySendAt<2500){toast("انتظر شوي قبل الصوت الثاني 😄");return}
+ lastFunnySendAt=now;
+ if(btn){btn.disabled=true;btn.textContent="📢 تم الإرسال"}
+ // Keep the user gesture hot on iPhone/Safari before the Firebase write.
+ await primeRoomAudio();
+ const eventId=uid+"_"+now;
+ // Play immediately for the sender; the Firebase echo is ignored locally below.
+ lastFunnyEventId=eventId;
+ playFunnySound(key,myName).catch(()=>{});
+ try{
+  await set(ref(db,`rooms/${roomCode}/public/funnySound`),{id:eventId,key,name:myName,ts:now});
+  setTimeout(()=>closeModal(),120);
+ }catch(e){
+  lastFunnySendAt=0;
+  if(btn){btn.disabled=false;btn.textContent="📢 إرسال"}
+  toast("تعذر إرسال الصوت");
+ }
+}
 function previewFunnySound(key){primeRoomAudio();playFunnySound(key,"");}
 function showSoundBoard(){
  primeRoomAudio();
@@ -1587,7 +1642,7 @@ function showSoundBoard(){
  const html=ordered.map(c=>`<div class="soundCategory"><div class="soundCategoryTitle">${esc(c)}</div><div class="soundRows">${normalized[c].map(([k,v])=>`<div class="soundItem"><div class="soundItemName">${esc(v.label)}</div><button class="soundMini soundPreview" data-preview="${esc(k)}">▶️ معاينة</button><button class="soundMini soundSend" data-funny="${esc(k)}">📢 إرسال</button></div>`).join("")}</div></div>`).join("") || `<div class="soundHint">ما تم تحميل قائمة الأصوات. حدّث الصفحة وجرب مرة ثانية.</div>`;
  openModal(`<div class="panel"><h2 style="margin-top:0">🔊 أصوات المجلس</h2>${html}<div id="soundNow" class="soundNow"></div><div class="soundHint">▶️ المعاينة تسمعها أنت فقط. 📢 الإرسال يسمعه كل الموجودين في الغرفة. يوجد انتظار بسيط بين الإرسال والثاني.</div><button id="soundBoardClose" class="btn alt soundClose">إغلاق</button></div>`);
  document.querySelectorAll("[data-preview]").forEach(b=>b.onclick=()=>previewFunnySound(b.dataset.preview));
- document.querySelectorAll("[data-funny]").forEach(b=>b.onclick=()=>sendFunnySound(b.dataset.funny));
+ document.querySelectorAll("[data-funny]").forEach(b=>{b.onclick=e=>{e.preventDefault();e.stopPropagation();sendFunnySound(b.dataset.funny,b)}});
  document.getElementById("soundBoardClose").onclick=closeModal
 }
 function getRadioAudio(){if(!radioAudio){radioAudio=new Audio();radioAudio.preload="none";radioAudio.playsInline=true;radioAudio.volume=radioVolume/100;radioAudio.muted=radioMuted;radioAudio.addEventListener("error",()=>updateRadioState("تعذر تشغيل البث المباشر — جرّب فتح البث الرسمي"));}return radioAudio}
@@ -1625,21 +1680,25 @@ function updateSfxUi(){
 }
 function cardLabel(c){if(!c)return"";if(c.r==="JOKER")return c.color==="color"?"🃏 ملون":"🃏 أسود";const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";return `${c.r}${sym}`}
 function cardFaceHtml(c){
- if(!c)return '<div class="faceCardInner"><div class="faceCenter"><span class="faceBrand">—</span></div></div>';
+ if(!c)return '<div class="faceCardInner emirCard"><div class="faceCenter"><span class="faceBrand">شيك شيك</span></div></div>';
  if(c.r==="JOKER"){
   const colored=c.color==="color";
-  return `<div class="faceCardInner faceJoker ${colored?'colorJoker':'blackJoker'}"><div class="faceCorner tl"><span class="faceRank">J</span><span class="faceSuitSmall">★</span></div><div class="jokerArt"><span class="jokerStar">★</span><b>JOKER</b><small>${colored?'الملون':'الأسود'}</small></div></div>`
+  return `<div class="faceCardInner emirCard faceJoker ${colored?'colorJoker':'blackJoker'}"><div class="faceCorner tl"><span class="faceRank">J</span><span class="faceSuitSmall">★</span></div><div class="emirJoker"><span class="emirJokerStar">★</span><b>JOKER</b><small>${colored?'الملون':'الأسود'}</small><span class="emirFalcon">🦅</span></div></div>`;
  }
  const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";
  const court=["J","Q","K"].includes(c.r);
+ const red=(c.s==="H"||c.s==="D");
  let center='';
  if(court){
-  const courtName={J:"JACK",Q:"QUEEN",K:"KING"}[c.r];
-  center=`<div class="faceCenter faceCourt"><div class="faceCourtArt">${c.r}</div><div class="faceSuitBig">${sym}</div><div class="faceCourtName">${courtName}</div></div>`;
+  const who={J:'👨🏻',Q:'👩🏻',K:'🧔🏻'}[c.r];
+  const title={J:'JACK',Q:'QUEEN',K:'KING'}[c.r];
+  center=`<div class="faceCenter emirCourt"><div class="emirPortrait"><span>${who}</span><i>${sym}</i></div><div class="faceCourtName">${title}</div></div>`;
+ }else if(c.r==='A'){
+  center=`<div class="faceCenter emirAce"><span class="emirAceSuit">${sym}</span><span class="emirAceMark">🦅</span></div>`;
  }else{
-  center=`<div class="faceCenter simpleNumberFace"><div class="simpleRank">${c.r}</div><div class="simpleSuit">${sym}</div></div>`;
+  center=`<div class="faceCenter emirNumber"><div class="emirBigSuit">${sym}</div><b>${c.r}</b><small>شيك شيك</small></div>`;
  }
- return `<div class="faceCardInner ${court?'courtInner':''}"><div class="faceCorner tl"><span class="faceRank">${c.r}</span><span class="faceSuitSmall">${sym}</span></div>${center}</div>`
+ return `<div class="faceCardInner emirCard ${red?'emirRed':'emirBlack'}"><div class="faceCorner tl"><span class="faceRank">${c.r}</span><span class="faceSuitSmall">${sym}</span></div>${center}<div class="emirCardSeal">ش</div></div>`;
 }
 function isRed(c){return c&&(c.s==="H"||c.s==="D")}
 function cardClass(c){return !c?"":(c.r==="JOKER"?"joker":(isRed(c)?"red":"black"))}
@@ -2499,7 +2558,7 @@ function renderResults(){
  const nextBlock=host&&!final?`<div class="gap"></div><div class="notice">👑 تقدر تغيّر لاعبين الجولة التالية. اختر من 2 إلى 4:</div>${playerEntries().map(([id,p])=>`<label class="playerPick"><input type="checkbox" data-nextactive="${id}" ${(g.turnOrder||[]).includes(id)?"checked":""} style="width:auto;margin-left:8px">${esc(p.name)}</label>`).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button><div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:(host&&final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`:(!host?`<div class="notice center">بانتظار المضيف ${final?'للعودة إلى الغرفة':'لبدء الجولة التالية'}</div>`:""));
  app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${g.totalRounds||1}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — نقاط الجولة: <b>${x.score}</b> • الكلي: <b>${totals[id]||0}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="resultCards">${cardsHtml(x.cards)}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div><button id="leave" class="btn danger">خروج</button></div>${chatPanel()}`;
  wireCommon();
- if(final&&uid===currentRoom.hostId&&!g.careerStatsCommittedAt)setTimeout(()=>commitMatchCareerStats(g).catch(e=>console.warn("career stats",e)),80);
+ if(uid===currentRoom.hostId)setTimeout(async()=>{try{await commitRoundCareerStats(g);if(final&&!g.careerStatsCommittedAt)await commitMatchCareerStats(g)}catch(e){console.warn("career stats",e)}},80);
  const br=document.getElementById("backRoom");if(br)br.onclick=resetToLobby;
  const nr=document.getElementById("nextRound");if(nr)nr.onclick=async()=>{const order=[...document.querySelectorAll("[data-nextactive]:checked")].map(x=>x.dataset.nextactive);if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}nr.disabled=true;nr.textContent="جاري تجهيز الجولة...";try{await beginRound(order,(g.roundNo||1)+1,g.totalRounds||1,g.cumulativeScores||{})}catch(e){console.warn(e);nr.disabled=false;nr.textContent="ابدأ الجولة التالية";toast("تعذر بدء الجولة التالية — جرّب مرة ثانية")}}
 }
