@@ -77,6 +77,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 .monitorLine{padding:7px 5px;border-bottom:1px solid #2e2113;font-size:12px;line-height:1.55}.monitorLine:last-child{border-bottom:0}.monitorLine time{color:#8f8067;font-size:10px;margin-inline-start:5px}
 .modActions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.modActions .btn{min-height:31px;font-size:10px;padding:0 8px}
 .monitorNotice{font-size:11px;color:#bda98a;line-height:1.6;margin:7px 1px 0}
+.voiceAdminBar{display:flex;gap:7px;flex-wrap:wrap;margin:9px 0}.voiceAdminBar .btn{min-height:38px;font-size:12px}.voiceState{display:inline-block;padding:5px 9px;border-radius:999px;background:#17100d;border:1px solid #5d431f;color:#ffe29a;font-size:11px;font-weight:800}
 @media(max-width:600px){
  .wrap{padding-top:8px}.card{padding:12px;border-radius:20px}.gridStats{grid-template-columns:repeat(2,1fr)}
  .tabs{grid-template-columns:repeat(2,1fr)}.adminEmail{max-width:190px}.itemHead{align-items:flex-start;flex-direction:column}
@@ -176,6 +177,8 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 </section>
 </div>
 
+<div id="voiceAudios" aria-hidden="true" style="position:fixed;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none"></div>
+<script src="voice.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -185,6 +188,7 @@ const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomai
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb);
 const $=id=>document.getElementById(id);
 let currentAdmin=null,currentRooms={},currentBans={},stops=[];
+let monitorVoice=null,monitorVoiceCode="",monitorVoiceStealth=true,monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]))}
 function msg(text,type='err'){const el=$('loginMsg');el.className='msg '+type;el.textContent=text}
@@ -244,6 +248,55 @@ function renderRooms(){
     </div>`;
   }).join('');
 }
+function monitorVoiceUid(){
+  return auth.currentUser ? `admin_${auth.currentUser.uid}` : "";
+}
+function monitorVoiceRoom(){
+  return currentRooms?.[monitorVoiceCode]?.public || null;
+}
+function monitorToast(text){
+  const el=document.createElement('div');el.textContent=text;el.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99999;background:#17100d;color:#ffe29a;border:1px solid #8e682d;border-radius:12px;padding:10px 14px;font-weight:800;font-size:13px;box-shadow:0 8px 30px #0009';document.body.appendChild(el);setTimeout(()=>el.remove(),2600);
+}
+function ensureMonitorVoice(){
+  if(monitorVoice) return monitorVoice;
+  if(!window.SheikhVoice?.createVoiceController) throw new Error('تعذر تحميل نظام الصوت voice.js');
+  monitorVoice=window.SheikhVoice.createVoiceController({
+    db,ref,get,set,update,push,remove,
+    getRoomCode:()=>monitorVoiceCode,
+    getUid:()=>monitorVoiceUid(),
+    getName:()=> 'الإدارة',
+    getCurrentRoom:()=>monitorVoiceRoom(),
+    toast:monitorToast,
+    sleep:ms=>new Promise(r=>setTimeout(r,ms)),
+    releaseWebAudio:async()=>{},stopRadio:()=>{},
+    onStateChange:st=>{monitorVoiceState=st||monitorVoiceState;renderMonitor()},
+    onUiRefresh:()=>{}
+  });
+  return monitorVoice;
+}
+async function joinMonitorVoice(code,stealth=true){
+  if(monitorVoiceCode && monitorVoiceCode!==code && monitorVoice?.isActive?.()) await monitorVoice.stop(true);
+  monitorVoiceCode=code;monitorVoiceStealth=!!stealth;
+  const vc=ensureMonitorVoice();
+  if(!vc.isActive()&&!vc.isStarting()) await vc.start({muted:true});
+  await setAdminMonitor(code,stealth);
+  await logAction('دخول صوت إداري',`الغرفة ${code} — ${stealth?'متخفي':'مراقب'}`);
+}
+async function toggleAdminTalk(code){
+  if(monitorVoiceCode!==code || !monitorVoice?.isActive?.()) await joinMonitorVoice(code,true);
+  if(monitorVoice?.isActive?.()){
+    await monitorVoice.toggleMute();
+    await update(ref(db,`rooms/${code}/public/adminVoice`),{
+      speaking:!monitorVoice.isMuted(),label:'الإدارة',ts:Date.now()
+    }).catch(()=>{});
+  }
+}
+async function leaveMonitorVoice(){
+  const code=monitorVoiceCode;
+  if(monitorVoice) await monitorVoice.stop(true).catch(()=>{});
+  if(code) await remove(ref(db,`rooms/${code}/public/adminVoice`)).catch(()=>{});
+  monitorVoiceCode='';monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};renderMonitor();
+}
 function roomMessages(room){
   const sources=[room?.public?.chat,room?.public?.messages,room?.chat,room?.messages].filter(Boolean);
   const all=[];sources.forEach(src=>Object.entries(src||{}).forEach(([id,v])=>all.push({id,...(v||{})})));
@@ -256,7 +309,9 @@ function renderMonitor(){
     const pub=room?.public||{},players=getPlayers(room),msgs=roomMessages(room);
     const feed=msgs.length?msgs.map(m=>`<div class="monitorLine"><b>${esc(m.name||m.senderName||m.userName||'لاعب')}:</b> ${esc(m.text||m.message||m.body||'')} ${m.createdAt||m.ts?`<time>${new Date(m.createdAt||m.ts).toLocaleTimeString('ar-AE',{hour:'2-digit',minute:'2-digit'})}</time>`:''}</div>`).join(''):'<div class="empty" style="padding:12px">لا توجد رسائل ظاهرة</div>';
     const phtml=players.map(p=>`<div class="player"><div><div class="pname">${esc(p.name||'بدون اسم')}</div><div class="prole">${esc(p.role||'player')}</div></div><div class="modActions">${canRooms()?`<button class="btn btnDark" data-warn="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">⚠️ تحذير</button><button class="btn btnDark" data-mute-chat="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">💬 كتم</button><button class="btn btnDark" data-mute-voice="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">🎙️ تعطيل</button><button class="btn btnBlue" data-kick="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">إخراج</button>`:''}${canBan()?`<button class="btn btnRed" data-ban="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">حظر</button>`:''}</div></div>`).join('');
-    return `<div class="item"><div class="itemHead"><div><div class="itemTitle">#${esc(code)}</div><div class="itemMeta">${roomStatus(pub)} • ${players.length} لاعب</div></div><div class="actions"><button class="btn btnBlue" data-watch="${esc(code)}">👁️ مراقبة</button><button class="btn btnDark" data-stealth="${esc(code)}">🥷 متخفي</button></div></div><div id="monitor-${esc(code)}" class="players"><div class="monitorBox"><div class="monitorHead"><b>الشات والأحداث الظاهرة</b><span class="pill gold">بدون أوراق خاصة</span></div><div class="monitorFeed">${feed}</div><div style="margin-top:9px">${phtml||'<div class="empty">لا يوجد لاعبون</div>'}</div></div></div></div>`;
+    const voiceHere=monitorVoiceCode===code;
+    const voiceLabel=voiceHere?(monitorVoiceState.starting?'جاري الربط...':monitorVoiceState.active?`متصل • ${monitorVoiceState.remoteCount||0} صوت`:'غير متصل'):'غير متصل';
+    return `<div class="item"><div class="itemHead"><div><div class="itemTitle">#${esc(code)}</div><div class="itemMeta">${roomStatus(pub)} • ${players.length} لاعب</div></div><div class="actions"><button class="btn btnBlue" data-watch="${esc(code)}">👁️ مراقبة</button><button class="btn btnDark" data-stealth="${esc(code)}">🥷 متخفي</button></div></div><div id="monitor-${esc(code)}" class="players"><div class="monitorBox"><div class="monitorHead"><b>الشات والأحداث الظاهرة</b><span class="pill gold">بدون أوراق خاصة</span></div><div class="voiceAdminBar"><button class="btn btnGreen" data-voice-listen="${esc(code)}">🔊 دخول الصوت</button><button class="btn btnGold" data-admin-talk="${esc(code)}">${voiceHere&&monitorVoiceState.active&&!monitorVoiceState.muted?'🔇 إيقاف حديث الإدارة':'🎙️ تحدث كإدارة'}</button>${voiceHere?`<button class="btn btnRed" data-voice-leave="${esc(code)}">⏹️ خروج من الصوت</button>`:''}<span class="voiceState">${esc(voiceLabel)}</span></div><div class="monitorFeed">${feed}</div><div style="margin-top:9px">${phtml||'<div class="empty">لا يوجد لاعبون</div>'}</div></div></div></div>`;
   }).join('');
 }
 async function setAdminMonitor(code,stealth){
@@ -346,6 +401,9 @@ $('roomsList').addEventListener('click',async e=>{
 $('monitorRooms').addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   try{
+    if(t.dataset.voiceListen){await joinMonitorVoice(t.dataset.voiceListen,true);const box=$(`monitor-${t.dataset.voiceListen}`);if(box)box.classList.add('open');return}
+    if(t.dataset.adminTalk){await toggleAdminTalk(t.dataset.adminTalk);const box=$(`monitor-${t.dataset.adminTalk}`);if(box)box.classList.add('open');return}
+    if(t.dataset.voiceLeave){await leaveMonitorVoice();return}
     if(t.dataset.watch){await setAdminMonitor(t.dataset.watch,false);return}
     if(t.dataset.stealth){await setAdminMonitor(t.dataset.stealth,true);return}
     if(t.dataset.warn){await moderationAction('warn',t.dataset.warn,t.dataset.uid,t.dataset.name);return}
@@ -381,7 +439,7 @@ $('closeAllBtn').onclick=async()=>{
 };
 $('refreshRooms').onclick=()=>subscribeAll();$('refreshMonitor').onclick=()=>subscribeAll();$('refreshBans').onclick=()=>subscribeAll();$('refreshLogs').onclick=()=>subscribeAll();
 $('backRoomsBtn').onclick=()=>{document.querySelector('[data-tab="rooms"]').click()};
-$('logoutBtn').onclick=()=>signOut(auth);
+$('logoutBtn').onclick=async()=>{await leaveMonitorVoice().catch(()=>{});await signOut(auth)};
 
 $('loginBtn').onclick=async()=>{
   const email=$('email').value.trim(),password=$('password').value;if(!email||!password){msg('اكتب البريد وكلمة المرور أولاً.');return}
