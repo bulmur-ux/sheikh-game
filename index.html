@@ -1294,6 +1294,10 @@ let unsubRoom=null,unsubChat=null,unsubHand=null,unsubFunny=null,unsubHomeStats=
 let voiceActive=false,voiceStarting=false,voiceMuted=false;
 let processingKickRequest=false;
 let voiceController=null;
+let moderationState={chatMutedUntil:0,voiceMutedUntil:0};
+let moderationStop=null;
+let seenAdminWarnings=new Set();
+
 let turnCountdownTimer=null,handlingTurnTimeout=false,revealFinalizing=false;
 let sfxMuted=localStorage.getItem("sheikh_sfx_muted")==="1",audioCtx=null,audioUnlocked=false;
 let funnyAudio=null,lastFunnyEventId="",funnyEventPrimed=false,lastFunnySendAt=0,funnySubscribeAt=0;
@@ -1635,7 +1639,7 @@ async function handleHostKickRequest(nextRoom){
   return true;
  }finally{processingKickRequest=false}
 }
-function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}const nextRoom=s.val();await handleHostRoundRemoveRequest(nextRoom);if(await handleHostKickRequest(nextRoom))return;if(uid&&!nextRoom?.players?.[uid]){localStorage.removeItem("sheikh_room");roomCode="";home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");return}currentRoom=nextRoom;if(uid===nextRoom.hostId){update(ref(db,`roomIndex/${c}`),{hostId:nextRoom.hostId||"",status:nextRoom.status||"lobby",playerCount:Object.keys(nextRoom.players||{}).length,updatedAt:Date.now()}).catch(()=>{})}await startPresence(nextRoom.status==="game"?"game":"room",c);await autoGameWork();render();updateAdminVoiceIndicator();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()});unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()))}
+function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}const nextRoom=s.val();await handleHostRoundRemoveRequest(nextRoom);if(await handleHostKickRequest(nextRoom))return;if(uid&&!nextRoom?.players?.[uid]){localStorage.removeItem("sheikh_room");roomCode="";home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");return}currentRoom=nextRoom;watchMyModeration();if(uid===nextRoom.hostId){update(ref(db,`roomIndex/${c}`),{hostId:nextRoom.hostId||"",status:nextRoom.status||"lobby",playerCount:Object.keys(nextRoom.players||{}).length,updatedAt:Date.now()}).catch(()=>{})}await startPresence(nextRoom.status==="game"?"game":"room",c);await autoGameWork();render();updateAdminVoiceIndicator();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()});unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()))}
 
 async function kickPlayer(targetUid){
  if(uid!==currentRoom?.hostId){toast("فقط صاحب الغرفة يقدر يطلع لاعب");return}
@@ -2322,6 +2326,65 @@ function showRulesModal(){
 function chatPanel(){return `<div class="panel chatPanel"><b>شات الغرفة</b><div class="voiceBar"><button id="sfxTest" class="btn alt">🔊 اختبار الصوت</button><button id="sfxToggle" class="btn alt">${sfxMuted?"🔇 تشغيل المؤثرات":"🔕 كتم المؤثرات"}</button><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><div class="entertainRow"><button id="funSounds" class="btn soundLauncher">😂 🔊 الأصوات</button><button id="radioOpenBtn" class="btn alt">📻 الإذاعة</button></div><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
 function wireCommon(){document.addEventListener("pointerdown",()=>{primeRoomAudio();unlockAudio()},{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=leaveRoomCleanly;const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const rfs=document.getElementById("refFunSounds");if(rfs)rfs.onclick=showSoundBoard;const ro=document.getElementById("radioOpenBtn");if(ro)ro.onclick=showRadioPanel;const rr=document.getElementById("refRadio");if(rr)rr.onclick=showRadioPanel;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();const chatInput=document.getElementById("chatInput");if(chatInput)chatInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
 function voiceRemoteCount(){return voiceController?.remoteCount?.()||0}
+
+function adminModerationToast(text){
+  toast(`⚠️ ${text}`);
+}
+
+function showAdminWarning(message){
+  const safe=String(message||"يرجى الالتزام بقوانين الغرفة.");
+  showModal(`
+    <div style="text-align:center;padding:8px 2px">
+      <div style="font-size:42px;margin-bottom:8px">⚠️</div>
+      <h3 style="margin:0 0 10px;color:#ffd36a">تحذير من الإدارة</h3>
+      <div style="line-height:1.9;font-weight:800">${escapeHtml(safe)}</div>
+      <button class="btn primary" style="width:100%;margin-top:16px" onclick="closeModal()">فهمت</button>
+    </div>
+  `);
+}
+
+function applyModerationSnapshot(v){
+  const now=Date.now();
+  moderationState={
+    chatMutedUntil:Number(v?.chatMutedUntil||0),
+    voiceMutedUntil:Number(v?.voiceMutedUntil||0)
+  };
+
+  const warnings=v?.warnings||{};
+  Object.entries(warnings).forEach(([id,w])=>{
+    if(seenAdminWarnings.has(id))return;
+    seenAdminWarnings.add(id);
+    const ts=Number(w?.createdAt||0);
+    if(ts && ts < Date.now()-10*60*1000)return;
+    showAdminWarning(w?.message||"يرجى الالتزام بقوانين الغرفة.");
+  });
+
+  if(moderationState.voiceMutedUntil>now && voiceController?.isActive?.()){
+    voiceController.stop(true).catch(()=>{});
+    adminModerationToast("تم تعطيل المايك مؤقتًا من الإدارة");
+  }
+}
+
+function watchMyModeration(){
+  if(moderationStop){try{moderationStop()}catch{} moderationStop=null}
+  moderationState={chatMutedUntil:0,voiceMutedUntil:0};
+  seenAdminWarnings=new Set();
+  if(!roomCode||!uid)return;
+  moderationStop=onValue(
+    ref(db,`moderation/${roomCode}/${uid}`),
+    snap=>applyModerationSnapshot(snap.val()||{}),
+    ()=>{}
+  );
+}
+
+function chatModerationRemaining(){
+  return Math.max(0,moderationState.chatMutedUntil-Date.now());
+}
+
+function voiceModerationRemaining(){
+  return Math.max(0,moderationState.voiceMutedUntil-Date.now());
+}
+
 function updateAdminVoiceIndicator(){
  const el=document.getElementById("adminVoiceIndicator");
  if(!el)return;
@@ -2335,7 +2398,7 @@ async function startLiveVoice(){if(!voiceController){toast("ملف المايك 
 async function toggleVoiceMute(){return voiceController?.toggleMute?.()}
 async function stopLiveVoice(removeState=true){return voiceController?.stop?.(removeState)}
 async function syncVoicePeers(){return voiceController?.sync?.()}
-async function sendChat(forced){const inp=document.getElementById("chatInput"),text=(forced||(inp?.value||"")).trim().slice(0,120);if(!text)return;try{await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid,name:myName,text,ts:Date.now()});if(inp)inp.value=""}catch(e){toast("تعذر إرسال الرسالة")}}
+async function sendChat(forced){if(chatModerationRemaining()>0){const mins=Math.max(1,Math.ceil(chatModerationRemaining()/60000));toast(`💬 الكتابة مكتومة من الإدارة — متبقي ${mins} دقيقة`);return;}const inp=document.getElementById("chatInput"),text=(forced||(inp?.value||"")).trim().slice(0,120);if(!text)return;try{await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid,name:myName,text,ts:Date.now()});if(inp)inp.value=""}catch(e){toast("تعذر إرسال الرسالة")}}
 async function sendSystem(text){try{await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid:"system",name:"النظام",text,ts:Date.now()})}catch{}}
 function renderChat(){const box=document.getElementById("chatBox");if(!box)return;const arr=Object.values(latestChat).sort((a,b)=>(a.ts||0)-(b.ts||0));box.innerHTML=arr.map(m=>`<p><b>${esc(m.name)}:</b> ${esc(m.text)}</p>`).join("");box.scrollTop=box.scrollHeight}
 
