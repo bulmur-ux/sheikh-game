@@ -1265,6 +1265,13 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 }
 </style>
 
+<style id="admin-voice-indicator-style">
+#adminVoiceIndicator{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:50%;transform:translateX(-50%);z-index:99999;display:none;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;background:rgba(109,38,51,.96);color:#fff7df;border:1px solid #d0a13b;box-shadow:0 6px 22px rgba(0,0,0,.28);font-size:13px;font-weight:900;white-space:nowrap}
+#adminVoiceIndicator.on{display:flex}
+#adminVoiceIndicator .adminVoicePulse{width:9px;height:9px;border-radius:50%;background:#fff;animation:adminVoicePulse 1s infinite alternate}
+@keyframes adminVoicePulse{from{opacity:.35;transform:scale(.8)}to{opacity:1;transform:scale(1.15)}}
+</style>
+
 <style id="account-edit-controls">
 .accountMiniBtn{margin-top:10px;padding:8px 14px;border:1px solid #b78a35;border-radius:12px;background:#f5ead2;color:#2a170d;font-weight:800;font-size:14px;cursor:pointer}
 .accountMiniBtn:active{transform:scale(.98)}
@@ -1272,7 +1279,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
-<div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="voiceAudios" style="display:none"></div><audio id="roomFunnyAudio" playsinline preload="auto" style="display:none"></audio>
+<div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="adminVoiceIndicator" role="status" aria-live="polite"><span class="adminVoicePulse"></span><span>🎙️ الإدارة تتحدث</span></div><div id="voiceAudios" style="display:none"></div><audio id="roomFunnyAudio" playsinline preload="auto" style="display:none"></audio>
 <script src="sounds.js?v=5"></script>
 <script src="voice.js?v=3"></script>
 <script type="module">
@@ -1628,7 +1635,7 @@ async function handleHostKickRequest(nextRoom){
   return true;
  }finally{processingKickRequest=false}
 }
-function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}const nextRoom=s.val();await handleHostRoundRemoveRequest(nextRoom);if(await handleHostKickRequest(nextRoom))return;if(uid&&!nextRoom?.players?.[uid]){localStorage.removeItem("sheikh_room");roomCode="";home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");return}currentRoom=nextRoom;await startPresence(nextRoom.status==="game"?"game":"room",c);await autoGameWork();render();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()});unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()))}
+function subscribe(c){cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();unsubRoom=onValue(ref(db,`rooms/${c}/public`),async s=>{if(!s.exists()){home("الغرفة غير موجودة");return}const nextRoom=s.val();await handleHostRoundRemoveRequest(nextRoom);if(await handleHostKickRequest(nextRoom))return;if(uid&&!nextRoom?.players?.[uid]){localStorage.removeItem("sheikh_room");roomCode="";home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");return}currentRoom=nextRoom;await startPresence(nextRoom.status==="game"?"game":"room",c);await autoGameWork();render();updateAdminVoiceIndicator();if(voiceActive)syncVoicePeers();},e=>home("فشل قراءة الغرفة: "+(e.code||e.message)));unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),async s=>{myHand=s.exists()?s.val():null;await autoGameWork();render()});unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()))}
 
 async function kickPlayer(targetUid){
  if(uid!==currentRoom?.hostId){toast("فقط صاحب الغرفة يقدر يطلع لاعب");return}
@@ -1651,6 +1658,37 @@ async function kickPlayer(targetUid){
  }catch(e){toast("تعذر إخراج اللاعب")}
 }
 
+async function transferRoomHost(targetUid){
+ if(uid!==currentRoom?.hostId){toast("فقط صاحب الغرفة يقدر يسلّم الإدارة");return}
+ const target=currentRoom?.players?.[targetUid];
+ if(!target||targetUid===uid){toast("اختر لاعب موجود في الغرفة");return}
+ if(!confirm(`تسليم إدارة الغرفة إلى ${target.name||"اللاعب"}؟`))return;
+ await update(ref(db,`rooms/${roomCode}/public`),{hostId:targetUid,hostTransferredAt:Date.now(),hostTransferredBy:uid});
+ await sendSystem(`👑 تم تسليم إدارة الغرفة إلى ${target.name||"اللاعب"}`);
+ toast("تم تسليم إدارة الغرفة 👑");
+}
+function showHostTransfer(){
+ if(uid!==currentRoom?.hostId)return;
+ const choices=playerEntries().filter(([id])=>id!==uid);
+ if(!choices.length){toast("ما فيه لاعب آخر لتسليمه الغرفة");return}
+ openModal(`<h3>👑 تسليم إدارة الغرفة</h3><div class="notice">اختر اللاعب الذي سيصبح صاحب الغرفة.</div><div class="choiceGrid">${choices.map(([id,p])=>`<button class="btn alt" data-transfer-host="${id}">${esc(p.name||"لاعب")}</button>`).join("")}</div><div class="gap"></div><button id="cancelTransferHost" class="btn danger">إلغاء</button>`);
+ sheet.querySelectorAll('[data-transfer-host]').forEach(b=>b.onclick=async()=>{closeModal();await transferRoomHost(b.dataset.transferHost)});
+ document.getElementById('cancelTransferHost').onclick=closeModal;
+}
+async function leaveRoomCleanly(){
+ if(!roomCode){home();return}
+ const code=roomCode,wasHost=uid===currentRoom?.hostId;
+ if(wasHost){
+   const others=playerEntries().filter(([id])=>id!==uid);
+   if(others.length){
+     const target=others[0];
+     await update(ref(db,`rooms/${code}/public`),{hostId:target[0],hostTransferredAt:Date.now(),hostTransferredBy:uid});
+     await sendSystem(`👑 غادر صاحب الغرفة وتم تسليم الإدارة إلى ${target[1]?.name||"اللاعب التالي"}`);
+   }
+ }
+ try{await remove(ref(db,`rooms/${code}/public/players/${uid}`))}catch{}
+ localStorage.removeItem("sheikh_room");roomCode="";currentRoom=null;await startPresence("home","");home();
+}
 async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active),totalRounds=Math.max(1,Math.min(10,Number(document.getElementById("roundCount")?.value||3)));if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}const readyCheck={order,totalRounds,startedAt:Date.now(),deadline:Date.now()+20000,ready:{}};await set(ref(db,`rooms/${roomCode}/public/readyCheck`),readyCheck);await sendSystem("⏱️ عندكم 20 ثانية للضغط على «ابدأ اللعب» — المتأخر يتحول متفرج");}
 async function confirmReadyToPlay(){
  const rc=currentRoom?.readyCheck;if(!rc||(rc.order||[]).includes(uid)===false)return;
@@ -2178,7 +2216,7 @@ function renderLobby(){
    <div class="lobbyHeader"><div class="lobbyBrand"><span class="lobbyFlag left"></span><span class="lobbyFalcon" aria-hidden="true"></span><div class="lobbyTitlePlaque">شيك شيك</div><span class="lobbyFlag right"></span></div><div class="lobbySubtitle">الشيك • السكور • لعبة المجلس أونلاين</div><div class="lobbyTools">${rulesButtonHtml()}<button id="sfxTop" class="toolBtn" title="الصوت">🔊<small>الصوت</small></button><button id="voiceTop" class="toolBtn" title="المايك">🎙️<small>المايك</small></button><button id="funTop" class="toolBtn" title="التأثيرات">😂<small>التأثيرات</small></button><button id="radioTop" class="toolBtn" title="الإذاعة">📻<small>الإذاعة</small></button><button class="toolBtn" onclick="document.getElementById('chatInput')?.focus()">💬<small>الشات</small></button></div></div>
    <div class="roomCodeBox"><div class="roomCodeLabel">كود الغرفة</div><div class="roomCodeRow"><div class="roomCodeValue">${esc(roomCode)}</div><button id="copy" class="copyMini">📋 نسخ</button></div></div>
    <div class="lobbyTable">${seats}<div class="lobbyCenterDeck"><div><div class="cardBack" aria-label="رزمة الورق"></div><div class="lobbyDeckLabel"><span class="lobbyDeckCount">106</span><br>رزمة الورق</div></div><div><div class="lobbyCenterCard"><div class="cardFace black">${cardFaceHtml({r:"K",s:"S"})}</div></div><div class="lobbyDeckLabel">ورقة الميدان</div></div></div></div>
-   ${host?`<div class="lobbySetup"><div class="setupGrid"><div class="setupBox"><label>👥 عدد اللاعبين</label><select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select><div class="lobbyHint">اختر 2 إلى 4، والباقي متفرجين</div></div><div class="setupBox"><label>🃏 عدد الجولات</label><select id="roundCount"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option><option value="7">7</option><option value="10">10</option></select></div></div><div class="lobbyMainActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="leave" class="btn danger">خروج</button></div><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`:`<div class="lobbySetup center"><div class="notice">👑 المضيف يختار 2 إلى 4 لاعبين، والباقي متفرجين.</div><button id="leave" class="btn danger">خروج</button><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`}
+   ${host?`<div class="lobbySetup"><div class="setupGrid"><div class="setupBox"><label>👥 عدد اللاعبين</label><select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select><div class="lobbyHint">اختر 2 إلى 4، والباقي متفرجين</div></div><div class="setupBox"><label>🃏 عدد الجولات</label><select id="roundCount"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option><option value="7">7</option><option value="10">10</option></select></div></div><div class="lobbyMainActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="transferHost" class="btn alt" ${ps.length<2?'disabled':''}>👑 تسليم الإدارة</button><button id="leave" class="btn danger">خروج</button></div><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`:`<div class="lobbySetup center"><div class="notice">👑 المضيف يختار 2 إلى 4 لاعبين، والباقي متفرجين.</div><button id="leave" class="btn danger">خروج</button><div class="lobbyCapacity">${ps.length} / 8 في الغرفة</div></div>`}
    <div class="lobbyBottomGrid"><div class="lobbyList"><h3>اللاعبون (${Math.min(ps.length,4)}/4)</h3>${playerList||'<div class="small">لا يوجد لاعبون</div>'}</div><div class="lobbyList"><h3>👀 المتفرجون (${Math.max(0,ps.length-4)})</h3>${spectatorList}</div><div class="lobbyChatWrap">${chatPanel()}</div></div>
  </div>`;
  wireCommon();
@@ -2187,7 +2225,7 @@ function renderLobby(){
    document.getElementById('playerCount')?.addEventListener('change',syncCount);
    document.querySelectorAll('[data-active]').forEach(b=>b.addEventListener('change',()=>{const checked=[...document.querySelectorAll('[data-active]:checked')];if(checked.length>4){b.checked=false;toast('الحد الأعلى 4 لاعبين')}if(checked.length<2){b.checked=true;toast('لازم لاعبين على الأقل')}const w=document.querySelector(`[data-seatwrap="${b.dataset.active}"]`);if(w){w.classList.toggle('active',b.checked);const st=w.querySelector('.pickState');if(st)st.textContent=b.checked?'مختار للعب':'متفرج'}}));
    syncCount();
-   const start=document.getElementById('start');if(start)start.onclick=startGame;
+   const start=document.getElementById('start');if(start)start.onclick=startGame;const th=document.getElementById('transferHost');if(th)th.onclick=showHostTransfer;
    document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kickPlayer(b.dataset.kick)});
  }
  const st=document.getElementById('sfxTop');if(st)st.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem('sheikh_sfx_muted','0');updateSfxUi()}await unlockAudio();sfx('correct');toast('اختبار الصوت 🔊')};
@@ -2282,9 +2320,16 @@ function showRulesModal(){
  const close=()=>el.remove();document.getElementById("rulesClose").onclick=close;el.addEventListener("click",e=>{if(e.target===el)close()});
 }
 function chatPanel(){return `<div class="panel chatPanel"><b>شات الغرفة</b><div class="voiceBar"><button id="sfxTest" class="btn alt">🔊 اختبار الصوت</button><button id="sfxToggle" class="btn alt">${sfxMuted?"🔇 تشغيل المؤثرات":"🔕 كتم المؤثرات"}</button><button id="voiceJoin" class="btn green">${voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر"}</button><button id="voiceMute" class="btn alt" ${voiceActive?"":"disabled"}>${voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}</button><button id="voiceLeave" class="btn danger" ${voiceActive?"":"disabled"}>إنهاء الصوت</button><div id="voiceState" class="voiceState"><span class="voiceDot ${voiceActive?"on":""}"></span>${voiceActive?"الصوت المباشر يعمل":"الصوت المباشر متوقف"}</div></div><div class="entertainRow"><button id="funSounds" class="btn soundLauncher">😂 🔊 الأصوات</button><button id="radioOpenBtn" class="btn alt">📻 الإذاعة</button></div><div id="chatBox" class="chat"></div><div class="quick">${["جاهز","دورك","اكبس","شيك","ابدأ"].map(x=>`<button data-q="${x}">${x}</button>`).join("")}</div><div class="row"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button id="send" class="btn" style="flex:0 0 90px">إرسال</button></div></div>`}
-function wireCommon(){document.addEventListener("pointerdown",()=>{primeRoomAudio();unlockAudio()},{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=async()=>{localStorage.removeItem("sheikh_room");roomCode="";await startPresence("home","");home()};const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const rfs=document.getElementById("refFunSounds");if(rfs)rfs.onclick=showSoundBoard;const ro=document.getElementById("radioOpenBtn");if(ro)ro.onclick=showRadioPanel;const rr=document.getElementById("refRadio");if(rr)rr.onclick=showRadioPanel;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();const chatInput=document.getElementById("chatInput");if(chatInput)chatInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
+function wireCommon(){document.addEventListener("pointerdown",()=>{primeRoomAudio();unlockAudio()},{once:true});const rb=document.getElementById("rulesTop");if(rb)rb.onclick=showRulesModal;const test=document.getElementById("sfxTest");if(test)test.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem("sheikh_sfx_muted","0");updateSfxUi()}const ok=await unlockAudio();if(ok){sfx("correct");toast("سمعت النغمة؟ الصوت شغال 🔊")}else toast("Safari منع الصوت — اضغط الشاشة ثم جرّب")};const sb=document.getElementById("sfxToggle");if(sb)sb.onclick=toggleSfx;updateSfxUi();const cp=document.getElementById("copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(roomCode);toast("تم نسخ الكود")}catch{prompt("انسخ الكود",roomCode)}};const leave=document.getElementById("leave");if(leave)leave.onclick=leaveRoomCleanly;const fs=document.getElementById("funSounds");if(fs)fs.onclick=showSoundBoard;const rfs=document.getElementById("refFunSounds");if(rfs)rfs.onclick=showSoundBoard;const ro=document.getElementById("radioOpenBtn");if(ro)ro.onclick=showRadioPanel;const rr=document.getElementById("refRadio");if(rr)rr.onclick=showRadioPanel;const send=document.getElementById("send");if(send)send.onclick=()=>sendChat();const chatInput=document.getElementById("chatInput");if(chatInput)chatInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(b.dataset.q));const vj=document.getElementById("voiceJoin");if(vj)vj.onclick=()=>startLiveVoice();const vm=document.getElementById("voiceMute");if(vm)vm.onclick=()=>toggleVoiceMute();const vl=document.getElementById("voiceLeave");if(vl)vl.onclick=()=>stopLiveVoice(true);renderChat();updateVoiceUi()}
 function voiceRemoteCount(){return voiceController?.remoteCount?.()||0}
-function updateVoiceUi(){const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount(),present=Object.values(currentRoom?.voiceUsers||{}).filter(v=>v?.active).length-1;const waiting=voiceActive&&n===0&&present>0;el.innerHTML=`<span class="voiceDot ${(voiceActive||voiceStarting)?(n>0?"on":"warn"):""}"></span>${voiceStarting?"جاري فتح المايك...":voiceActive?`المايك شغال • متصل ${n}/${Math.max(0,present)}${waiting?" • جاري الاتصال...":""}`:"الصوت المباشر متوقف"}`}
+function updateAdminVoiceIndicator(){
+ const el=document.getElementById("adminVoiceIndicator");
+ if(!el)return;
+ const speaking=currentRoom?.adminVoice?.speaking===true;
+ el.classList.toggle("on",speaking);
+ el.setAttribute("aria-hidden",speaking?"false":"true");
+}
+function updateVoiceUi(){updateAdminVoiceIndicator();const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount(),present=Object.values(currentRoom?.voiceUsers||{}).filter(v=>v?.active).length-1;const waiting=voiceActive&&n===0&&present>0;el.innerHTML=`<span class="voiceDot ${(voiceActive||voiceStarting)?(n>0?"on":"warn"):""}"></span>${voiceStarting?"جاري فتح المايك...":voiceActive?`المايك شغال • متصل ${n}/${Math.max(0,present)}${waiting?" • جاري الاتصال...":""}`:"الصوت المباشر متوقف"}`}
  const j=document.getElementById("voiceJoin"),m=document.getElementById("voiceMute"),l=document.getElementById("voiceLeave");if(j)j.textContent=voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر";if(m){m.disabled=!voiceActive;m.textContent=voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}if(l)l.disabled=!voiceActive}
 async function startLiveVoice(){if(!voiceController){toast("ملف المايك voice.js غير محمّل");return}return voiceController.start()}
 async function toggleVoiceMute(){return voiceController?.toggleMute?.()}
