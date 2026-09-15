@@ -1217,6 +1217,26 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
  body:has(.homePage) .homeStat span{font-size:9px!important;line-height:1.1!important;}
 }
 </style>
+
+<style id="home-landscape-brand-v1">
+@media (orientation:landscape) and (min-width:650px) and (max-height:600px){
+ body:has(.homePage) .wrap>header{
+   display:flex!important;align-items:center!important;justify-content:center!important;gap:14px!important;
+   min-height:50px!important;padding:3px 0 4px!important;margin:0 auto 3px!important;background:transparent!important;
+ }
+ body:has(.homePage) .wrap>header h1{
+   display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+   margin:0!important;font-size:25px!important;line-height:1!important;color:#f2c54a!important;white-space:nowrap!important;
+ }
+ body:has(.homePage) .wrap>header h1::before{
+   width:38px!important;height:38px!important;flex:0 0 38px!important;border-radius:10px!important;
+ }
+ body:has(.homePage) .wrap>header p{
+   display:block!important;margin:0!important;font-size:10px!important;line-height:1.15!important;color:#eadcc7!important;white-space:nowrap!important;
+ }
+ body:has(.homePage) .homePage{margin-top:0!important;}
+}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
