@@ -327,7 +327,7 @@ async function setAdminMonitor(code,stealth){
 }
 async function moderationAction(kind,code,uid,name){
   if(!canRooms())return;
-  const now=Date.now(),base=`moderation/${code}/${uid}`;
+  const now=Date.now(),base=`rooms/${code}/public/moderation/${uid}`;
   if(kind==='warn'){
     const reason=prompt(`رسالة التحذير إلى ${name}:`,'يرجى الالتزام بقوانين الغرفة.')??null;if(reason===null)return;
     await set(push(ref(db,`${base}/warnings`)),{room:code,message:reason,by:auth.currentUser.uid,createdAt:now});await logAction('تحذير لاعب',`${name} في الغرفة ${code}: ${reason}`);return;
