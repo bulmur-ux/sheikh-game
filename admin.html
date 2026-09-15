@@ -90,6 +90,10 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 .memberCard{border:1px solid #4f381c;border-radius:14px;padding:10px;margin:8px 0;background:#110c09}.memberTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.memberName{font-weight:900;color:#fff1c6}.memberMeta{font-size:11px;color:#aa9878;line-height:1.6}.rankMini{width:30px;height:30px;object-fit:contain;vertical-align:middle;margin-inline-end:5px}.adminRoleMini{width:32px;height:32px;object-fit:contain}
 .adminEditor{border:1px solid #8a6429;border-radius:16px;padding:12px;background:#0b0806;margin:10px 0}.adminEditor h3{margin:0 0 8px;color:#ffe29a}.roleGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:9px 0}.roleChoice{display:flex;align-items:center;gap:7px;border:1px solid #4f381c;border-radius:12px;padding:8px;background:#17100d}.roleChoice img{width:34px;height:34px;object-fit:contain}.permGrid.flexPerms{grid-template-columns:repeat(2,1fr)}
 @media(max-width:600px){.roleGrid,.permGrid.flexPerms{grid-template-columns:1fr}.memberTop{align-items:flex-start}}
+
+.memberCard{padding:8px 10px!important}.memberCard .actions{display:grid!important;grid-template-columns:repeat(3,1fr);gap:6px!important}.memberCard .actions .btn{min-width:0!important;padding:8px 5px!important;font-size:12px!important}.memberMeta{font-weight:700}.memberNoStrong{color:#f1c75b;font-weight:950}
+.pinGate{position:fixed;inset:0;z-index:99999;background:rgba(5,2,1,.94);display:flex;align-items:center;justify-content:center;padding:18px;direction:rtl}.pinBox{width:min(390px,100%);background:#160d08;border:1px solid #b98532;border-radius:20px;padding:20px;box-shadow:0 20px 70px #000}.pinBox h2{margin:0 0 8px;color:#f4d27e}.pinBox p{color:#c8b18a;line-height:1.7}.pinBox input{width:100%;font-size:28px;letter-spacing:10px;text-align:center;padding:12px;border-radius:12px;border:1px solid #72501f;background:#090604;color:#fff;margin:8px 0}.pinChoices{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pinError{color:#ff8e8e;min-height:22px;font-size:13px;margin-top:6px}.returnRoomTop{display:none;margin-bottom:10px}.returnRoomTop.show{display:block}
+@media(max-width:430px){.memberCard .actions{grid-template-columns:repeat(3,1fr)!important}.memberCard .actions .btn{font-size:10.5px!important;padding:7px 2px!important}.memberName{font-size:14px}.rankMini{width:24px!important;height:24px!important}}
 </style>
 </head>
 <body>
@@ -119,6 +123,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
       <div class="stat"><b id="bansCount">0</b><span>المحظورون</span></div>
     </div>
 
+    <button id="returnRoomTop" class="btn btnGold returnRoomTop">🎮 العودة للغرفة</button>
     <div class="tabs">
       <button class="tab active" data-tab="rooms">الغرف</button>
       <button class="tab" data-tab="monitor">المراقب</button>
@@ -173,7 +178,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 
     <div class="toolbar">
       <button id="logoutBtn" class="btn logout">تسجيل الخروج</button>
-      <button id="backRoomsBtn" class="btn btnDark">العودة للغرف</button>
+      <button id="backRoomsBtn" class="btn btnDark">عرض الغرف في اللوحة</button>
     </div>
     <div class="note">لوحة الإدارة لا تعرض أوراق اللاعبين الخاصة داخل الواجهة.</div>
   </div>
@@ -185,12 +190,12 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getDatabase, ref, get, onValue, remove, update, set, push, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+import { getDatabase, ref, get, onValue, remove, update, set, push, query, limitToLast, runTransaction } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
 const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomain:"al-sheikh-game.firebaseapp.com",databaseURL:"https://al-sheikh-game-default-rtdb.firebaseio.com",projectId:"al-sheikh-game",storageBucket:"al-sheikh-game.firebasestorage.app",messagingSenderId:"739452149085",appId:"1:739452149085:web:778619aa18fed1c698dcb4"};
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb);
 const $=id=>document.getElementById(id);
-let currentAdmin=null,currentRooms={},currentBans={},currentUsers={},currentAdmins={},currentPresence={},memberFilter="all",editingAdminUid="",stops=[];
+let currentAdmin=null,currentRooms={},currentBans={},currentUsers={},currentAdmins={},currentPresence={},currentLogs={},memberFilter="all",editingAdminUid="",stops=[];
 let monitorVoice=null,monitorVoiceCode="",monitorVoiceStealth=true,monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]))}
@@ -365,7 +370,7 @@ function renderAdmins(data){
   if(!e.length){list.innerHTML='<div class="empty">لا يوجد مشرفون</div>';return}
   list.innerHTML=e.map(([uid,a])=>{const u=currentUsers[uid]||{},role=a.superAdmin?{name:'سوبر أدمن',icon:'ranks/admin_01_superadmin.png'}:(ADMIN_ROLES[a.role]||ADMIN_ROLES.assistantModerator);return `
     <div class="item"><div class="itemHead"><div style="display:flex;gap:9px;align-items:center"><img class="adminRoleMini" src="${role.icon}" alt=""><div><div class="itemTitle">${esc(u.username||a.label||'مشرف')} ${a.superAdmin?'👑':''}</div><div class="itemMeta">${role.name} • ${u.memberNo?'عضوية '+esc(u.memberNo):''}</div></div></div>
-    <div class="actions">${!a.superAdmin?`<button class="btn btnGold" data-edit-admin="${esc(uid)}">⚙️ الصلاحيات</button><button class="btn btnRed" data-remove-admin="${esc(uid)}">إلغاء الإشراف</button>`:''}</div></div></div>`}).join('');
+    <div class="actions">${!a.superAdmin?`<button class="btn btnGold" data-edit-admin="${esc(uid)}">⚙️ الصلاحيات</button><button class="btn btnRed" data-reset-pin="${esc(uid)}">🔐 إعادة PIN</button><button class="btn btnRed" data-remove-admin="${esc(uid)}">إلغاء الإشراف</button>`:''}</div></div></div>`}).join('');
 }
 function isOnlineUid(uid){return !!(currentPresence?.[uid]?.online||currentPresence?.[uid]?.state==='online'||currentPresence?.[uid]?.lastSeen&&Date.now()-Number(currentPresence[uid].lastSeen)<120000)}
 function renderMembers(){
@@ -373,7 +378,7 @@ function renderMembers(){
  let e=Object.entries(currentUsers||{}).filter(([uid,u])=>{const text=`${u.username||''} ${u.memberNo||''} ${u.email||''}`.toLowerCase();if(q&&!text.includes(q))return false;if(memberFilter==='admins'&&!currentAdmins[uid])return false;if(memberFilter==='banned'&&!currentBans[uid])return false;if(memberFilter==='online'&&!isOnlineUid(uid))return false;return true});
  e.sort((a,b)=>(Number(a[1]?.memberNo)||999999)-(Number(b[1]?.memberNo)||999999));
  if(!e.length){list.innerHTML='<div class="empty">لا توجد نتائج</div>';return}
- list.innerHTML=e.map(([uid,u])=>{const r=rankForXp(u.xp||0),a=currentAdmins[uid],ar=a?.superAdmin?{name:'سوبر أدمن',icon:'ranks/admin_01_superadmin.png'}:ADMIN_ROLES[a?.role];return `<div class="memberCard"><div class="memberTop"><div><div class="memberName"><img class="rankMini" src="${r.icon}" alt="">${esc(u.username||'بدون اسم')}</div><div class="memberMeta">رقم العضوية: ${esc(u.memberNo||'—')} • ${r.name} • ${Number(u.xp||0)} XP ${isOnlineUid(uid)?'• 🟢 متصل':''} ${currentBans[uid]?'• 🔴 محظور':''}${ar?`<br><img class="adminRoleMini" src="${ar.icon}" alt=""> ${ar.name}`:''}</div></div></div><div class="actions" style="margin-top:10px">${hasPerm('manageMembers')?`<button class="btn btnDark" data-member-edit="${esc(uid)}">✏️ تعديل البيانات</button>`:''}${a?.superAdmin?'<span class="pill gold">👑 Super Admin</span>':`<button class="btn ${a?'btnGold':'btnBlue'}" data-assign-admin="${esc(uid)}">${a?'🛡️ تعديل الصلاحية':'🛡️ منح صلاحية'}</button>`}${hasPerm('manageMembers')&&!a?.superAdmin?`<button class="btn btnRed" data-member-block="${esc(uid)}">⛔ حظر / حذف</button>`:''}</div></div>`}).join('');
+ list.innerHTML=e.map(([uid,u])=>{const r=rankForXp(u.xp||0),a=currentAdmins[uid],ar=a?.superAdmin?{name:'سوبر أدمن',icon:'ranks/admin_01_superadmin.png'}:ADMIN_ROLES[a?.role];return `<div class="memberCard"><div class="memberTop"><div><div class="memberName"><img class="rankMini" src="${r.icon}" alt="">${esc(u.username||'بدون اسم')}</div><div class="memberMeta"><span class="memberNoStrong">عضوية #${esc(u.memberNo||'—')}</span> • ${r.name} • ${Number(u.xp||0)} XP ${isOnlineUid(uid)?'• 🟢 متصل':''} ${currentBans[uid]?'• 🔴 محظور':''}${ar?`<br><img class="adminRoleMini" src="${ar.icon}" alt=""> ${ar.name}`:''}</div></div></div><div class="actions" style="margin-top:10px">${hasPerm('manageMembers')?`<button class="btn btnDark" data-member-edit="${esc(uid)}">✏️ تعديل البيانات</button>`:''}${a?.superAdmin?'<span class="pill gold">👑 Super Admin</span>':`<button class="btn ${a?'btnGold':'btnBlue'}" data-assign-admin="${esc(uid)}">${a?'🛡️ تعديل الصلاحية':'🛡️ منح صلاحية'}</button>`}${hasPerm('manageMembers')&&!a?.superAdmin?`<button class="btn btnRed" data-member-block="${esc(uid)}">⛔ حظر / حذف</button>`:''}</div></div>`}).join('');
 }
 function formatAdminDate(ts){if(!ts)return '';const d=new Date(Number(ts));return new Intl.DateTimeFormat('ar-AE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(d).replace('،',' •')}
 function memberLabel(uid){const u=currentUsers[uid]||{};return `${u.username||'عضو'}${u.memberNo?' — عضوية #'+u.memberNo:''}`}
@@ -382,11 +387,14 @@ function openMemberManager(uid){
  const u=currentUsers[uid]||{},box=$('memberEditor'),locked=u.avatarLocked===true,disabled=u.status==='disabled';
  box.innerHTML=`<div class="adminEditor"><h3>👤 إدارة العضو: ${esc(u.username||'العضو')} ${u.memberNo?'#'+esc(u.memberNo):''}</h3>
  <div class="permGrid flexPerms" style="grid-template-columns:1fr">
+  <label>👤 اسم العضو<input id="memberUsername" maxlength="20" value="${esc(u.username||'')}"></label>
+  <label>✉️ إيميل تسجيل الدخول<input id="memberEmail" type="email" value="${esc(u.email||'')}" readonly></label>
+  <div class="note">الإيميل المعروض هو إيميل تسجيل الدخول. تغييره لحساب عضو آخر يحتاج خدمة Firebase إدارية من الخادم، لذلك لا نغيّره شكليًا من قاعدة البيانات.</div>
   <label>📱 رقم الهاتف (اختياري)<input id="memberPhone" inputmode="tel" placeholder="05XXXXXXXX" value="${esc(u.phone||'')}"></label>
   <div class="note">رقم الهاتف خاص بالإدارة ولا يظهر في الغرف أو الشات.</div>
  </div>
  <div class="actions" style="margin-top:10px;flex-wrap:wrap">
-  <button id="saveMemberPhone" class="btn btnGold">💾 حفظ الهاتف</button>
+  <button id="saveMemberPhone" class="btn btnGold">💾 حفظ البيانات</button>
   ${hasPerm('resetPasswords')?'<button id="sendMemberReset" class="btn btnBlue">🔑 إرسال استعادة كلمة المرور</button>':''}
   ${hasPerm('moderateAvatars')?`<button id="resetMemberAvatar" class="btn btnDark">🖼️ حذف الصورة الحالية</button><button id="toggleAvatarLock" class="btn ${locked?'btnGreen':'btnRed'}">${locked?'🔓 فك قفل الصور':'🔒 قفل رفع الصور'}</button>`:''}
   <button id="toggleMemberStatus" class="btn ${disabled?'btnGreen':'btnRed'}">${disabled?'✅ تفعيل الحساب':'⛔ تعطيل الحساب'}</button>
@@ -394,7 +402,7 @@ function openMemberManager(uid){
  </div>
  <div class="note">قفل الصور يمنع رفع صورة من الجهاز ويُبقي الصور الجاهزة المعتمدة فقط. كلمة المرور القديمة لا تظهر للإدارة.</div></div>`;
  $('closeMemberManager').onclick=()=>box.innerHTML='';
- $('saveMemberPhone').onclick=async()=>{const phone=$('memberPhone').value.trim();try{await update(ref(db,`users/${uid}`),{phone});await logAction('تعديل رقم هاتف عضو',memberLabel(uid),{targetUid:uid,targetName:u.username||'',targetMemberNo:u.memberNo||null});alert('تم حفظ رقم الهاتف ✅')}catch(e){alert(e.message)}};
+ $('saveMemberPhone').onclick=async()=>{const phone=$('memberPhone').value.trim(),username=$('memberUsername').value.trim();if(username.length<2)return alert('اسم العضو قصير');try{if(username!==String(u.username||'')){const norm=username.toLowerCase().replace(/\s+/g,' ').trim();const oldNorm=String(u.usernameNorm||'');const claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw new Error('اسم المستخدم مستخدم من عضو آخر');await update(ref(db,`users/${uid}`),{username,usernameNorm:norm,phone});if(oldNorm&&oldNorm!==norm){try{const os=await get(ref(db,`usernames/${oldNorm}`));if(os.val()===uid)await remove(ref(db,`usernames/${oldNorm}`))}catch{}}}else await update(ref(db,`users/${uid}`),{phone});await logAction('تعديل بيانات عضو',`${username} — عضوية #${u.memberNo||'—'}`,{targetUid:uid,targetName:username,targetMemberNo:u.memberNo||null});alert('تم حفظ بيانات العضو ✅')}catch(e){alert(e.message)}};
  if($('sendMemberReset'))$('sendMemberReset').onclick=async()=>{if(!u.email)return alert('لا يوجد بريد إلكتروني للعضو');try{await sendPasswordResetEmail(auth,u.email);await logAction('إرسال استعادة كلمة المرور',memberLabel(uid),{targetUid:uid,targetName:u.username||'',targetMemberNo:u.memberNo||null});alert('تم إرسال رابط الاستعادة إلى بريد العضو ✅')}catch(e){alert(e.message)}};
  if($('resetMemberAvatar'))$('resetMemberAvatar').onclick=async()=>{if(!confirm('حذف الصورة الحالية وإرجاع شعار اللعبة؟'))return;try{await update(ref(db,`users/${uid}`),{avatarUrl:'icon-512.png'});await logAction('حذف صورة شخصية',memberLabel(uid),{targetUid:uid,targetName:u.username||'',targetMemberNo:u.memberNo||null});alert('تم حذف الصورة الحالية ✅')}catch(e){alert(e.message)}};
  if($('toggleAvatarLock'))$('toggleAvatarLock').onclick=async()=>{try{await update(ref(db,`users/${uid}`),{avatarLocked:!locked,avatarUrl:!locked?'icon-512.png':(u.avatarUrl||'icon-512.png')});await logAction(!locked?'قفل رفع الصور':'فك قفل الصور',memberLabel(uid),{targetUid:uid,targetName:u.username||'',targetMemberNo:u.memberNo||null});alert(!locked?'تم قفل رفع الصور وإرجاع الصورة المعتمدة ✅':'تم فك قفل الصور ✅');box.innerHTML=''}catch(e){alert(e.message)}};
@@ -446,9 +454,9 @@ function subscribeAll(){
     },e=>$('roomsList').innerHTML=`<div class="empty">تعذر قراءة فهرس الغرف: ${esc(e.message)}</div>`));
   }else{$('roomsList').innerHTML='<div class="empty">ما عندك صلاحية إدارة الغرف.</div>'}
   stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans();if(isSuper())renderMembers()},()=>{}));
-  if(hasPerm('viewLogs'))stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>renderLogs(s.val()||{}),()=>{}));else $('logsList').innerHTML='<div class="empty">ما عندك صلاحية مشاهدة السجل.</div>';
+  if(hasPerm('viewLogs'))stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>{currentLogs=s.val()||{};renderLogs(currentLogs)},()=>{}));else $('logsList').innerHTML='<div class="empty">ما عندك صلاحية مشاهدة السجل.</div>';
   if(isSuper()){
-    stops.push(onValue(ref(db,'users'),s=>{currentUsers=s.val()||{};renderMembers();renderAdmins(currentAdmins)},e=>$('membersList').innerHTML=`<div class="empty">تعذر قراءة الأعضاء: ${esc(e.message)}</div>`));
+    stops.push(onValue(ref(db,'users'),s=>{currentUsers=s.val()||{};renderMembers();renderAdmins(currentAdmins);renderLogs(currentLogs)},e=>$('membersList').innerHTML=`<div class="empty">تعذر قراءة الأعضاء: ${esc(e.message)}</div>`));
     stops.push(onValue(ref(db,'admins'),s=>{currentAdmins=s.val()||{};renderAdmins(currentAdmins);renderMembers()},()=>{}));
     stops.push(onValue(ref(db,'presence'),s=>{currentPresence=s.val()||{};renderMembers()},()=>{}));
   }
@@ -502,10 +510,18 @@ $('bansList').addEventListener('click',async e=>{
 });
 $('adminsList').addEventListener('click',async e=>{
   const edit=e.target.closest('[data-edit-admin]');if(edit){openAdminEditor(edit.dataset.editAdmin);return}
+  const rp=e.target.closest('[data-reset-pin]');if(rp){const target=rp.dataset.resetPin;if(!confirm('إعادة ضبط PIN لهذا المشرف؟ سيختار رمزًا جديدًا عند دخوله القادم.'))return;try{await remove(ref(db,`admins/${target}/adminPin`));await logAction('إعادة ضبط PIN مشرف',memberLabel(target),{targetUid:target,targetName:currentUsers[target]?.username||'',targetMemberNo:currentUsers[target]?.memberNo||null});alert('تمت إعادة ضبط PIN ✅')}catch(err){alert(err.message)}return}
   const t=e.target.closest('[data-remove-admin]');if(!t)return;const uid=t.dataset.removeAdmin;if(!confirm('إلغاء الإشراف عن هذا العضو؟'))return;
   try{await remove(ref(db,`admins/${uid}`));await logAction('إلغاء إشراف',currentUsers[uid]?.username||uid)}catch(err){alert(err.message)}
 });
-$('membersList').addEventListener('click',e=>{const m=e.target.closest('[data-manage-member]');if(m){openMemberManager(m.dataset.manageMember);return}const t=e.target.closest('[data-assign-admin]');if(t)openAdminEditor(t.dataset.assignAdmin)});
+$('membersList').addEventListener('click',e=>{
+  const edit=e.target.closest('[data-member-edit]');
+  if(edit){openMemberManager(edit.dataset.memberEdit);return}
+  const assign=e.target.closest('[data-assign-admin]');
+  if(assign){openAdminEditor(assign.dataset.assignAdmin);return}
+  const block=e.target.closest('[data-member-block]');
+  if(block){openMemberBlock(block.dataset.memberBlock);return}
+});
 $('memberSearch').addEventListener('input',renderMembers);$('clearMemberSearch').onclick=()=>{$('memberSearch').value='';renderMembers()};
 document.querySelector('.filterRow').addEventListener('click',e=>{const b=e.target.closest('[data-member-filter]');if(!b)return;memberFilter=b.dataset.memberFilter;document.querySelectorAll('[data-member-filter]').forEach(x=>x.classList.toggle('active',x===b));renderMembers()});
 $('refreshMembers').onclick=()=>subscribeAll();
@@ -515,8 +531,15 @@ $('closeAllBtn').onclick=async()=>{
   try{const ch={};for(const code of Object.keys(currentRooms||{})){ch[`rooms/${code}`]=null;ch[`roomIndex/${code}`]=null}await update(ref(db),ch);await logAction('إغلاق جميع الغرف',`${n} غرفة`)}catch(err){alert(err.message)}
 };
 $('refreshRooms').onclick=()=>subscribeAll();$('refreshMonitor').onclick=()=>subscribeAll();$('refreshBans').onclick=()=>subscribeAll();$('refreshLogs').onclick=()=>subscribeAll();
-$('backRoomsBtn').onclick=()=>{document.querySelector('[data-tab="rooms"]').click()};
+$('backRoomsBtn').onclick=()=>{document.querySelector('[data-tab="rooms"]')?.click()};
 $('logoutBtn').onclick=async()=>{await leaveMonitorVoice().catch(()=>{});await signOut(auth)};
+
+
+function roomReturnInfo(){const q=new URLSearchParams(location.search),code=q.get('fromRoom')||localStorage.getItem('sheikh_room')||'';return {code,mode:q.get('mode')||localStorage.getItem('sheikh_admin_entry_mode')||'player'}}
+function setupReturnRoom(){const x=roomReturnInfo(),b=$('returnRoomTop');if(x.code){b.classList.add('show');b.textContent=`🎮 العودة للغرفة ${x.code}`;b.onclick=()=>{if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}else location.href='index.html'}}else b.classList.remove('show')}
+async function pinDigest(uid,pin){const raw=new TextEncoder().encode(`${uid}:${pin}:sheikh-admin-v1`),buf=await crypto.subtle.digest('SHA-256',raw);return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+function pinPromptHtml(title,setup=false){return new Promise(resolve=>{const gate=document.createElement('div');gate.className='pinGate';gate.innerHTML=`<div class="pinBox"><h2>🔐 ${title}</h2><p>${setup?'اختر PIN خاص بلوحة الإدارة. مسموح 4 أو 6 أرقام فقط.':'أدخل PIN الإدارة الخاص بك.'}</p>${setup?'<div class="pinChoices"><button class="btn btnGold" data-len="4">4 أرقام</button><button class="btn btnDark" data-len="6">6 أرقام</button></div>':''}<input id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••••"><input id="pinConfirm" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="تأكيد PIN" style="display:${setup?'block':'none'}"><button id="pinGo" class="btn btnGold" style="width:100%;margin-top:8px">${setup?'حفظ PIN':'دخول لوحة التحكم'}</button><div class="pinError" id="pinErr"></div></div>`;document.body.appendChild(gate);let len=setup?4:0;gate.querySelectorAll('[data-len]').forEach(b=>b.onclick=()=>{len=Number(b.dataset.len);gate.querySelector('#pinInput').maxLength=len;gate.querySelector('#pinConfirm').maxLength=len;gate.querySelectorAll('[data-len]').forEach(x=>x.classList.toggle('btnGold',x===b))});gate.querySelector('#pinGo').onclick=()=>{const p=gate.querySelector('#pinInput').value.replace(/\D/g,''),c=gate.querySelector('#pinConfirm').value.replace(/\D/g,'');if(![4,6].includes(p.length)||(setup&&p.length!==len)){gate.querySelector('#pinErr').textContent='الرمز لازم يكون 4 أو 6 أرقام.';return}if(setup&&p!==c){gate.querySelector('#pinErr').textContent='تأكيد PIN غير مطابق.';return}gate.remove();resolve(p)};setTimeout(()=>gate.querySelector('#pinInput').focus(),100)})}
+async function requireAdminPin(user){if(sessionStorage.getItem(`sheikh_pin_ok_${user.uid}`)==='1')return true;const lockKey=`sheikh_pin_lock_${user.uid}`,triesKey=`sheikh_pin_tries_${user.uid}`,until=Number(localStorage.getItem(lockKey)||0);if(until>Date.now()){alert(`تم إيقاف محاولات PIN مؤقتًا. جرّب بعد ${Math.ceil((until-Date.now())/60000)} دقيقة.`);return false}const snap=await get(ref(db,`admins/${user.uid}/adminPin`));let cfg=snap.val()||null;if(!cfg?.hash){const pin=await pinPromptHtml('إنشاء PIN الإدارة',true),hash=await pinDigest(user.uid,pin);await set(ref(db,`admins/${user.uid}/adminPin`),{hash,length:pin.length,updatedAt:Date.now()});sessionStorage.setItem(`sheikh_pin_ok_${user.uid}`,'1');return true}while(true){const pin=await pinPromptHtml('رمز لوحة التحكم',false),hash=await pinDigest(user.uid,pin);if(hash===cfg.hash){localStorage.removeItem(triesKey);localStorage.removeItem(lockKey);sessionStorage.setItem(`sheikh_pin_ok_${user.uid}`,'1');return true}let tries=Number(localStorage.getItem(triesKey)||0)+1;localStorage.setItem(triesKey,String(tries));if(tries>=5){localStorage.setItem(lockKey,String(Date.now()+5*60000));localStorage.removeItem(triesKey);alert('5 محاولات خاطئة. تم إيقاف PIN لمدة 5 دقائق.');return false}alert(`PIN غير صحيح. باقي ${5-tries} محاولات.`)}}
 
 $('loginBtn').onclick=async()=>{
   const email=$('email').value.trim(),password=$('password').value;if(!email||!password){msg('اكتب البريد وكلمة المرور أولاً.');return}
@@ -524,13 +547,13 @@ $('loginBtn').onclick=async()=>{
   try{
     const cred=await signInWithEmailAndPassword(auth,email,password);currentAdmin=await fetchAdmin(cred.user);
     if(!currentAdmin){await signOut(auth);throw new Error('NO_ADMIN')}
-    showDash(cred.user);
+    if(await requireAdminPin(cred.user)){showDash(cred.user);setupReturnRoom()}
   }catch(e){msg(e.message==='NO_ADMIN'?'هذا الحساب ليس لديه صلاحية إدارة فعالة.':'تعذر تسجيل الدخول. تأكد من البريد وكلمة المرور.')}
   finally{$('loginBtn').disabled=false;$('loginBtn').textContent='دخول الأدمن'}
 };
 onAuthStateChanged(auth,async user=>{
   if(!user){currentAdmin=null;showLogin();return}
-  try{currentAdmin=await fetchAdmin(user);if(currentAdmin)showDash(user);else{await signOut(auth);showLogin()}}catch{showLogin()}
+  try{currentAdmin=await fetchAdmin(user);if(currentAdmin){if(await requireAdminPin(user)){showDash(user);setupReturnRoom()}}else{await signOut(auth);showLogin()}}catch{showLogin()}
 });
 </script>
 </body>
