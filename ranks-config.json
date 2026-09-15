@@ -1,0 +1,69 @@
+{
+  "playerLevels": [
+    {
+      "key": "beginner",
+      "name_ar": "مبتدئ",
+      "xp_min": 0,
+      "xp_max": 499,
+      "icon": "player_01_beginner.png"
+    },
+    {
+      "key": "player",
+      "name_ar": "لاعب",
+      "xp_min": 500,
+      "xp_max": 1499,
+      "icon": "player_02_player.png"
+    },
+    {
+      "key": "experienced",
+      "name_ar": "متمرس",
+      "xp_min": 1500,
+      "xp_max": 3499,
+      "icon": "player_03_experienced.png"
+    },
+    {
+      "key": "expert",
+      "name_ar": "خبير",
+      "xp_min": 3500,
+      "xp_max": 6999,
+      "icon": "player_04_expert.png"
+    },
+    {
+      "key": "pro",
+      "name_ar": "محترف",
+      "xp_min": 7000,
+      "xp_max": null,
+      "icon": "player_05_pro.png"
+    }
+  ],
+  "xpRules": {
+    "completeRound": 5,
+    "completeMatch": 10,
+    "winRound": 15,
+    "winMatch": 40,
+    "lowestTotalStar": 10,
+    "leaveBeforeMatchEnd": 0
+  },
+  "adminRoles": [
+    {
+      "key": "superAdmin",
+      "name_ar": "سوبر أدمن",
+      "icon": "admin_01_superadmin.png"
+    },
+    {
+      "key": "generalModerator",
+      "name_ar": "مشرف عام",
+      "icon": "admin_02_general_mod.png"
+    },
+    {
+      "key": "roomModerator",
+      "name_ar": "مشرف غرف",
+      "icon": "admin_03_room_mod.png"
+    },
+    {
+      "key": "assistantModerator",
+      "name_ar": "مشرف مساعد",
+      "icon": "admin_04_assistant_mod.png"
+    }
+  ]
+}
