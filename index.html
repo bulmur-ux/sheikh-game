@@ -1277,6 +1277,21 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 <style id="account-edit-controls">
 .accountMiniBtn{margin-top:10px;padding:8px 14px;border:1px solid #b78a35;border-radius:12px;background:#f5ead2;color:#2a170d;font-weight:800;font-size:14px;cursor:pointer}
 .accountMiniBtn:active{transform:scale(.98)}
+
+/* وضوح أوراق اللعب - نسخة التجربة */
+@media (orientation:portrait){
+ .refHandWrap .hand{gap:9px!important}
+ .refHandWrap .slot{width:76px!important;min-width:76px!important;min-height:112px!important}
+ .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:74px!important;height:106px!important;border-radius:9px!important}
+ .refCenterPiles{gap:30px!important}
+ .refPile .cardBack,.refPile .cardFace{width:78px!important;height:110px!important;border-radius:9px!important}
+ .cardFace .faceRank{font-size:22px!important}.cardFace .faceSuitSmall{font-size:16px!important}
+}
+@media (orientation:landscape) and (min-width:650px){
+ .refHandWrap .hand{gap:7px!important}.refHandWrap .slot{width:66px!important;min-width:66px!important}
+ .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:64px!important;height:92px!important}
+ .refPile .cardBack,.refPile .cardFace{width:68px!important;height:96px!important}
+}
 </style>
 </head>
 <body>
@@ -1779,6 +1794,8 @@ async function beginRound(order,roundNo,totalRounds,totals){
  totals={...(totals||{})};for(const id of order)if(totals[id]==null)totals[id]=0;
  // نقرأ اللاعبين مباشرة من Firebase حتى لا نعتمد على currentRoom قديم وقت الانتقال.
  const pubSnap=await get(ref(db,`rooms/${roomCode}/public`));const livePub=pubSnap.val()||currentRoom||{};const livePlayers=livePub.players||{};
+ // اختيار أول لاعب عشوائياً في كل جولة، بدون ربط البداية بالمضيف أو المشرف.
+ for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
  const deck=buildDeck(),discard=deck.shift(),players={};
  const roundToken=`r${Number(roundNo)||1}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
  for(const [id,p] of Object.entries(livePlayers))players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:0,ready:!order.includes(id),introDone:!order.includes(id),introStarted:false,dealRoundNo:0,dealToken:""};
@@ -1816,7 +1833,7 @@ async function tryAdvanceMemorize(){
   const until=Number(g.memorizeUntil||0);if(!until||until>Date.now())return g;
   g.phase="playing";g.memorizeUntil=0;g.turnIndex=0;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;g.timeoutClaim=null;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;advanced=true;return g;
  });
- if(advanced&&tx.committed){try{await sendSystem("🎮 بدأ اللعب — لكل لاعب 60 ثانية")}catch{}}
+ if(advanced&&tx.committed){try{const gg=tx.snapshot.val()||{};const firstId=(gg.turnOrder||[])[0];const firstName=currentRoom?.players?.[firstId]?.name||"لاعب";await sendSystem(`🎲 بدأ اللعب — البداية عشوائياً مع ${firstName} • لكل لاعب 60 ثانية`)}catch{}}
  return advanced;
 }
 function scheduleRoundRecovery(){
@@ -2274,7 +2291,9 @@ function renderLobby(){
 function renderGame(){
  const g=game(),active=g.turnOrder||[],tuid=turnUid(),tname=currentRoom.players?.[tuid]?.name||"",totals=g.cumulativeScores||{},host=uid===currentRoom.hostId;
  if(g.phase==="dealing"){
-  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>توزيع الأوراق</h2><p>${isActivePlayer()?"جاري توزيع 4 أوراق لكل لاعب...":"👀 أنت متفرج في هذه الجولة"}</p><div class="refWaiting">${activePlayerEntries().filter(([,p])=>p.ready===true&&Number(p.cardCount)===4&&String(p.dealToken||"")===String(g.roundToken||"")).length} / ${active.length} تم التوزيع</div></div></div></div>`;return;
+  const dealtCount=activePlayerEntries().filter(([,p])=>p.ready===true&&Number(p.cardCount)===4&&String(p.dealToken||"")===String(g.roundToken||"")).length;
+  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>🃏 توزيع الأوراق</h2><p>${isActivePlayer()?"يتم تجهيز 4 أوراق لك ولكل لاعب...":"👀 أنت متفرج — يتم تجهيز أوراق اللاعبين"}</p><div class="refWaiting"><b>${dealtCount} / ${active.length}</b> تم التوزيع</div>${isActivePlayer()?`<button id="retryDeal" class="btn gold" style="margin-top:14px;width:100%">↻ إعادة محاولة استلام أوراقي</button>`:`<div class="small center" style="margin-top:12px">تبدأ الجولة تلقائياً بعد استلام جميع اللاعبين أوراقهم.</div>`}</div></div></div>`;
+  const rd=document.getElementById("retryDeal");if(rd)rd.onclick=async()=>{try{if(myHand){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}await claimInitialHand();await tryAdvanceDealing();toast("تمت إعادة محاولة التوزيع") }catch(e){toast("تعذر التوزيع: "+(e.code||e.message||"حاول مرة ثانية"))}};return;
  }
  if(g.phase==="reveal"){
   const rev=currentRoom.reveals||{},done=active.filter(id=>rev[id]).length;
