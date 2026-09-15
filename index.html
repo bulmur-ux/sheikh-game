@@ -1030,6 +1030,43 @@ header p{text-shadow:0 2px 8px #000;}
 /* Existing full game-table layout keeps its own approved background/layout. */
 body:has(.gameStage){background:#160d08!important;}
 </style>
+
+<style id="auth-landscape-responsive-fix">
+/* Responsive account screen: portrait stays as approved; landscape uses the available width. */
+@media (orientation:landscape) and (min-width:650px){
+  body:not(:has(.gameStage)){overflow:auto!important;background:#120b07 url("bg-wide.PNG") center center/cover fixed no-repeat!important}
+  body:not(:has(.gameStage)) .wrap{min-height:100dvh!important;height:auto!important;overflow:visible!important;padding-bottom:18px!important}
+  body:not(:has(.gameStage)) header{padding:8px 16px 2px!important}
+  body:not(:has(.gameStage)) header h1{font-size:36px!important;margin:0!important;gap:10px!important}
+  body:not(:has(.gameStage)) header h1::before{width:48px!important;height:48px!important;flex-basis:48px!important;border-radius:12px!important}
+  body:not(:has(.gameStage)) header p{font-size:15px!important;margin:4px 0 2px!important}
+  body:not(:has(.gameStage)) #app{width:100%!important;max-width:none!important;padding:0 24px 18px!important;box-sizing:border-box!important}
+  body:not(:has(.gameStage)) .authShell{width:min(92vw,900px)!important;max-width:900px!important;margin:2px auto 0!important}
+  body:not(:has(.gameStage)) .authBrand{padding:4px 0 6px!important}
+  body:not(:has(.gameStage)) .authBrand h2{font-size:25px!important;margin:0!important}
+  body:not(:has(.gameStage)) .authBrand p{font-size:13px!important;margin:3px 0!important}
+  body:not(:has(.gameStage)) .authShell>.panel{padding:16px 20px!important;border-radius:18px!important}
+  body:not(:has(.gameStage)) .authTabs{max-width:620px;margin:0 auto 12px!important}
+  body:not(:has(.gameStage)) .authField{margin-bottom:9px!important}
+  body:not(:has(.gameStage)) .authField label{font-size:14px!important;margin-bottom:4px!important}
+  body:not(:has(.gameStage)) .authShell input{min-height:48px!important;padding-top:9px!important;padding-bottom:9px!important}
+  body:not(:has(.gameStage)) .authHint{font-size:11px!important;margin-top:4px!important;line-height:1.45!important}
+  body:not(:has(.gameStage)) .authShell .btn{min-height:48px!important}
+  body:not(:has(.gameStage)) .authMsg{margin-top:5px!important;min-height:16px!important}
+
+  /* New-member form becomes a balanced two-column layout in landscape. */
+  body:not(:has(.gameStage)) .authShell>.panel:has(#regUser){display:grid!important;grid-template-columns:1fr 1fr!important;column-gap:18px!important;align-items:start!important}
+  body:not(:has(.gameStage)) .authShell>.panel:has(#regUser) .authTabs{grid-column:1/-1!important;width:100%!important}
+  body:not(:has(.gameStage)) .authShell>.panel:has(#regUser) .authField{min-width:0!important}
+  body:not(:has(.gameStage)) .authShell>.panel:has(#regUser) #authSubmit,
+  body:not(:has(.gameStage)) .authShell>.panel:has(#regUser) .authMsg{grid-column:1/-1!important;width:100%!important}
+}
+
+/* Tablet/desktop portrait gets a little more breathing room without becoming oversized. */
+@media (orientation:portrait) and (min-width:700px){
+  .authShell{max-width:620px!important;width:min(88vw,620px)!important}
+}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
