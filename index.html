@@ -2331,7 +2331,7 @@ function adminModerationToast(text){
   toast(`⚠️ ${text}`);
 }
 
-function showAdminWarning(message){
+function showAdminWarning(message,warningId){
   const safe=String(message||"يرجى الالتزام بقوانين الغرفة.");
   openModal(`
     <div style="
@@ -2377,7 +2377,10 @@ function showAdminWarning(message){
   `);
   requestAnimationFrame(()=>{
     const btn=document.getElementById("adminWarningOk");
-    if(btn)btn.addEventListener("click",closeModal,{once:true});
+    if(btn)btn.addEventListener("click",()=>{
+      if(warningId)localStorage.setItem(`sheikh_admin_warning_ack_${roomCode}_${uid}_${warningId}`,"1");
+      closeModal();
+    },{once:true});
   });
 }
 
@@ -2390,11 +2393,12 @@ function applyModerationSnapshot(v){
 
   const warnings=v?.warnings||{};
   Object.entries(warnings).forEach(([id,w])=>{
-    if(seenAdminWarnings.has(id))return;
+    const ackKey=`sheikh_admin_warning_ack_${roomCode}_${uid}_${id}`;
+    if(seenAdminWarnings.has(id)||localStorage.getItem(ackKey)==="1")return;
     seenAdminWarnings.add(id);
     const ts=Number(w?.createdAt||0);
     if(ts && ts < Date.now()-10*60*1000)return;
-    showAdminWarning(w?.message||"يرجى الالتزام بقوانين الغرفة.");
+    showAdminWarning(w?.message||"يرجى الالتزام بقوانين الغرفة.",id);
   });
 
   if(moderationState.voiceMutedUntil>now && voiceController?.isActive?.()){
