@@ -153,14 +153,14 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 
     <div id="panel-admins" class="panel superOnly">
       <div class="section">
-        <div class="sectionTitle"><h2>👥 الأعضاء والمشرفون</h2><button id="refreshMembers" class="btn btnDark refresh">تحديث ↻</button></div>
-        <div class="note" style="margin:0 0 8px">اختر العضو من المسجلين، ثم عيّن رتبته الإدارية والصلاحيات. لا تحتاج UID.</div>
+        <div class="sectionTitle"><h2>🛡️ المشرفون الحاليون</h2><button id="refreshMembers" class="btn btnDark refresh">تحديث ↻</button></div>
+        <div id="adminsList"><div class="empty">جاري تحميل المشرفين...</div></div>
+        <div class="sectionTitle" style="margin-top:18px"><h2>👥 قائمة الأعضاء</h2></div>
+        <div class="note" style="margin:0 0 8px">إدارة بيانات العضو أو منحه صلاحية أو حظره من مكان واحد.</div>
         <div class="memberSearch"><input id="memberSearch" placeholder="ابحث باسم المستخدم أو رقم العضوية"><button id="clearMemberSearch" class="btn btnDark">مسح</button></div>
         <div class="filterRow"><button class="filterBtn active" data-member-filter="all">الكل</button><button class="filterBtn" data-member-filter="online">المتصلون</button><button class="filterBtn" data-member-filter="admins">المشرفون</button><button class="filterBtn" data-member-filter="banned">المحظورون</button></div>
         <div id="memberEditor"></div>
         <div id="membersList"><div class="empty">جاري تحميل الأعضاء...</div></div>
-        <div class="sectionTitle" style="margin-top:18px"><h2>المشرفون الحاليون</h2></div>
-        <div id="adminsList"><div class="empty">جاري تحميل المشرفين...</div></div>
       </div>
     </div>
 
@@ -370,10 +370,10 @@ function renderAdmins(data){
 function isOnlineUid(uid){return !!(currentPresence?.[uid]?.online||currentPresence?.[uid]?.state==='online'||currentPresence?.[uid]?.lastSeen&&Date.now()-Number(currentPresence[uid].lastSeen)<120000)}
 function renderMembers(){
  const list=$('membersList');if(!list)return;const q=($('memberSearch')?.value||'').trim().toLowerCase();
- let e=Object.entries(currentUsers||{}).filter(([uid,u])=>{const text=`${u.username||''} ${u.memberNo||''}`.toLowerCase();if(q&&!text.includes(q))return false;if(memberFilter==='admins'&&!currentAdmins[uid])return false;if(memberFilter==='banned'&&!currentBans[uid])return false;if(memberFilter==='online'&&!isOnlineUid(uid))return false;return true});
+ let e=Object.entries(currentUsers||{}).filter(([uid,u])=>{const text=`${u.username||''} ${u.memberNo||''} ${u.email||''}`.toLowerCase();if(q&&!text.includes(q))return false;if(memberFilter==='admins'&&!currentAdmins[uid])return false;if(memberFilter==='banned'&&!currentBans[uid])return false;if(memberFilter==='online'&&!isOnlineUid(uid))return false;return true});
  e.sort((a,b)=>(Number(a[1]?.memberNo)||999999)-(Number(b[1]?.memberNo)||999999));
  if(!e.length){list.innerHTML='<div class="empty">لا توجد نتائج</div>';return}
- list.innerHTML=e.map(([uid,u])=>{const r=rankForXp(u.xp||0),a=currentAdmins[uid],ar=a?.superAdmin?{name:'سوبر أدمن',icon:'ranks/admin_01_superadmin.png'}:ADMIN_ROLES[a?.role];return `<div class="memberCard"><div class="memberTop"><div><div class="memberName"><img class="rankMini" src="${r.icon}" alt="">${esc(u.username||'بدون اسم')}</div><div class="memberMeta">رقم العضوية: ${esc(u.memberNo||'—')} • ${r.name} • ${Number(u.xp||0)} XP ${isOnlineUid(uid)?'• 🟢 متصل':''} ${currentBans[uid]?'• 🔴 محظور':''}${ar?`<br><img class="adminRoleMini" src="${ar.icon}" alt=""> ${ar.name}`:''}</div></div><div class="actions">${a?.superAdmin?'<span class="pill gold">Super Admin</span>':`<button class="btn ${a?'btnGold':'btnBlue'}" data-assign-admin="${esc(uid)}">${a?'⚙️ تعديل الإشراف':'🛡️ تعيين مشرف'}</button>`}${hasPerm('manageMembers')?`<button class="btn btnDark" data-manage-member="${esc(uid)}">👤 إدارة العضو</button>`:''}</div></div></div>`}).join('');
+ list.innerHTML=e.map(([uid,u])=>{const r=rankForXp(u.xp||0),a=currentAdmins[uid],ar=a?.superAdmin?{name:'سوبر أدمن',icon:'ranks/admin_01_superadmin.png'}:ADMIN_ROLES[a?.role];return `<div class="memberCard"><div class="memberTop"><div><div class="memberName"><img class="rankMini" src="${r.icon}" alt="">${esc(u.username||'بدون اسم')}</div><div class="memberMeta">رقم العضوية: ${esc(u.memberNo||'—')} • ${r.name} • ${Number(u.xp||0)} XP ${isOnlineUid(uid)?'• 🟢 متصل':''} ${currentBans[uid]?'• 🔴 محظور':''}${ar?`<br><img class="adminRoleMini" src="${ar.icon}" alt=""> ${ar.name}`:''}</div></div></div><div class="actions" style="margin-top:10px">${hasPerm('manageMembers')?`<button class="btn btnDark" data-member-edit="${esc(uid)}">✏️ تعديل البيانات</button>`:''}${a?.superAdmin?'<span class="pill gold">👑 Super Admin</span>':`<button class="btn ${a?'btnGold':'btnBlue'}" data-assign-admin="${esc(uid)}">${a?'🛡️ تعديل الصلاحية':'🛡️ منح صلاحية'}</button>`}${hasPerm('manageMembers')&&!a?.superAdmin?`<button class="btn btnRed" data-member-block="${esc(uid)}">⛔ حظر / حذف</button>`:''}</div></div>`}).join('');
 }
 function formatAdminDate(ts){if(!ts)return '';const d=new Date(Number(ts));return new Intl.DateTimeFormat('ar-AE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(d).replace('،',' •')}
 function memberLabel(uid){const u=currentUsers[uid]||{};return `${u.username||'عضو'}${u.memberNo?' — عضوية #'+u.memberNo:''}`}
@@ -401,6 +401,17 @@ function openMemberManager(uid){
  $('toggleMemberStatus').onclick=async()=>{const next=disabled?'active':'disabled';if(!disabled&&!confirm('تعطيل حساب هذا العضو؟'))return;try{await update(ref(db,`users/${uid}`),{status:next});await logAction(next==='disabled'?'تعطيل حساب عضو':'تفعيل حساب عضو',memberLabel(uid),{targetUid:uid,targetName:u.username||'',targetMemberNo:u.memberNo||null});alert(next==='disabled'?'تم تعطيل الحساب':'تم تفعيل الحساب');box.innerHTML=''}catch(e){alert(e.message)}};
  box.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function openMemberBlock(uid){
+ if(!hasPerm('manageMembers'))return alert('ما عندك صلاحية إدارة الأعضاء');
+ const u=currentUsers[uid]||{},box=$('memberEditor'),banned=!!currentBans[uid];
+ box.innerHTML=`<div class="adminEditor"><h3>⛔ حظر / حذف: ${esc(u.username||'العضو')} ${u.memberNo?'#'+esc(u.memberNo):''}</h3><label>سبب الإجراء<input id="memberBlockReason" placeholder="اكتب السبب"></label><div class="actions" style="margin-top:10px">${banned?'<button id="unbanMemberNow" class="btn btnGreen">✅ فك الحظر</button>':'<button id="banMemberNow" class="btn btnRed">⛔ حظر العضو</button>'}<button id="deleteMemberInfo" class="btn btnDark">🗑️ حذف العضو</button><button id="closeMemberBlock" class="btn btnDark">إغلاق</button></div><div class="note">الحذف النهائي لحساب تسجيل الدخول يحتاج خدمة إدارية آمنة على الخادم؛ لن نحذف بيانات الحساب فقط ونترك تسجيل الدخول فعالاً.</div></div>`;
+ $('closeMemberBlock').onclick=()=>box.innerHTML='';
+ if($('banMemberNow'))$('banMemberNow').onclick=async()=>{const reason=$('memberBlockReason').value.trim()||'بقرار الإدارة';if(!confirm(`حظر ${u.username||'العضو'}؟`))return;try{await set(ref(db,`bans/${uid}`),{name:u.username||'عضو',memberNo:u.memberNo||null,reason,createdAt:Date.now(),createdBy:auth.currentUser.uid});await update(ref(db,`users/${uid}`),{status:'disabled'});await logAction('حظر عضو',memberLabel(uid),{targetUid:uid,targetName:u.username||'',targetMemberNo:u.memberNo||null});box.innerHTML='';alert('تم حظر العضو ✅')}catch(e){alert(e.message)}};
+ if($('unbanMemberNow'))$('unbanMemberNow').onclick=async()=>{try{await remove(ref(db,`bans/${uid}`));await update(ref(db,`users/${uid}`),{status:'active'});await logAction('فك حظر عضو',memberLabel(uid),{targetUid:uid,targetName:u.username||'',targetMemberNo:u.memberNo||null});box.innerHTML='';alert('تم فك الحظر ✅')}catch(e){alert(e.message)}};
+ $('deleteMemberInfo').onclick=()=>alert('الحذف النهائي غير مفعّل من المتصفح حتى لا يبقى حساب Firebase Authentication بدون ملف عضو. نفعّله لاحقاً بخدمة إدارية آمنة.');
+ box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function openAdminEditor(uid){
  if(!isSuper())return;editingAdminUid=uid;const u=currentUsers[uid]||{},a=currentAdmins[uid]||{},role=a.role||'assistantModerator',perms=a.permissions||{};const box=$('memberEditor');
  box.innerHTML=`<div class="adminEditor"><h3>إشراف: ${esc(u.username||'العضو')} ${u.memberNo?'#'+esc(u.memberNo):''}</h3><div class="roleGrid">${Object.entries(ADMIN_ROLES).map(([k,r])=>`<label class="roleChoice"><input type="radio" name="adminRole" value="${k}" ${role===k?'checked':''}><img src="${r.icon}" alt=""><b>${r.name}</b></label>`).join('')}</div><div class="permGrid flexPerms">${Object.entries(PERM_DEFS).map(([k,label])=>`<label class="check"><input type="checkbox" data-perm="${k}" ${perms[k]===true?'checked':''}> ${label}</label>`).join('')}</div><div class="actions"><button id="saveAdminEditor" class="btn btnGold">حفظ الصلاحيات</button><button id="cancelAdminEditor" class="btn btnDark">إلغاء</button></div><div class="note">إدارة المشرفين وتغيير صلاحياتهم تبقى للسوبر أدمن فقط ولا يمكن تفويضها.</div></div>`;
