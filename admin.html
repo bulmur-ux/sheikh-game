@@ -44,7 +44,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 .gridStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
 .stat{background:#0e0a08;border:1px solid #5d431f;border-radius:16px;padding:12px 6px;text-align:center}
 .stat b{display:block;font-size:22px;color:#ffdf7f;margin-bottom:4px}.stat span{font-size:11px;color:#c8b795}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:13px 0}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:13px 0}
 .tab{min-height:43px;border-radius:13px;border:1px solid #63451f;background:#17100d;color:#decba6;font-weight:800}
 .tab.active{background:linear-gradient(180deg,#f0c457,#bd8320);color:#211407;border-color:#f0c457}
 .panel{display:none}.panel.active{display:block}
@@ -69,6 +69,14 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 .log{padding:10px;border-bottom:1px solid #342514}.log:last-child{border-bottom:0}.log b{color:#ffe097}.log time{display:block;color:#9f8d70;font-size:11px;margin-top:3px}
 .pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}
 .pill.green{background:#176b46;color:#d9ffed}.pill.red{background:#74192a;color:#ffd7df}.pill.gold{background:#4c3517;color:#ffe39c}
+
+/* Admin monitor */
+.monitorBox{margin-top:10px;border:1px solid #6a4c25;border-radius:16px;background:#0c0907;padding:11px}
+.monitorHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.monitorHead b{color:#ffe29a}
+.monitorFeed{max-height:260px;overflow:auto;border:1px solid #3f2d17;border-radius:12px;background:#080605;padding:8px}
+.monitorLine{padding:7px 5px;border-bottom:1px solid #2e2113;font-size:12px;line-height:1.55}.monitorLine:last-child{border-bottom:0}.monitorLine time{color:#8f8067;font-size:10px;margin-inline-start:5px}
+.modActions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.modActions .btn{min-height:31px;font-size:10px;padding:0 8px}
+.monitorNotice{font-size:11px;color:#bda98a;line-height:1.6;margin:7px 1px 0}
 @media(max-width:600px){
  .wrap{padding-top:8px}.card{padding:12px;border-radius:20px}.gridStats{grid-template-columns:repeat(2,1fr)}
  .tabs{grid-template-columns:repeat(2,1fr)}.adminEmail{max-width:190px}.itemHead{align-items:flex-start;flex-direction:column}
@@ -105,6 +113,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 
     <div class="tabs">
       <button class="tab active" data-tab="rooms">الغرف</button>
+      <button class="tab" data-tab="monitor">المراقب</button>
       <button class="tab" data-tab="bans">الحظر</button>
       <button class="tab superOnly" data-tab="admins">المشرفون</button>
       <button class="tab" data-tab="logs">السجل</button>
@@ -116,6 +125,15 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
         <div id="roomsList"><div class="empty">جاري تحميل الغرف...</div></div>
       </div>
       <button id="closeAllBtn" class="btn btnRed btnWide" style="margin-top:12px">إغلاق جميع الغرف</button>
+    </div>
+
+
+    <div id="panel-monitor" class="panel">
+      <div class="section">
+        <div class="sectionTitle"><h2>مراقبة الغرف</h2><button id="refreshMonitor" class="btn btnDark refresh">تحديث ↻</button></div>
+        <div class="note" style="margin:0 0 10px">المراقب لا يدخل كلاعب ولا تُعرض له الأوراق الخاصة. الدخول المتخفي لا يظهر ضمن قائمة اللاعبين أو المتفرجين، وتُسجل إجراءات الإدارة داخليًا.</div>
+        <div id="monitorRooms"><div class="empty">جاري تحميل الغرف...</div></div>
+      </div>
     </div>
 
     <div id="panel-bans" class="panel">
@@ -226,6 +244,46 @@ function renderRooms(){
     </div>`;
   }).join('');
 }
+function roomMessages(room){
+  const sources=[room?.public?.chat,room?.public?.messages,room?.chat,room?.messages].filter(Boolean);
+  const all=[];sources.forEach(src=>Object.entries(src||{}).forEach(([id,v])=>all.push({id,...(v||{})})));
+  return all.sort((a,b)=>(a.createdAt||a.ts||0)-(b.createdAt||b.ts||0)).slice(-80);
+}
+function renderMonitor(){
+  const list=$('monitorRooms'),entries=Object.entries(currentRooms||{});
+  if(!entries.length){list.innerHTML='<div class="empty">لا توجد غرف مفتوحة حاليًا ✅</div>';return}
+  list.innerHTML=entries.map(([code,room])=>{
+    const pub=room?.public||{},players=getPlayers(room),msgs=roomMessages(room);
+    const feed=msgs.length?msgs.map(m=>`<div class="monitorLine"><b>${esc(m.name||m.senderName||m.userName||'لاعب')}:</b> ${esc(m.text||m.message||m.body||'')} ${m.createdAt||m.ts?`<time>${new Date(m.createdAt||m.ts).toLocaleTimeString('ar-AE',{hour:'2-digit',minute:'2-digit'})}</time>`:''}</div>`).join(''):'<div class="empty" style="padding:12px">لا توجد رسائل ظاهرة</div>';
+    const phtml=players.map(p=>`<div class="player"><div><div class="pname">${esc(p.name||'بدون اسم')}</div><div class="prole">${esc(p.role||'player')}</div></div><div class="modActions">${canRooms()?`<button class="btn btnDark" data-warn="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">⚠️ تحذير</button><button class="btn btnDark" data-mute-chat="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">💬 كتم</button><button class="btn btnDark" data-mute-voice="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">🎙️ تعطيل</button><button class="btn btnBlue" data-kick="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">إخراج</button>`:''}${canBan()?`<button class="btn btnRed" data-ban="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">حظر</button>`:''}</div></div>`).join('');
+    return `<div class="item"><div class="itemHead"><div><div class="itemTitle">#${esc(code)}</div><div class="itemMeta">${roomStatus(pub)} • ${players.length} لاعب</div></div><div class="actions"><button class="btn btnBlue" data-watch="${esc(code)}">👁️ مراقبة</button><button class="btn btnDark" data-stealth="${esc(code)}">🥷 متخفي</button></div></div><div id="monitor-${esc(code)}" class="players"><div class="monitorBox"><div class="monitorHead"><b>الشات والأحداث الظاهرة</b><span class="pill gold">بدون أوراق خاصة</span></div><div class="monitorFeed">${feed}</div><div style="margin-top:9px">${phtml||'<div class="empty">لا يوجد لاعبون</div>'}</div></div></div></div>`;
+  }).join('');
+}
+async function setAdminMonitor(code,stealth){
+  if(!auth.currentUser||!canRooms())return;
+  const uid=auth.currentUser.uid;
+  const data={adminUid:uid,adminEmail:auth.currentUser.email||'',stealth:!!stealth,enteredAt:Date.now()};
+  await set(ref(db,`adminMonitoring/${code}/${uid}`),data);
+  await logAction(stealth?'دخول مراقبة متخفية':'دخول مراقبة',`الغرفة ${code}`);
+  const box=$(`monitor-${code}`);if(box)box.classList.add('open');
+}
+async function moderationAction(kind,code,uid,name){
+  if(!canRooms())return;
+  const now=Date.now(),base=`moderation/${uid}`;
+  if(kind==='warn'){
+    const reason=prompt(`رسالة التحذير إلى ${name}:`,'يرجى الالتزام بقوانين الغرفة.')??null;if(reason===null)return;
+    await set(push(ref(db,`${base}/warnings`)),{room:code,message:reason,by:auth.currentUser.uid,createdAt:now});await logAction('تحذير لاعب',`${name} في الغرفة ${code}: ${reason}`);return;
+  }
+  if(kind==='muteChat'){
+    const mins=Number(prompt(`مدة كتم الكتابة لـ ${name} بالدقائق:`, '10'));if(!Number.isFinite(mins)||mins<=0)return;
+    await update(ref(db,base),{chatMutedUntil:now+mins*60000,chatMutedBy:auth.currentUser.uid});await logAction('كتم شات',`${name} لمدة ${mins} دقيقة`);return;
+  }
+  if(kind==='muteVoice'){
+    const mins=Number(prompt(`مدة تعطيل الصوت لـ ${name} بالدقائق:`, '10'));if(!Number.isFinite(mins)||mins<=0)return;
+    await update(ref(db,base),{voiceMutedUntil:now+mins*60000,voiceMutedBy:auth.currentUser.uid});await logAction('تعطيل صوت',`${name} لمدة ${mins} دقيقة`);return;
+  }
+}
+
 function renderBans(){
   renderStats();const e=Object.entries(currentBans||{}),list=$('bansList');
   if(!e.length){list.innerHTML='<div class="empty">لا يوجد لاعبون محظورون ✅</div>';return}
@@ -253,7 +311,7 @@ function renderLogs(data){
 function subscribeAll(){
   cleanup();
   if(canRooms()){
-    stops.push(onValue(ref(db,'rooms'),s=>{currentRooms=s.val()||{};renderRooms()},e=>$('roomsList').innerHTML=`<div class="empty">تعذر قراءة الغرف: ${esc(e.message)}</div>`));
+    stops.push(onValue(ref(db,'rooms'),s=>{currentRooms=s.val()||{};renderRooms();renderMonitor()},e=>$('roomsList').innerHTML=`<div class="empty">تعذر قراءة الغرف: ${esc(e.message)}</div>`));
   }else{$('roomsList').innerHTML='<div class="empty">ما عندك صلاحية إدارة الغرف.</div>'}
   stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans()},()=>{}));
   stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>renderLogs(s.val()||{}),()=>{}));
@@ -285,6 +343,19 @@ $('roomsList').addEventListener('click',async e=>{
     }catch(err){alert(err.message)}
   }
 });
+$('monitorRooms').addEventListener('click',async e=>{
+  const t=e.target.closest('button');if(!t)return;
+  try{
+    if(t.dataset.watch){await setAdminMonitor(t.dataset.watch,false);return}
+    if(t.dataset.stealth){await setAdminMonitor(t.dataset.stealth,true);return}
+    if(t.dataset.warn){await moderationAction('warn',t.dataset.warn,t.dataset.uid,t.dataset.name);return}
+    if(t.dataset.muteChat){await moderationAction('muteChat',t.dataset.muteChat,t.dataset.uid,t.dataset.name);return}
+    if(t.dataset.muteVoice){await moderationAction('muteVoice',t.dataset.muteVoice,t.dataset.uid,t.dataset.name);return}
+    if(t.dataset.kick){const code=t.dataset.kick,uid=t.dataset.uid,name=t.dataset.name;if(!confirm(`إخراج ${name} من الغرفة ${code}؟`))return;const ch={};ch[`rooms/${code}/public/players/${uid}`]=null;ch[`rooms/${code}/privateHands/${uid}`]=null;await update(ref(db),ch);await logAction('إخراج لاعب',`${name} من الغرفة ${code}`);return}
+    if(t.dataset.ban){const code=t.dataset.ban,uid=t.dataset.uid,name=t.dataset.name;const reason=prompt(`سبب حظر ${name} (اختياري):`,'')??null;if(reason===null)return;if(!confirm(`حظر ${name} وإخراجه من الغرفة؟`))return;const ch={};ch[`bans/${uid}`]={name,reason,createdAt:Date.now(),by:auth.currentUser.uid};ch[`rooms/${code}/public/players/${uid}`]=null;ch[`rooms/${code}/privateHands/${uid}`]=null;await update(ref(db),ch);await logAction('حظر لاعب',`${name} (${uid})`);return}
+  }catch(err){alert(err.message)}
+});
+
 $('bansList').addEventListener('click',async e=>{
   const t=e.target.closest('[data-unban]');if(!t)return;
   const uid=t.dataset.unban,name=t.dataset.name;if(!confirm(`فك الحظر عن ${name}؟`))return;
@@ -308,7 +379,7 @@ $('closeAllBtn').onclick=async()=>{
   if(!confirm(`إغلاق جميع الغرف (${n})؟`))return;
   try{await remove(ref(db,'rooms'));await logAction('إغلاق جميع الغرف',`${n} غرفة`)}catch(err){alert(err.message)}
 };
-$('refreshRooms').onclick=()=>subscribeAll();$('refreshBans').onclick=()=>subscribeAll();$('refreshLogs').onclick=()=>subscribeAll();
+$('refreshRooms').onclick=()=>subscribeAll();$('refreshMonitor').onclick=()=>subscribeAll();$('refreshBans').onclick=()=>subscribeAll();$('refreshLogs').onclick=()=>subscribeAll();
 $('backRoomsBtn').onclick=()=>{document.querySelector('[data-tab="rooms"]').click()};
 $('logoutBtn').onclick=()=>signOut(auth);
 
