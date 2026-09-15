@@ -304,6 +304,8 @@ function roomMessages(room){
 }
 function renderMonitor(){
   const list=$('monitorRooms'),entries=Object.entries(currentRooms||{});
+  const openRooms=new Set([...list.querySelectorAll('.players.open')].map(el=>String(el.id||'').replace(/^monitor-/,'')).filter(Boolean));
+  if(monitorVoiceCode) openRooms.add(monitorVoiceCode);
   if(!entries.length){list.innerHTML='<div class="empty">لا توجد غرف مفتوحة حاليًا ✅</div>';return}
   list.innerHTML=entries.map(([code,room])=>{
     const pub=room?.public||{},players=getPlayers(room),msgs=roomMessages(room);
@@ -313,6 +315,7 @@ function renderMonitor(){
     const voiceLabel=voiceHere?(monitorVoiceState.starting?'جاري الربط...':monitorVoiceState.active?`متصل • ${monitorVoiceState.remoteCount||0} صوت`:'غير متصل'):'غير متصل';
     return `<div class="item"><div class="itemHead"><div><div class="itemTitle">#${esc(code)}</div><div class="itemMeta">${roomStatus(pub)} • ${players.length} لاعب</div></div><div class="actions"><button class="btn btnBlue" data-watch="${esc(code)}">👁️ مراقبة</button><button class="btn btnDark" data-stealth="${esc(code)}">🥷 متخفي</button></div></div><div id="monitor-${esc(code)}" class="players"><div class="monitorBox"><div class="monitorHead"><b>الشات والأحداث الظاهرة</b><span class="pill gold">بدون أوراق خاصة</span></div><div class="voiceAdminBar"><button class="btn btnGreen" data-voice-listen="${esc(code)}">🔊 دخول الصوت</button><button class="btn btnGold" data-admin-talk="${esc(code)}">${voiceHere&&monitorVoiceState.active&&!monitorVoiceState.muted?'🔇 إيقاف حديث الإدارة':'🎙️ تحدث كإدارة'}</button>${voiceHere?`<button class="btn btnRed" data-voice-leave="${esc(code)}">⏹️ خروج من الصوت</button>`:''}<span class="voiceState">${esc(voiceLabel)}</span></div><div class="monitorFeed">${feed}</div><div style="margin-top:9px">${phtml||'<div class="empty">لا يوجد لاعبون</div>'}</div></div></div></div>`;
   }).join('');
+  openRooms.forEach(code=>{const box=$(`monitor-${code}`);if(box)box.classList.add('open');});
 }
 async function setAdminMonitor(code,stealth){
   if(!auth.currentUser||!canRooms())return;
