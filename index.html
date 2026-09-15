@@ -1295,7 +1295,7 @@ let voiceActive=false,voiceStarting=false,voiceMuted=false;
 let processingKickRequest=false;
 let voiceController=null;
 let moderationState={chatMutedUntil:0,voiceMutedUntil:0};
-let moderationStop=null;
+let moderationStop=null,moderationWatchKey="";
 let seenAdminWarnings=new Set();
 
 let turnCountdownTimer=null,handlingTurnTimeout=false,revealFinalizing=false;
@@ -2333,11 +2333,11 @@ function adminModerationToast(text){
 
 function showAdminWarning(message){
   const safe=String(message||"يرجى الالتزام بقوانين الغرفة.");
-  showModal(`
+  openModal(`
     <div style="text-align:center;padding:8px 2px">
       <div style="font-size:42px;margin-bottom:8px">⚠️</div>
       <h3 style="margin:0 0 10px;color:#ffd36a">تحذير من الإدارة</h3>
-      <div style="line-height:1.9;font-weight:800">${escapeHtml(safe)}</div>
+      <div style="line-height:1.9;font-weight:800">${esc(safe)}</div>
       <button class="btn primary" style="width:100%;margin-top:16px" onclick="closeModal()">فهمت</button>
     </div>
   `);
@@ -2366,14 +2366,17 @@ function applyModerationSnapshot(v){
 }
 
 function watchMyModeration(){
+  if(!roomCode||!uid)return;
+  const key=`${roomCode}|${uid}`;
+  if(moderationStop&&moderationWatchKey===key)return;
   if(moderationStop){try{moderationStop()}catch{} moderationStop=null}
+  moderationWatchKey=key;
   moderationState={chatMutedUntil:0,voiceMutedUntil:0};
   seenAdminWarnings=new Set();
-  if(!roomCode||!uid)return;
   moderationStop=onValue(
-    ref(db,`moderation/${roomCode}/${uid}`),
+    ref(db,`rooms/${roomCode}/public/moderation/${uid}`),
     snap=>applyModerationSnapshot(snap.val()||{}),
-    ()=>{}
+    e=>console.warn("moderation listener",e)
   );
 }
 
@@ -2394,7 +2397,7 @@ function updateAdminVoiceIndicator(){
 }
 function updateVoiceUi(){updateAdminVoiceIndicator();const el=document.getElementById("voiceState");if(el){const n=voiceRemoteCount(),present=Object.values(currentRoom?.voiceUsers||{}).filter(v=>v?.active).length-1;const waiting=voiceActive&&n===0&&present>0;el.innerHTML=`<span class="voiceDot ${(voiceActive||voiceStarting)?(n>0?"on":"warn"):""}"></span>${voiceStarting?"جاري فتح المايك...":voiceActive?`المايك شغال • متصل ${n}/${Math.max(0,present)}${waiting?" • جاري الاتصال...":""}`:"الصوت المباشر متوقف"}`}
  const j=document.getElementById("voiceJoin"),m=document.getElementById("voiceMute"),l=document.getElementById("voiceLeave");if(j)j.textContent=voiceActive?"🎙️ المايك شغال":"🎙️ تشغيل المايك المباشر";if(m){m.disabled=!voiceActive;m.textContent=voiceMuted?"🔇 فتح المايك":"🔈 كتم المايك"}if(l)l.disabled=!voiceActive}
-async function startLiveVoice(){if(!voiceController){toast("ملف المايك voice.js غير محمّل");return}return voiceController.start()}
+async function startLiveVoice(){if(!voiceController){toast("ملف المايك voice.js غير محمّل");return}if(voiceModerationRemaining()>0){const mins=Math.max(1,Math.ceil(voiceModerationRemaining()/60000));toast(`🎙️ الإدارة عطلت المايك مؤقتًا — متبقي ${mins} دقيقة`);return}return voiceController.start()}
 async function toggleVoiceMute(){return voiceController?.toggleMute?.()}
 async function stopLiveVoice(removeState=true){return voiceController?.stop?.(removeState)}
 async function syncVoicePeers(){return voiceController?.sync?.()}
