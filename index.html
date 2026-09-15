@@ -1006,6 +1006,23 @@ body:has(.lobbyShell) #app{margin:0!important}
 .playerPick .resultCards:only-child{justify-content:center!important}
 @media(max-width:600px){.resultMiniCard{width:54px!important;height:76px!important}.resultCards{gap:7px!important}.emptyCardSlot{width:66px;height:94px}}
 </style>
+
+<style id="sheik-bg-brand-pass">
+/* 2026-09 visual pass: responsive majlis backgrounds + official logo. Game-table logic untouched. */
+body{background:#120b07 url("bg-mobile.PNG") center center/cover fixed no-repeat;}
+.wrap{position:relative;isolation:isolate;min-height:100dvh;background:linear-gradient(180deg,rgba(30,12,7,.42),rgba(12,7,5,.72))!important;}
+.wrap::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(24,10,6,.18),rgba(12,7,5,.36));}
+header{position:relative;z-index:1;background:transparent!important;}
+header h1{display:flex;align-items:center;justify-content:center;gap:12px;text-shadow:0 3px 12px #000;}
+header h1::before{content:"";width:58px;height:58px;flex:0 0 58px;background:url("icon-512.png") center/contain no-repeat;border-radius:15px;filter:drop-shadow(0 4px 8px #0008);}
+header p{text-shadow:0 2px 8px #000;}
+.authShell{position:relative;z-index:1}.authShell>.panel{background:rgba(20,11,8,.91)!important;border-color:#9d742d!important;box-shadow:0 14px 36px #0008, inset 0 0 0 1px rgba(255,216,118,.05)!important;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.authBrand h2{color:#a91834!important;text-shadow:0 2px 8px #0008}.authBrand p{color:#e1d2bc!important;text-shadow:0 2px 7px #000}.authField label{color:#fff3d6!important}.authHint{color:#d2c1a8!important}.authShell .authLink{color:#fff!important;text-shadow:0 1px 5px #000}.authShell input{background:#fffdf8!important}.authTabs button{border-color:#b68a43!important}.authTabs button.active{background:#8d1730!important;border-color:#a92743!important}.authShell .btn{background:linear-gradient(180deg,#e8b842,#d6a232)!important;color:#1b1009!important;border-color:#efc95f!important}
+@media (orientation:landscape),(min-width:700px){body{background-image:url("bg-wide.PNG");background-position:center center;}}
+@media (max-width:600px){header h1::before{width:50px;height:50px;flex-basis:50px;border-radius:13px}.authShell{margin-top:4px}.authShell>.panel{background:rgba(20,11,8,.89)!important}}
+/* Existing full game-table layout keeps its own approved background/layout. */
+body:has(.gameStage){background:#160d08!important;}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
