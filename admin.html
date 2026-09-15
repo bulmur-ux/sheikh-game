@@ -471,5 +471,30 @@ onAuthStateChanged(auth,async user=>{
   try{currentAdmin=await fetchAdmin(user);if(currentAdmin)showDash(user);else{await signOut(auth);showLogin()}}catch{showLogin()}
 });
 </script>
+
+<script>
+/* SHEIKH FLEX ADMIN PERMISSIONS */
+window.SHEIKH_ADMIN_ROLES = {
+  superAdmin: {label:"السوبر أدمن", badge:"👑", locked:true},
+  generalModerator: {label:"مشرف عام", badge:"🛡️"},
+  roomModerator: {label:"مشرف غرف", badge:"🔰"},
+  assistantModerator: {label:"مشرف مساعد", badge:"⭐"}
+};
+window.SHEIKH_ADMIN_PERMISSION_DEFS = {
+  enterAsModerator:"دخول الغرف كمشرف",
+  hiddenMonitor:"المراقبة المخفية",
+  listenVoice:"الاستماع للصوت",
+  adminTalk:"التحدث كإدارة",
+  warnPlayers:"إرسال تحذير",
+  muteChat:"كتم الشات",
+  disableVoice:"تعطيل المايك",
+  kickPlayers:"إخراج لاعب",
+  banPlayers:"حظر لاعب",
+  closeRooms:"إغلاق غرفة",
+  globalAnnouncements:"الإعلانات العامة",
+  viewLogs:"مشاهدة السجلات"
+};
+</script>
+
 </body>
 </html>
