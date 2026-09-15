@@ -544,19 +544,29 @@ async function pinDigest(uid,pin){const raw=new TextEncoder().encode(`${uid}:${p
 function pinPromptHtml(title,setup=false){return new Promise(resolve=>{const gate=document.createElement('div');gate.className='pinGate';gate.innerHTML=`<div class="pinBox"><h2>🔐 ${title}</h2><p>${setup?'اختر PIN خاص بلوحة الإدارة. مسموح 4 أو 6 أرقام فقط.':'أدخل PIN الإدارة الخاص بك.'}</p>${setup?'<div class="pinChoices"><button class="btn pinLenBtn selected" data-len="4" aria-pressed="true">4 أرقام</button><button class="btn pinLenBtn" data-len="6" aria-pressed="false">6 أرقام</button></div>':''}<input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="${setup?4:6}" autocomplete="off" placeholder="${setup?'••••':'PIN'}"><input id="pinConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="${setup?'تأكيد PIN (4 أرقام)':''}" style="display:${setup?'block':'none'}"><button id="pinGo" class="btn btnGold" style="width:100%;margin-top:8px">${setup?'حفظ PIN':'دخول لوحة التحكم'}</button><div class="pinError" id="pinErr"></div></div>`;document.body.appendChild(gate);let len=setup?4:0;const inp=gate.querySelector('#pinInput'),conf=gate.querySelector('#pinConfirm'),err=gate.querySelector('#pinErr');const chooseLen=b=>{len=Number(b.dataset.len);inp.maxLength=len;conf.maxLength=len;inp.value='';conf.value='';inp.placeholder='•'.repeat(len);conf.placeholder=`تأكيد PIN (${len} أرقام)`;err.textContent='';gate.querySelectorAll('[data-len]').forEach(x=>{const active=x===b;x.classList.toggle('selected',active);x.setAttribute('aria-pressed',active?'true':'false')});inp.focus()};gate.querySelectorAll('[data-len]').forEach(b=>b.onclick=()=>chooseLen(b));[inp,conf].forEach(x=>x.addEventListener('input',()=>{x.value=x.value.replace(/\D/g,'').slice(0,x.maxLength);err.textContent=''}));gate.querySelector('#pinGo').onclick=()=>{const p=inp.value.replace(/\D/g,''),c=conf.value.replace(/\D/g,'');if(![4,6].includes(p.length)||(setup&&p.length!==len)){err.textContent=`الرمز لازم يكون ${setup?len:'4 أو 6'} أرقام.`;return}if(setup&&p!==c){err.textContent='تأكيد PIN غير مطابق.';return}gate.remove();resolve(p)};setTimeout(()=>inp.focus(),100)})}
 async function requireAdminPin(user){if(sessionStorage.getItem(`sheikh_pin_ok_${user.uid}`)==='1')return true;const lockKey=`sheikh_pin_lock_${user.uid}`,triesKey=`sheikh_pin_tries_${user.uid}`,until=Number(localStorage.getItem(lockKey)||0);if(until>Date.now()){alert(`تم إيقاف محاولات PIN مؤقتًا. جرّب بعد ${Math.ceil((until-Date.now())/60000)} دقيقة.`);return false}const snap=await get(ref(db,`admins/${user.uid}/adminPin`));let cfg=snap.val()||null;if(!cfg?.hash){const pin=await pinPromptHtml('إنشاء PIN الإدارة',true),hash=await pinDigest(user.uid,pin);await set(ref(db,`admins/${user.uid}/adminPin`),{hash,length:pin.length,updatedAt:Date.now()});sessionStorage.setItem(`sheikh_pin_ok_${user.uid}`,'1');return true}while(true){const pin=await pinPromptHtml('رمز لوحة التحكم',false),hash=await pinDigest(user.uid,pin);if(hash===cfg.hash){localStorage.removeItem(triesKey);localStorage.removeItem(lockKey);sessionStorage.setItem(`sheikh_pin_ok_${user.uid}`,'1');return true}let tries=Number(localStorage.getItem(triesKey)||0)+1;localStorage.setItem(triesKey,String(tries));if(tries>=5){localStorage.setItem(lockKey,String(Date.now()+5*60000));localStorage.removeItem(triesKey);alert('5 محاولات خاطئة. تم إيقاف PIN لمدة 5 دقائق.');return false}alert(`PIN غير صحيح. باقي ${5-tries} محاولات.`)}}
 
+const adminQuery=new URLSearchParams(location.search);
+const enteredFromGame=adminQuery.get('source')==='game';
+const forcePinOnEntry=enteredFromGame&&adminQuery.get('forcePin')==='1';
+let manualAdminLogin=false;
+if(forcePinOnEntry&&auth.currentUser)sessionStorage.removeItem(`sheikh_pin_ok_${auth.currentUser.uid}`);
+
 $('loginBtn').onclick=async()=>{
   const email=$('email').value.trim(),password=$('password').value;if(!email||!password){msg('اكتب البريد وكلمة المرور أولاً.');return}
+  manualAdminLogin=true;
   $('loginBtn').disabled=true;$('loginBtn').textContent='جاري التحقق...';$('loginMsg').className='msg';
   try{
     const cred=await signInWithEmailAndPassword(auth,email,password);currentAdmin=await fetchAdmin(cred.user);
     if(!currentAdmin){await signOut(auth);throw new Error('NO_ADMIN')}
+    sessionStorage.removeItem(`sheikh_pin_ok_${cred.user.uid}`);
     if(await requireAdminPin(cred.user)){showDash(cred.user);setupReturnRoom()}
   }catch(e){msg(e.message==='NO_ADMIN'?'هذا الحساب ليس لديه صلاحية إدارة فعالة.':'تعذر تسجيل الدخول. تأكد من البريد وكلمة المرور.')}
-  finally{$('loginBtn').disabled=false;$('loginBtn').textContent='دخول الأدمن'}
+  finally{manualAdminLogin=false;$('loginBtn').disabled=false;$('loginBtn').textContent='دخول الأدمن'}
 };
 onAuthStateChanged(auth,async user=>{
   if(!user){currentAdmin=null;showLogin();return}
-  try{currentAdmin=await fetchAdmin(user);if(currentAdmin){if(await requireAdminPin(user)){showDash(user);setupReturnRoom()}}else{await signOut(auth);showLogin()}}catch{showLogin()}
+  if(!enteredFromGame&&!manualAdminLogin){currentAdmin=null;showLogin();return}
+  if(manualAdminLogin)return;
+  try{currentAdmin=await fetchAdmin(user);if(currentAdmin){if(forcePinOnEntry)sessionStorage.removeItem(`sheikh_pin_ok_${user.uid}`);if(await requireAdminPin(user)){showDash(user);setupReturnRoom()}}else{showLogin()}}catch{showLogin()}
 });
 </script>
 </body>
