@@ -1373,6 +1373,21 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 }
 </style>
 
+
+<style>
+#gameTurnNotice{
+ position:fixed;left:50%;top:50%;z-index:99999;pointer-events:none;
+ transform:translate(-50%,-50%) scale(.9);opacity:0;
+ max-width:88vw;padding:14px 24px;border-radius:18px;
+ background:rgba(12,18,24,.94);color:#fff;text-align:center;
+ font-weight:900;font-size:clamp(19px,5vw,30px);
+ box-shadow:0 12px 34px rgba(0,0,0,.38);
+ transition:opacity .16s ease,transform .16s ease;
+}
+#gameTurnNotice.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#gameTurnNotice.mine{outline:3px solid #f1c84b}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري تجهيز اللعبة...</div><div style="opacity:.82;font-size:15px">سيتم تحويلك تلقائياً خلال لحظات</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
@@ -1447,6 +1462,9 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 }
 </style>
 <script type="module">
+import {createGameFlowUI} from "./game.js";
+const gameFlowUI=createGameFlowUI();
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, deleteUser, verifyBeforeUpdateEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getDatabase, ref, get, set, update, onValue, onDisconnect, push, query, limitToLast, runTransaction, remove } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
@@ -2723,6 +2741,7 @@ function renderGame(){
  const mySeat=isActivePlayer()?`<div class="refSeat bottom ${uid===tuid?'turn':''}"><div class="refAvatar">${esc((myName||"أ").trim().charAt(0)||"أ")}</div><div class="refSeatLabel"><b>${esc(myName)}</b>${countCards(myHand?.cards)} ورقة</div></div>`:"";
  const pending=myHand?.pending,turn=isMyTurn(),memorizing=g.phase==="memorize",deciding=turn&&g.decisionUid===uid&&Number(g.decisionUntil||0)>Date.now();
  const controls=deciding&&countCards(myHand?.cards)>0?`<div class="refActions decisionActions compactDecision"><div class="decisionTitle">انتهى دورك — اختر: <b>شيك</b> أو <b>تمرير</b> خلال <b>${Math.max(0,Math.ceil((Number(g.decisionUntil||0)-Date.now())/1000))}</b> ثوانٍ</div><div class="decisionButtons"><button id="check" class="btn green" ${!g.ending?'':'disabled'}>✓ شيك</button><button id="passTurn" class="btn alt">تمرير الدور ▶</button></div></div>`:pending?`<div class="refActions">${myHand?.pendingSource==="deck"&&powerEnabled(pending,"J")?`<button id="useJack" class="btn blue">J تبديل</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"Q")?`<button id="useQ" class="btn blue">Q كشف</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"K")?`<button id="useK" class="btn blue">K سحب 2</button>`:""}${myHand?.pendingSource!=="field"?(pending?.r==="JOKER"?`<div class="notice" style="max-width:260px">🃏 احتفظ بالجوكر: اختر «بدّل بهذي» تحت إحدى أوراقك.</div>`:`<button id="throw" class="btn danger">رمي الورقة</button>`):""}</div>`:`<div class="refActions"><button id="check" class="btn green" ${turn&&!g.ending&&!memorizing?'':'disabled'}>✓ شيك</button><button id="playHand" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>رمي ورقة</button><button id="takeField" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>أخذ الميدان</button><button id="draw" class="btn danger" ${turn&&!memorizing?'':'disabled'}>سحب ورقة</button></div>`;
+ const memorizeState=gameFlowUI.syncMemorize({phase:g.phase,myHand,memorizeUntil:g.memorizeUntil});
  const introActive=memorizing&&isActivePlayer();
  const introUntil=Number(myHand?.introRevealUntil||0),count=introCountdown();
  const globalIntroUntil=Number(g.memorizeUntil||introUntil||0);
@@ -2733,6 +2752,19 @@ function renderGame(){
  const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${roundsLabel(g)}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([id,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span>${canKick&&id!==uid?`<button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button>`:""}</div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRoundBottom" class="btn danger refWithdrawBottom">🚪 انسحاب</button>`:""}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
  wireCommon();
+ try{
+   if(g.phase==="playing"){
+     const liveUid=(g.turnOrder||[])[Number(g.turnIndex||0)]||"";
+     gameFlowUI.announceTurn({
+       roundToken:String(g.roundToken||""),
+       turnSeq:Number(g.turnSeq||0),
+       turnUid:liveUid,
+       myUid:uid,
+       name:currentRoom.players?.[liveUid]?.name||"اللاعب"
+     });
+   }
+ }catch(e){console.warn("turn notice",e)}
+
  document.querySelectorAll("[data-kick-game]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kickPlayer(b.dataset.kickGame)});document.querySelectorAll("[data-round-out]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();removePlayerFromRound(b.dataset.roundOut)});const rs=document.getElementById("refSfx");if(rs)rs.onclick=toggleSfx;const rv=document.getElementById("refVoice");if(rv)rv.onclick=()=>voiceActive?stopLiveVoice(true):startLiveVoice();const rc=document.getElementById("refChatFocus");if(rc)rc.onclick=()=>document.getElementById("chatInput")?.focus();const wr=document.getElementById("withdrawRound");if(wr)wr.onclick=withdrawFromRound;const wrb=document.getElementById("withdrawRoundBottom");if(wrb)wrb.onclick=withdrawFromRound;
  const sp=document.getElementById("startPeek");if(sp)sp.onclick=startInitialPeek;
  if(document.getElementById("draw"))document.getElementById("draw").onclick=drawCard;
@@ -2780,7 +2812,7 @@ function showRulesModal(){
  const el=document.createElement("div");el.id="rulesModalBack";el.className="rulesModalBack";
  el.innerHTML=`<div class="rulesModal" role="dialog" aria-modal="true" aria-label="قواعد لعبة شيك شيك">
    <div class="rulesModalHead"><h2>📖 قواعد شيك شيك</h2><button id="rulesClose" class="rulesClose">✕</button></div>
-   <div class="rulesQuick"><div><b>🎯 الهدف</b><br>أقل مجموع كلي بعد نهاية كل الجولات.</div><div><b>🃏 البداية</b><br>قبل المباراة عندك 20 ثانية تضغط «ابدأ اللعب»؛ المتأخر يتحول متفرج. بعدها 4 أوراق، وتنكشف أول ورقتين تلقائياً 10 ثوانٍ للحفظ.</div></div>
+   <div class="rulesQuick"><div><b>🎯 الهدف</b><br>أقل مجموع كلي بعد نهاية كل الجولات.</div><div><b>🃏 البداية</b><br>المضيف يبدأ المباراة مباشرة. بعدها تُوزع 4 أوراق لكل لاعب، وتنكشف أول ورقتين تلقائياً 20 ثانية للحفظ.</div></div>
    <ol class="rulesList">
     <li><b>في دورك:</b> تسحب من الرزمة، أو تأخذ ورقة الميدان، أو ترمي ورقة من أوراقك إذا كانت نفس رتبة ورقة الميدان.</li>
     <li><b>الرمي الخطأ:</b> الورقة تبقى عندك وتأخذ ورقة عقوبة.</li>
