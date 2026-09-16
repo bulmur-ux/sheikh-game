@@ -2120,36 +2120,75 @@ async function finishReadyCheck(){
 }
 async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  clearTimeout(pendingStartTimer);pendingStartTimer=null;localRevealUntil={};seenRoundToken="";
- order=[...new Set((order||[]).filter(Boolean))];if(order.length<2)throw new Error("يلزم لاعبان على الأقل");
+ order=[...new Set((order||[]).filter(Boolean))];
+ if(order.length<2)throw new Error("يلزم لاعبان على الأقل");
  totals={...(totals||{})};for(const id of order)if(totals[id]==null)totals[id]=0;
- // نقرأ اللاعبين مباشرة من Firebase حتى لا نعتمد على currentRoom قديم وقت الانتقال.
- const pubSnap=await get(ref(db,`rooms/${roomCode}/public`));const livePub=pubSnap.val()||currentRoom||{};const livePlayers=livePub.players||{};
- // اختيار أول لاعب عشوائياً في كل جولة، بدون ربط البداية بالمضيف أو المشرف.
- for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
+
+ const pubSnap=await get(ref(db,`rooms/${roomCode}/public`));
+ const livePub=pubSnap.val()||currentRoom||{},livePlayers=livePub.players||{};
+ for(const id of order)if(!livePlayers[id])throw new Error("لاعب مختار غير موجود في الغرفة");
+
+ // اختيار أول لاعب عشوائياً.
+ for(let i=order.length-1;i>0;i--){
+   const j=Math.floor(Math.random()*(i+1));
+   [order[i],order[j]]=[order[j],order[i]];
+ }
+
  const deck=buildDeck(),discard=deck.shift(),players={};
  const roundToken=`r${Number(roundNo)||1}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
- for(const [id,p] of Object.entries(livePlayers))players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:0,ready:!order.includes(id),introDone:!order.includes(id),introStarted:false,dealRoundNo:0,dealToken:""};
- for(const id of order){if(!players[id])throw new Error("لاعب مختار غير موجود في الغرفة");}
- const previousGame=livePub.game||{};const matchId=(Number(roundNo)>1&&previousGame.matchId)?previousGame.matchId:`m_${Date.now()}_${Math.random().toString(36).slice(2,9)}`;const participationRounds={...(Number(roundNo)>1?(previousGame.participationRounds||{}):{})};for(const id of order)participationRounds[id]=Number(participationRounds[id]||0)+1;
- const inheritedRule=Number(settings.ruleMode||previousGame.ruleMode||1)===2?2:1,inheritedLimit=Math.max(1,Number(settings.scoreLimit||previousGame.scoreLimit||100));
- const freshGame={phase:"dealing",roundToken,matchId,participationRounds,turnOrder:order,turnIndex:0,deck,discard,discardPile:[discard],discardSeq:1,dealt:{},startedAt:Date.now(),actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},decisionUid:null,decisionUntil:null,hasDrawn:null,lastAction:"",results:null,memorizeUntil:0};
- // مسح readyCheck مع إنشاء الجولة في تحديث واحد يمنع شاشة «جاهز» من البقاء معلقة.
- await update(ref(db,`rooms/${roomCode}/public`),{status:"game",game:freshGame,players,reveals:null,readyCheck:null});
- // مهم للمضيف: لا نعتمد فقط على onValue بعد ضغط بدء المباراة.
- // نحدّث حالته محلياً فور نجاح إنشاء الجولة حتى يدخل شاشة اللعب مثل بقية اللاعبين.
- currentRoom={...livePub,status:"game",game:freshGame,players,reveals:null,readyCheck:null};
- try{render()}catch(e){console.warn("host immediate render",e)}
- try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
- toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"}`);
- // تشغيل الاسترداد فوراً بدل انتظار دورة onValue التالية.
- setTimeout(async()=>{
-  try{
-    // لا ننتظر تحديث onValue: المضيف يبدأ التوزيع فوراً.
-    await hostDealAllInitialHands();
-    await autoGameWork();
-    await tryAdvanceDealing();
-  }catch(e){console.warn("round bootstrap",e)}
-},30);
+ const previousGame=livePub.game||{};
+ const matchId=(Number(roundNo)>1&&previousGame.matchId)?previousGame.matchId:`m_${Date.now()}_${Math.random().toString(36).slice(2,9)}`;
+ const participationRounds={...(Number(roundNo)>1?(previousGame.participationRounds||{}):{})};
+ for(const id of order)participationRounds[id]=Number(participationRounds[id]||0)+1;
+
+ for(const [id,p] of Object.entries(livePlayers)){
+   players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:order.includes(id)?4:0,
+     ready:true,introDone:!order.includes(id),introStarted:order.includes(id),
+     dealRoundNo:order.includes(id)?Number(roundNo||1):0,dealToken:order.includes(id)?roundToken:""};
+ }
+
+ // أهم تغيير V2:
+ // المضيف يجهز الأربع أوراق لكل اللاعبين قبل نشر بداية الجولة.
+ // ثم يكتب public + privateHands دفعة ذرية واحدة، لذلك لا توجد حالة 0/2 معلقة.
+ const memorizeStartedAt=Date.now();
+ const memorizeUntil=memorizeStartedAt+20000;
+ const dealt={},updates={};
+ for(const id of order){
+   const cards=deck.splice(0,4);
+   if(cards.length!==4)throw new Error("تعذر تجهيز أربع أوراق لكل لاعب");
+   dealt[id]=roundToken;
+   updates[`rooms/${roomCode}/privateHands/${id}`]={
+     cards,pending:null,pendingSource:null,powerCards:null,lastKabasSeq:0,
+     roundNo:Number(roundNo||1),roundToken,introDone:false,introRevealUntil:memorizeUntil
+   };
+ }
+
+ const inheritedRule=Number(settings.ruleMode||previousGame.ruleMode||1)===2?2:1;
+ const inheritedLimit=Math.max(1,Number(settings.scoreLimit||previousGame.scoreLimit||100));
+ const freshGame={
+   phase:"memorize",roundToken,matchId,participationRounds,turnOrder:order,turnIndex:0,
+   deck,discard,discardPile:[discard],discardSeq:1,dealt,
+   startedAt:Date.now(),dealtAt:Date.now(),memorizeStartedAt,memorizeUntil,memorizeSeq:1,
+   actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,
+   cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,
+   eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,
+   turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},
+   decisionUid:null,decisionUntil:null,hasDrawn:null,lastAction:"",results:null
+ };
+
+ updates[`rooms/${roomCode}/public/status`]="game";
+ updates[`rooms/${roomCode}/public/game`]=freshGame;
+ updates[`rooms/${roomCode}/public/players`]=players;
+ updates[`rooms/${roomCode}/public/reveals`]=null;
+ updates[`rooms/${roomCode}/public/readyCheck`]=null;
+
+ await update(ref(db),updates);
+
+ // لا يوجد render خاص بالمضيف ولا توزيع ثانٍ.
+ // كل الأجهزة، بما فيها المضيف، تدخل من نفس Firebase onValue.
+ myHand=null;
+ toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"} — احفظ أول ورقتين`);
+ try{await sendSystem("👁️ تم توزيع 4 أوراق لكل لاعب — أول ورقتين مكشوفتان 20 ثانية")}catch{}
 }
 async function hostDealAllInitialHands(){
  // نقرأ حالة الغرفة الحية من Firebase. لا نعتمد على currentRoom لأن onValue قد يتأخر لحظة بدء الجولة.
@@ -2270,7 +2309,14 @@ async function autoGameWork(){
   await tryAdvanceDealing();
  }
  if(g.phase==="memorize"){
-  // الحفظ تلقائي للجميع: أول ورقتين مكشوفتان 10 ثوانٍ، ولا ننتظر أي زر من اللاعبين.
+  // إذا وصل public قبل privateHands على جهاز اللاعب، نقرأ اليد مباشرة ولا نفوّت فترة الحفظ.
+  if(isActivePlayer()&&!myHand){
+   try{
+    const hs=await get(ref(db,`rooms/${roomCode}/privateHands/${uid}`));
+    if(hs.exists())myHand=hs.val();
+   }catch(e){console.warn("memorize hand fetch",e)}
+  }
+  // الحفظ تلقائي للجميع: أول ورقتين مكشوفتان 20 ثانية، ولا ننتظر أي زر من اللاعبين.
   const memorizeUntil=Number(g.memorizeUntil||0);
   if(isActivePlayer()&&myHand&&String(myHand.roundToken||"")===String(g.roundToken||"")&&countCards(myHand.cards)===4){
    if(memorizeUntil>Date.now()){
