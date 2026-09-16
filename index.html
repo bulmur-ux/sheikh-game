@@ -1994,7 +1994,12 @@ async function leaveRoomCleanly(){
  try{await remove(ref(db,`rooms/${code}/public/players/${uid}`))}catch{}
  localStorage.removeItem("sheikh_room");roomCode="";currentRoom=null;await startPresence("home","");home();
 }
-async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active),rv=document.getElementById("roundCount")?.value||"3",totalRounds=rv==="open"?0:Math.max(1,Math.min(9,Number(rv)||3)),ruleModeValue=Number(document.getElementById("ruleMode")?.value||1)===2?2:1,scoreLimitValue=Math.max(1,Number(document.getElementById("scoreLimit")?.value||100));if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}const btn=document.getElementById("start");if(btn){btn.disabled=true;btn.textContent="جاري بدء المباراة..."}try{const totals={};for(const id of order)totals[id]=0;await beginRound(order,1,totalRounds,totals,{ruleMode:ruleModeValue,scoreLimit:scoreLimitValue});try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue} — جاري توزيع 4 أوراق لكل لاعب`) }catch{}}catch(e){console.warn("start game",e);toast("تعذر بدء المباراة — جرّب مرة ثانية");if(btn){btn.disabled=false;btn.textContent="▶ ابدأ المباراة"}}}
+async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active),rv=document.getElementById("roundCount")?.value||"3",totalRounds=rv==="open"?0:Math.max(1,Math.min(9,Number(rv)||3)),ruleModeValue=Number(document.getElementById("ruleMode")?.value||1)===2?2:1,scoreLimitValue=Math.max(1,Number(document.getElementById("scoreLimit")?.value||100));if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}const btn=document.getElementById("start");if(btn){btn.disabled=true;btn.textContent="جاري بدء المباراة..."}try{const totals={};for(const id of order)totals[id]=0;await beginRound(order,1,totalRounds,totals,{ruleMode:ruleModeValue,scoreLimit:scoreLimitValue});
+try{
+ const fresh=await get(ref(db,`rooms/${roomCode}/public`));
+ if(fresh.exists()){currentRoom=fresh.val();render()}
+}catch(e){console.warn("host start refresh",e)}
+try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue} — جاري توزيع 4 أوراق لكل لاعب`) }catch{}}catch(e){console.warn("start game",e);toast("تعذر بدء المباراة — جرّب مرة ثانية");if(btn){btn.disabled=false;btn.textContent="▶ ابدأ المباراة"}}}
 async function confirmReadyToPlay(){
  const rc=currentRoom?.readyCheck;if(!rc||(rc.order||[]).includes(uid)===false)return;
  await set(ref(db,`rooms/${roomCode}/public/readyCheck/ready/${uid}`),true);
@@ -2053,6 +2058,10 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  const freshGame={phase:"dealing",roundToken,matchId,participationRounds,turnOrder:order,turnIndex:0,deck,discard,discardPile:[discard],discardSeq:1,dealt:{},startedAt:Date.now(),actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},decisionUid:null,decisionUntil:null,hasDrawn:null,lastAction:"",results:null,memorizeUntil:0};
  // مسح readyCheck مع إنشاء الجولة في تحديث واحد يمنع شاشة «جاهز» من البقاء معلقة.
  await update(ref(db,`rooms/${roomCode}/public`),{status:"game",game:freshGame,players,reveals:null,readyCheck:null});
+ // مهم للمضيف: لا نعتمد فقط على onValue بعد ضغط بدء المباراة.
+ // نحدّث حالته محلياً فور نجاح إنشاء الجولة حتى يدخل شاشة اللعب مثل بقية اللاعبين.
+ currentRoom={...livePub,status:"game",game:freshGame,players,reveals:null,readyCheck:null};
+ try{render()}catch(e){console.warn("host immediate render",e)}
  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
  toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"}`);
  // تشغيل الاسترداد فوراً بدل انتظار دورة onValue التالية.
