@@ -1337,6 +1337,12 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 @media (orientation:landscape) and (max-height:500px){.refHandWrap .cardFace .emirBigSuit{font-size:29px!important}.refHandWrap .cardFace .emirAceSuit{font-size:33px!important}.refHandWrap .cardFace .emirPortrait>span{font-size:26px!important}.refHandWrap .cardFace .faceRank{font-size:15px!important}.refHandWrap .cardBack:after{font-size:5px!important;bottom:4px!important}}
 </style>
 
+<style id="real-card-assets-final">
+.cardFace,.cardBack{padding:0!important;overflow:hidden!important;background:#fff!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important;aspect-ratio:5/7!important}
+.cardBack{background-image:url("cards/back.png")!important}
+.cardFace .gameCardImage{display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;object-position:center!important;border:0!important;margin:0!important;padding:0!important;user-select:none!important;-webkit-user-drag:none!important}
+.cardFace .faceCardInner,.cardFace .pipGrid{display:none!important}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -1679,26 +1685,13 @@ function updateSfxUi(){
  const t=document.getElementById("sfxTop");if(t)t.innerHTML=sfxMuted?"🔇<small>الصوت</small>":"🔊<small>الصوت</small>"
 }
 function cardLabel(c){if(!c)return"";if(c.r==="JOKER")return c.color==="color"?"🃏 ملون":"🃏 أسود";const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";return `${c.r}${sym}`}
+function cardImageFile(c){
+ if(!c)return "cards/back.png";
+ if(c.r==="JOKER")return c.color==="color"?"cards/joker_color.png":"cards/joker_black.png";
+ return `cards/${c.r}${c.s}.png`;
+}
 function cardFaceHtml(c){
- if(!c)return '<div class="faceCardInner emirCard"><div class="faceCenter"><span class="faceBrand">شيك شيك</span></div></div>';
- if(c.r==="JOKER"){
-  const colored=c.color==="color";
-  return `<div class="faceCardInner emirCard faceJoker ${colored?'colorJoker':'blackJoker'}"><div class="faceCorner tl"><span class="faceRank">J</span><span class="faceSuitSmall">★</span></div><div class="emirJoker"><span class="emirJokerStar">★</span><b>JOKER</b><small>${colored?'الملون':'الأسود'}</small><span class="emirFalcon">🦅</span></div></div>`;
- }
- const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";
- const court=["J","Q","K"].includes(c.r);
- const red=(c.s==="H"||c.s==="D");
- let center='';
- if(court){
-  const who={J:'👨🏻',Q:'👩🏻',K:'🧔🏻'}[c.r];
-  const title={J:'JACK',Q:'QUEEN',K:'KING'}[c.r];
-  center=`<div class="faceCenter emirCourt"><div class="emirPortrait"><span>${who}</span><i>${sym}</i></div><div class="faceCourtName">${title}</div></div>`;
- }else if(c.r==='A'){
-  center=`<div class="faceCenter emirAce"><span class="emirAceSuit">${sym}</span><span class="emirAceMark">🦅</span></div>`;
- }else{
-  center=`<div class="faceCenter emirNumber"><div class="emirBigSuit">${sym}</div><b>${c.r}</b><small>شيك شيك</small></div>`;
- }
- return `<div class="faceCardInner emirCard ${red?'emirRed':'emirBlack'}"><div class="faceCorner tl"><span class="faceRank">${c.r}</span><span class="faceSuitSmall">${sym}</span></div>${center}<div class="emirCardSeal">ش</div></div>`;
+ return `<img class="gameCardImage" src="${cardImageFile(c)}" alt="${esc(cardLabel(c)||"ورقة لعب")}" draggable="false">`;
 }
 function isRed(c){return c&&(c.s==="H"||c.s==="D")}
 function cardClass(c){return !c?"":(c.r==="JOKER"?"joker":(isRed(c)?"red":"black"))}
