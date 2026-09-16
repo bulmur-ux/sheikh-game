@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>لعبة شيك شيك</title>
+    
+    <!-- ربط خط Cairo العربي لجمالية التصميم -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- إعدادات الـ PWA وتوافقية المتصفح -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="apple-touch-icon" href="icon-180.png">
+
+    <style>
+        /* المتغيرات الأساسية للتصميم */
+        :root {
+            --primary-color: #4e54c8;
+            --secondary-color: #8f94fb;
+            --bg-color: #0f1020;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --text-muted: #b0b0c3;
+            --accent-color: #ff6b6b;
+        }
+
+        /* إعادة ضبط العناصر الأساسية */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif, -apple-system, BlinkMacSystemFont;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-color), #1f1c2c);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* حاوية اللعبة الرئيسية */
+        .game-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        /* العناوين والنصوص */
+        h1 {
+            font-weight: 900;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, var(--secondary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        /* تصميم الأزرار */
+        .btn {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-top: 12px;
+            box-shadow: 0 4px 15px rgba(78, 84, 200, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--secondary-color);
+            box-shadow: none;
+        }
+
+        /* إدارة الشاشات (تظهر وتختفي برمجياً) */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* لوحة اللعب والعناصر الداخلية */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .slot {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <!-- شاشة البداية -->
+        <div id="start-screen" class="screen active">
+            <h1>شيك شيك</h1>
+            <p>أهلاً بك في اللعبة التفاعلية، استعد للمنافسة!</p>
+            <button class="btn" id="start-btn">ابدأ اللعبة</button>
+            <button class="btn btn-secondary" id="rules-btn">قواعد اللعبة</button>
+        </div>
+
+        <!-- شاشة عرض القواعد -->
+        <div id="rules-screen" class="screen">
+            <h1>قواعد اللعبة</h1>
+            <p>هنا يمكنك كتابة شروط وقواعد لعبة شيك شيك وكيفية الفوز بالتفصيل.</p>
+            <button class="btn btn-secondary" id="back-from-rules-btn">العودة</button>
+        </div>
+
+        <!-- شاشة اللعب الرئيسية -->
+        <div id="game-screen" class="screen">
+            <h1>غرفة اللعب</h1>
+            <div class="game-board">
+                <div class="slot">لاعب 1</div>
+                <div class="slot">لاعب 2</div>
+            </div>
+            <button class="btn btn-secondary" id="back-btn">العودة للرئيسية</button>
+        </div>
+
+    </div>
+
+    <!-- كود الجافاسكريبت للتحكم بتنقل الشاشات -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // تعريف العناصر
+            const startScreen = document.getElementById('start-screen');
+            const rulesScreen = document.getElementById('rules-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            const startBtn = document.getElementById('start-btn');
+            const rulesBtn = document.getElementById('rules-btn');
+            const backBtn = document.getElementById('back-btn');
+            const backFromRulesBtn = document.getElementById('back-from-rules-btn');
+
+            // دالة مساعدة لتغيير الشاشات النشطة
+            function switchScreen(targetScreen) {
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+                targetScreen.classList.add('active');
+            }
+
+            // ربط الأحداث بالأزرار
+            startBtn.addEventListener('click', () => {
+                switchScreen(gameScreen);
+            });
+
+            rulesBtn.addEventListener('click', () => {
+                switchScreen(rulesScreen);
+            });
+
+            backBtn.addEventListener('click', () => {
+                switchScreen(startScreen);
+            });
+
+            backFromRulesBtn.addEventListener('click', () => {
+                switchScreen(startScreen);
+            });
+        });
+    </script>
+</body>
+</html>
