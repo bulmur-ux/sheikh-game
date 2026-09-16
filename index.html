@@ -1945,21 +1945,42 @@ async function kickPlayer(targetUid){
  if(!(uid===currentRoom?.hostId||adminHasPerm("kickPlayers"))){toast("ما عندك صلاحية إخراج لاعب");return}
  if(!targetUid||targetUid===uid){toast("ما تقدر تطلع نفسك من هنا");return}
  const target=currentRoom?.players?.[targetUid];if(!target)return;
- const inRound=(game()?.turnOrder||[]).includes(targetUid)&&["memorize","playing"].includes(game()?.phase);
- const msg=inRound?`تبي تطلع ${target.name||"اللاعب"} من الجولة والغرفة؟\nورقة بترجع للميدان والباقي لرزمة السحب.`:`تبي تطلع ${target.name||"اللاعب"} من الغرفة؟`;
+ const g=game(),inRound=(g?.turnOrder||[]).includes(targetUid)&&["dealing","memorize","playing"].includes(g?.phase);
+ const msg=inRound?`تبي تطلع ${target.name||"اللاعب"} من الجولة والغرفة؟\nأوراقه بترجع للعبة وينشال فوراً.`:`تبي تطلع ${target.name||"اللاعب"} من الغرفة؟`;
  if(!confirm(msg))return;
  try{
-  if(currentRoom?.status==="game"){
-   await set(ref(db,`rooms/${roomCode}/public/kickRequests/${targetUid}`),{by:uid,at:Date.now(),name:target.name||"لاعب"});
-   await sendSystem(`🚫 صاحب الغرفة طلب إخراج ${target.name||"لاعب"} من الغرفة`);
-   toast(`جاري إخراج ${target.name||"اللاعب"}...`);
-  }else{
-   await remove(ref(db,`rooms/${roomCode}/public/players/${targetUid}`));
-   try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${targetUid}`))}catch{}
-   await sendSystem(`🚪 صاحب الغرفة أخرج ${target.name||"لاعب"} من الغرفة`);
-   toast(`تم إخراج ${target.name||"اللاعب"} من الغرفة`);
+  if(inRound){
+   const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${targetUid}`))).val()||{};
+   const returned=[...(hs.cards||[]).filter(Boolean)];
+   if(hs.pending)returned.push(hs.pending);
+   if(Array.isArray(hs.powerCards))returned.push(...hs.powerCards.filter(Boolean));
+   await runTransaction(ref(db,`rooms/${roomCode}/public/game`),state=>{
+    if(!state)return state;
+    const oldOrder=Array.isArray(state.turnOrder)?state.turnOrder.slice():[];
+    const rm=oldOrder.indexOf(targetUid);if(rm<0)return state;
+    const cardsBack=returned.slice(),fieldCard=cardsBack.length?cardsBack.shift():null;
+    const deck=Array.isArray(state.deck)?state.deck.slice():[];deck.push(...cardsBack);
+    for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
+    state.deck=deck;
+    if(fieldCard){const pile=Array.isArray(state.discardPile)?state.discardPile.slice():[];pile.push(fieldCard);state.discardPile=pile;state.discard=fieldCard;state.discardSeq=Number(state.discardSeq||0)+1}
+    const oldIdx=Math.max(0,Number(state.turnIndex||0)),nextOrder=oldOrder.filter(id=>id!==targetUid);
+    state.turnOrder=nextOrder;let nextIdx=oldIdx;if(rm<oldIdx)nextIdx--;if(nextOrder.length)nextIdx=((nextIdx%nextOrder.length)+nextOrder.length)%nextOrder.length;else nextIdx=0;state.turnIndex=nextIdx;
+    if(state.dealt)delete state.dealt[targetUid];if(state.finalRemaining)delete state.finalRemaining[targetUid];if(state.timeoutMisses)delete state.timeoutMisses[targetUid];
+    if(state.decisionUid===targetUid){state.decisionUid=null;state.decisionUntil=null}
+    state.swapRequest=null;state.jackSwap=null;state.hasDrawn=null;state.timeoutClaim=null;
+    state.lastAction=`${target.name||"اللاعب"} تم طرده من الغرفة`;state.turnStartedAt=Date.now();state.turnSeq=Number(state.turnSeq||0)+1;
+    if(nextOrder.length<=1&&["memorize","playing"].includes(state.phase)){state.phase="reveal";state.ending=true;state.decisionUid=null;state.decisionUntil=null}
+    return state;
+   });
   }
- }catch(e){toast("تعذر إخراج اللاعب")}
+  // الطلب يخبر جهاز اللاعب بالطرد فوراً، والحذف المباشر يمنع بقاءه في قائمة الغرفة.
+  try{await set(ref(db,`rooms/${roomCode}/public/kickRequests/${targetUid}`),{by:uid,at:Date.now(),name:target.name||"لاعب"})}catch{}
+  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${targetUid}`))}catch{}
+  try{await remove(ref(db,`rooms/${roomCode}/public/voiceUsers/${targetUid}`))}catch{}
+  try{await remove(ref(db,`rooms/${roomCode}/public/players/${targetUid}`))}catch{}
+  try{await sendSystem(`🚫 صاحب الغرفة أخرج ${target.name||"اللاعب"} من الغرفة`)}catch{}
+  toast(`تم طرد ${target.name||"اللاعب"} من الغرفة`);
+ }catch(e){console.warn("kick player",e);toast("تعذر إخراج اللاعب")}
 }
 
 async function transferRoomHost(targetUid){
@@ -2609,7 +2630,9 @@ async function autoWithdrawForInactivity(){return performRoundWithdrawal({automa
 function render(){if(!currentRoom)return;if(currentRoom.status==="lobby")return renderLobby();if(currentRoom.status==="game"){if(game().phase==="finished")return renderResults();renderGame();if(game().phase==="reveal")setTimeout(maybeFinishReveal,300)}}
 function renderLobby(){
  const ps=playerEntries(),host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers"),canManageHost=host||!!myAdmin,rc=currentRoom.readyCheck;
- if(rc){const left=Math.max(0,Math.ceil((Number(rc.deadline||0)-Date.now())/1000)),selected=(rc.order||[]).includes(uid),ready=!!rc.ready?.[uid];app.innerHTML=`<div class="refGameShell"><div class="refBrand"><div class="refTitle">شيك شيك</div></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>جاهزين نبدأ؟</h2><p>اضغط «ابدأ اللعب» خلال 20 ثانية. اللي يتأخر يتحول متفرج.</p><div class="refWaiting">${left} ثانية</div>${selected?`<button id="readyPlay" class="btn green" ${ready?"disabled":""}>${ready?"✅ جاهز":"▶ ابدأ اللعب"}</button>`:`<div class="notice">👀 أنت متفرج في هذه المباراة</div>`}</div></div></div>`;if(document.getElementById("readyPlay"))document.getElementById("readyPlay").onclick=confirmReadyToPlay;clearTimeout(window.__readyCheckTimer);window.__readyCheckTimer=setTimeout(()=>{const rr=currentRoom?.readyCheck;if(!rr)return render();const ids=rr.order||[],cnt=ids.filter(id=>rr.ready?.[id]).length;if(uid===currentRoom?.hostId||ids.includes(uid)){if((ids.length>=2&&cnt===ids.length)||Date.now()>=Number(rr.deadline||0))finishReadyCheck().catch(e=>console.warn(e));else render()}else render()},500);return}
+ // البداية الآن مباشرة: لا توجد شاشة «جاهزين نبدأ؟» ولا انتظار 20 ثانية.
+ // تنظيف أي readyCheck قديم من نسخة سابقة بدون تعطيل دخول الغرفة.
+ if(rc && host){remove(ref(db,`rooms/${roomCode}/public/readyCheck`)).catch(()=>{});}
  const selectedDefault=ps.slice(0,Math.min(4,ps.length)).map(([id])=>id);
  const scoreOf=id=>Number(currentRoom?.game?.cumulativeScores?.[id]||0);
  const avatarOf=p=>p?.avatarUrl||"icon-512.png";
