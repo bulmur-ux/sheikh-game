@@ -205,7 +205,7 @@ linear-gradient(180deg,#a85825 0 19%,#6c2818 20% 34%,#35170f 35% 100%);box-shado
 .authShell{max-width:520px;margin:8px auto 0}.authBrand{text-align:center;padding:10px 0 4px}.authBrand h2{margin:0;color:var(--maroon);font-size:28px}.authBrand p{margin:7px 0;color:var(--muted);font-size:13px}.authTabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.authTabs button{background:#fff;border:1px solid var(--line);color:var(--ink)}.authTabs button.active{background:var(--maroon);color:#fff;border-color:var(--maroon)}.authField{margin-bottom:12px}.passwordWrap{position:relative}.passwordWrap input{padding-left:52px}.eyeBtn{position:absolute;left:6px;top:6px;width:42px;height:42px;padding:0;background:transparent;font-size:20px}.authLink{border:0;background:transparent;color:var(--maroon);padding:8px 4px;font-weight:800}.accountBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:13px}.accountBar strong{color:var(--maroon)}.accountBar button{padding:8px 10px;background:#f3ead8;border:1px solid var(--line);font-size:12px}.authHint{font-size:12px;color:var(--muted);line-height:1.7;margin-top:8px}.authMsg{min-height:20px;margin-top:9px;font-size:13px}.authMsg.error{color:var(--danger)}.authMsg.success{color:var(--green)}
 
 .rankInline{display:inline-flex;align-items:center;gap:5px;margin-inline-start:6px;vertical-align:middle}.rankIcon{width:25px;height:25px;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 2px 3px #0003)}.rankText{font-size:11px;font-weight:900;color:#8a6420}.homeRank{display:inline-flex;align-items:center;gap:7px;margin-top:5px;padding:4px 9px;border:1px solid #d8b65a;border-radius:999px;background:#fff8df;color:#6c4b12;font-size:12px;font-weight:900}.homeRank img{width:28px;height:28px;object-fit:contain}.xpBar{height:8px;border-radius:999px;background:#eadfca;overflow:hidden;margin-top:7px}.xpBar>i{display:block;height:100%;background:linear-gradient(90deg,#b98520,#f0ce6a);border-radius:999px}.rankCard{margin-top:12px;padding:12px;border:1px solid #e2cf9a;border-radius:14px;background:#fffaf0}.rankCardTop{display:flex;align-items:center;gap:10px}.rankCardTop img{width:52px;height:52px;object-fit:contain}.rankCardTop b{font-size:18px}.rankCard small{color:#78694f}
-</style>
+@keyframes startupSpin{to{transform:rotate(360deg)}}</style>
 
 <style id="final-reference-layout">
 /* Final visual pass: keep portrait usable, make landscape match the approved table composition. */
@@ -1375,7 +1375,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 
 </head>
 <body>
-<div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
+<div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري تجهيز اللعبة...</div><div style="opacity:.82;font-size:15px">سيتم تحويلك تلقائياً خلال لحظات</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
 <div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="adminVoiceIndicator" role="status" aria-live="polite"><span class="adminVoicePulse"></span><span>🎙️ الإدارة تتحدث</span></div><div id="voiceAudios" style="display:none"></div><audio id="roomFunnyAudio" playsinline preload="auto" style="display:none"></audio>
 <script src="sounds.js?v=5"></script>
 <script src="voice.js?v=3"></script>
@@ -2208,21 +2208,34 @@ async function kingPower(){
  const take=await takeDeckCards(2),picked=take.cards||[];
  if(!take.ok||picked.length<2){toast("ما في ورقتين كفاية");return finishTurn()}
  if(take.recycled)toast("🔄 تم خلط أوراق الميدان وإعادة الرزمة");
- // إذا ظهر K أحمر في السحبتين: تنزل السحبتان للميدان ويكون K الأحمر فوق، ثم تتكرر سحبة K.
- const redKIndex=picked.findIndex(c=>powerEnabled(c,"K"));
- if(redKIndex>=0){
-  const k=picked[redKIndex],other=picked[redKIndex?0:1];
-  await putDiscard(other,`${myName} أنزل الورقة المصاحبة في سلسلة K`);
-  await putDiscard(k,`${myName} سحب K أحمر جديد — تستمر قوة K`);
-  toast("👑 طلع K أحمر — اسحب ورقتين مرة ثانية");
-  return kingPower();
- }
- await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:picked});showKingChoices(picked)
+ await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:picked,pending:null,pendingSource:null});
+ showKingChoices(picked)
 }
 function showKingChoices(cards){
- openModal(`<h3>قوة K الأحمر</h3><div class="notice">سحبت ورقتين. اختر واحدة تدخل مكان ورقة من أوراقك، أو اختر <b>ما أختار</b> لرمي الثنتين وتكون الورقة الأولى فوق.</div><div class="choiceGrid">${cards.map((c,i)=>`<button class="btn alt" data-kpick="${i}"><div class="cardFace ${cardClass(c)}" style="margin:auto">${cardFaceHtml(c)}</div></button>`).join("")}</div><div class="gap"></div><button id="kNoPick" class="btn danger">ما أختار — ارْمِ الورقتين</button>`);
+ const title=ruleMode()===2?"قوة K":"قوة K الأحمر";
+ openModal(`<h3>${title}</h3><div class="notice">سحبت ورقتين. إذا كانت إحدى الورقتين <b>J / Q / K</b> وقوتها فعّالة حسب قانون الغرفة، تقدر تستخدم قوتها مباشرة. أو اختر ورقة لتبدّل بها من يدك، أو ارمِ الورقتين.</div><div class="choiceGrid">${cards.map((c,i)=>`<div class="kPowerPick"><button class="btn alt" data-kpick="${i}"><div class="cardFace ${cardClass(c)}" style="margin:auto">${cardFaceHtml(c)}</div><small>اختيار الورقة</small></button>${powerEnabled(c,c?.r)&&["J","Q","K"].includes(c?.r)?`<button class="btn blue" data-kpower="${i}">⚡ استخدم قوة ${c.r}</button>`:""}</div>`).join("")}</div><div class="gap"></div><button id="kNoPick" class="btn danger">ما أختار — ارْمِ الورقتين</button>`);
  sheet.querySelectorAll("[data-kpick]").forEach(b=>b.onclick=()=>chooseKingOwnSlot(+b.dataset.kpick,cards));
+ sheet.querySelectorAll("[data-kpower]").forEach(b=>b.onclick=()=>useKingDrawnPower(+b.dataset.kpower,cards));
  document.getElementById("kNoPick").onclick=()=>finishKingNoPick(cards);
+}
+async function useKingDrawnPower(chosen,cards){
+ if(!isMyTurn()||!Array.isArray(cards)||!cards[chosen])return;
+ const c=cards[chosen],other=cards[chosen?0:1];
+ if(!["J","Q","K"].includes(c.r)||!powerEnabled(c,c.r)){toast("هذي الورقة ما لها قوة في قانون الغرفة");return}
+ closeModal();
+ // الورقة الثانية تنزل أولاً، ثم ورقة القوة تصبح أعلى الميدان.
+ if(other)await putDiscard(other,`${myName} أنزل الورقة المصاحبة من سحبة K`);
+ await putDiscard(c,`${myName} استخدم قوة ${c.r} من سحبة K`);
+ await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:null,pending:null,pendingSource:null});
+ if(c.r==="J"){
+   sfx("jack");startJackPowerTimer();chooseJack();return;
+ }
+ if(c.r==="Q"){
+   sfx("queen");choosePeek();return;
+ }
+ if(c.r==="K"){
+   sfx("king");toast("👑 قوة K مستمرة — سحب ورقتين جديدتين");return kingPower();
+ }
 }
 function chooseKingOwnSlot(chosen,cards){
  const mine=myHand?.cards||[];
@@ -2340,16 +2353,22 @@ async function finishTurn(){
 }
 async function advanceTurnNow(fromCheck=false){
  const snap=await get(ref(db,`rooms/${roomCode}/public/game`));
- const g=snap.val()||game(),order=g.turnOrder||[];if(!order.length)return;
- if(turnUid()!==uid&&!fromCheck)return;
+ const g=snap.val()||game(),order=Array.isArray(g.turnOrder)?g.turnOrder.filter(Boolean):[];if(!order.length)return;
+ const liveTurnUid=order[Number(g.turnIndex||0)]||null;
+ if(liveTurnUid!==uid&&!fromCheck)return;
  let remaining={...(g.finalRemaining||{})};
  if(g.ending&&!fromCheck&&remaining[uid]){delete remaining[uid];await set(ref(db,`rooms/${roomCode}/public/game/finalRemaining`),remaining)}
  if(g.ending&&Object.keys(remaining).length===0){await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",hasDrawn:null,turnStartedAt:0,timeoutClaim:null,decisionUntil:null,decisionUid:null});return}
- let idx=(g.turnIndex||0),tries=0;
- do{idx=(idx+1)%order.length;tries++}while((currentRoom.players?.[order[idx]]?.cardCount??0)<=0&&tries<order.length);
- await update(ref(db,`rooms/${roomCode}/public/game`),{turnIndex:idx,hasDrawn:null,turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1,timeoutClaim:null,decisionUntil:null,decisionUid:null});
+ let idx=Number(g.turnIndex||0),tries=0;
+ do{
+   idx=(idx+1)%order.length;tries++;
+   const nextId=order[idx];
+   const liveCount=Number(currentRoom?.players?.[nextId]?.cardCount??1);
+   if(liveCount>0&&!isEliminated(nextId,g))break;
+ }while(tries<order.length);
+ await update(ref(db,`rooms/${roomCode}/public/game`),{turnIndex:idx,hasDrawn:null,turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1,timeoutClaim:null,decisionUntil:null,decisionUid:null,lastAction:`انتقل الدور إلى ${currentRoom?.players?.[order[idx]]?.name||"اللاعب التالي"}`});
 }
-async function passAfterPlay(){if(!isMyTurn()||game().decisionUid!==uid)return;await advanceTurnNow(false)}
+async function passAfterPlay(){const snap=await get(ref(db,`rooms/${roomCode}/public/game`)),g=snap.val()||game(),o=g.turnOrder||[],live=o[Number(g.turnIndex||0)]||null;if(live!==uid||g.decisionUid!==uid)return;await advanceTurnNow(false)}
 
 function turnSecondsLeft(){
  const g=game();if(g.phase!=="playing")return 60;
@@ -2633,7 +2652,7 @@ function showRulesModal(){
     <li><b>إذا خلصت الرزمة:</b> تُخلط أوراق الميدان القديمة وتعود كرزمة سحب جديدة، وأوراق اللاعبين ما تتغير.</li>
     <li><b>شيك:</b> تبدأ نهاية الجولة حسب نظام اللعبة، ثم تُكشف الأوراق وتُحسب النقاط.</li>
    </ol>
-   <div class="rulesSpecial"><b>🔢 حساب النقاط:</b><br>A = 1 • من 2 إلى 9 بقيمتها • 10 الأحمر = 0 • 10 الأسود = 10 • J / Q / K = 10 • الجوكر = 0 مع تطبيق قوة الإلغاء.</div>
+   <div class="rulesSpecial"><b>🔢 حساب النقاط:</b><br>A = 1 • من 2 إلى 9 بقيمتها • 10 الأحمر = 0 • 10 الأسود = 10 • J / Q / K = 10 • الجوكر الأسود يخصم 1 نقطة • الجوكر الملون يخصم 3 نقاط من مجموع الجولة.</div>
  </div>`;
  document.body.appendChild(el);
  const close=()=>el.remove();document.getElementById("rulesClose").onclick=close;el.addEventListener("click",e=>{if(e.target===el)close()});
