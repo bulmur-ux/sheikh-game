@@ -1490,6 +1490,43 @@ const presenceSession=sessionStorage.getItem("sheikh_presence_session")||((crypt
 sessionStorage.setItem("sheikh_presence_session",presenceSession);
 let presenceReady=false;
 
+// ===== 15-minute whole-app inactivity timeout =====
+// Any real user interaction resets the timer. Automatic Firebase updates do not.
+const APP_IDLE_LIMIT_MS=15*60*1000;
+let appLastActivityAt=Date.now(),appIdleTimer=null,appIdleLogoutRunning=false;
+function markAppActivity(){appLastActivityAt=Date.now()}
+async function logoutForAppInactivity(){
+ if(appIdleLogoutRunning||sessionSuperseded||!auth.currentUser||auth.currentUser.isAnonymous)return;
+ appIdleLogoutRunning=true;
+ try{
+  // If the player is in an active round, return the hand safely before leaving.
+  if(roomCode&&currentRoom){
+   const g=currentRoom.game||{};
+   if((g.turnOrder||[]).includes(uid)&&["memorize","playing"].includes(g.phase)){
+    try{await performRoundWithdrawal({automatic:true,voluntary:true,reason:"انتهت الجلسة بعد 15 دقيقة بدون تفاعل"})}catch(e){console.warn("idle round leave",e)}
+   }
+   try{await leaveRoomCleanly()}catch(e){console.warn("idle room leave",e)}
+  }
+  try{await voiceController?.stop?.(false)}catch{}
+  try{stopRadio(false)}catch{}
+  await logoutPlayer();
+  authScreen("login","تم تسجيل خروجك تلقائياً بعد 15 دقيقة بدون تفاعل.");
+ }catch(e){
+  console.warn("idle logout",e);
+  try{await logoutPlayer()}catch{}
+  authScreen("login","تم إنهاء الجلسة بسبب عدم التفاعل.");
+ }finally{appIdleLogoutRunning=false}
+}
+function checkAppIdle(){
+ if(!auth.currentUser||auth.currentUser.isAnonymous||sessionSuperseded)return;
+ if(Date.now()-appLastActivityAt>=APP_IDLE_LIMIT_MS)logoutForAppInactivity();
+}
+["pointerdown","touchstart","keydown","click"].forEach(ev=>window.addEventListener(ev,markAppActivity,{passive:true,capture:true}));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){checkAppIdle();markAppActivity()}});
+appIdleTimer=setInterval(checkAppIdle,30000);
+// ===== End inactivity timeout =====
+
+
 // ===== Single active game session per account (admin.html is intentionally separate) =====
 const gameSessionId=sessionStorage.getItem("sheikh_game_session_id")||((crypto.randomUUID?.()||("g"+Date.now()+Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9_-]/g,""));
 sessionStorage.setItem("sheikh_game_session_id",gameSessionId);
@@ -1497,6 +1534,7 @@ let activeSessionUnsub=null,sessionSuperseded=false,explicitLoginInProgress=fals
 function activeSessionRef(userId=auth.currentUser?.uid){return userId?ref(db,`activeSessions/${userId}`):null}
 async function claimActiveGameSession(user){
  if(!user||user.isAnonymous)return false;
+ markAppActivity();
  const ar=activeSessionRef(user.uid);
  await set(ar,{sessionId:gameSessionId,ts:Date.now()});
  watchActiveGameSession(user.uid);
@@ -1854,7 +1892,7 @@ async function forgotPassword(){const email=document.getElementById("authEmail")
 async function checkMyBan(){if(!auth.currentUser)return null;const s=await get(ref(db,`bans/${auth.currentUser.uid}`));return s.exists()?s.val():null}
 function completeProfileScreen(user,msg="تم إنشاء حساب الدخول، وباقي نثبت اسم المستخدم فقط."){cleanupSubs();roomCode="";localStorage.removeItem("sheikh_room");app.innerHTML=`<div class="authShell"><div class="authBrand"><h2>شيك شيك</h2><p>إكمال حساب اللاعب</p></div><div class="panel"><div class="authField"><label>اسم المستخدم</label><input id="repairUser" maxlength="20" autocomplete="nickname" placeholder="مثال: بو سعيد"><div class="authHint">اكتب نفس الاسم الذي اخترته. الاسم لن يتكرر حتى باختلاف المسافات.</div></div><div class="small" style="margin-bottom:12px">البريد: <span dir="ltr">${esc(user?.email||"")}</span></div><button id="repairSubmit" class="btn">إكمال إنشاء الحساب</button><div id="authMsg" class="authMsg error">${esc(msg)}</div><div class="center"><button id="repairLogout" class="authLink" type="button">تسجيل الخروج</button></div></div></div>`;document.getElementById("repairSubmit").onclick=()=>repairPlayerProfile(user);document.getElementById("repairLogout").onclick=logoutPlayer}
 async function repairPlayerProfile(user){const username=document.getElementById("repairUser").value.trim(),norm=normalizeUsername(username);if(username.length<2||norm.length<2)return setAuthMsg("اكتب اسم المستخدم الذي تريده");const btn=document.getElementById("repairSubmit");btn.disabled=true;btn.textContent="جاري الحفظ...";let reserved=false;try{uid=user.uid;const claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw Object.assign(new Error("اسم المستخدم مستخدم مسبقاً"),{code:"username-taken"});reserved=true;const memberNo=await allocateMemberNo();await set(ref(db,`users/${uid}`),{username,usernameNorm:norm,email:(user.email||"").toLowerCase(),role:"player",status:"active",createdAt:Date.now(),memberNo,xp:0});myName=username;localStorage.setItem("sheikh_name",username);home("تم إكمال حسابك بنجاح")}catch(e){if(reserved)try{await remove(ref(db,`usernames/${norm}`))}catch{}setAuthMsg(e?.code==="username-taken"?"اسم المستخدم مستخدم مسبقاً — اختر اسماً آخر":authErrorText(e));btn.disabled=false;btn.textContent="إكمال إنشاء الحساب"}}
-async function loadPlayerAccount(user){if(!user||user.isAnonymous){if(user)try{await signOut(auth)}catch{}authScreen();return false}uid=user.uid;const [p,b]=await Promise.all([get(ref(db,`users/${uid}`)),get(ref(db,`bans/${uid}`))]);if(b.exists()){const x=b.val()||{};authScreen("login",`هذا الحساب محظور${x.reason?": "+x.reason:""}`);return false}if(!p.exists()){const a=await get(ref(db,`admins/${uid}`));if(a.exists()&&a.val()?.active!==false){const av=a.val()||{};let username=String(av.label||av.username||((user.email||"").split("@")[0])||"مشرف").trim();let memberNo=await allocateMemberNo();let norm=normalizeUsername(username);try{let claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid){username=`مشرف ${memberNo}`;norm=normalizeUsername(username);claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw new Error("تعذر حجز اسم حساب الإدارة")};await set(ref(db,`users/${uid}`),{username,usernameNorm:norm,email:(user.email||"").toLowerCase(),role:"player",status:"active",createdAt:Date.now(),memberNo,xp:0});myName=username;localStorage.setItem("sheikh_name",myName);await loadMyAdminAccess();if(roomCode)subscribe(roomCode);else home("تم تفعيل حساب الإدارة للعب والإشراف ✅");return true}catch(e){console.warn("admin player profile",e);authScreen("login","تعذر تفعيل حساب الإدارة داخل اللعبة: "+(e?.message||"خطأ"));return false}}completeProfileScreen(user);return false}const profile=p.val();if(!profile.memberNo){try{profile.memberNo=await ensureMemberNo(user,profile)}catch(e){console.warn("member number",e)}}if(profile.status!=="active"){authScreen("login","هذا الحساب غير نشط");return false}myName=profile.username||"لاعب";localStorage.setItem("sheikh_name",myName);await loadMyAdminAccess();if(roomCode)subscribe(roomCode);else home();return true}
+async function loadPlayerAccount(user){markAppActivity();if(!user||user.isAnonymous){if(user)try{await signOut(auth)}catch{}authScreen();return false}uid=user.uid;const [p,b]=await Promise.all([get(ref(db,`users/${uid}`)),get(ref(db,`bans/${uid}`))]);if(b.exists()){const x=b.val()||{};authScreen("login",`هذا الحساب محظور${x.reason?": "+x.reason:""}`);return false}if(!p.exists()){const a=await get(ref(db,`admins/${uid}`));if(a.exists()&&a.val()?.active!==false){const av=a.val()||{};let username=String(av.label||av.username||((user.email||"").split("@")[0])||"مشرف").trim();let memberNo=await allocateMemberNo();let norm=normalizeUsername(username);try{let claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid){username=`مشرف ${memberNo}`;norm=normalizeUsername(username);claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw new Error("تعذر حجز اسم حساب الإدارة")};await set(ref(db,`users/${uid}`),{username,usernameNorm:norm,email:(user.email||"").toLowerCase(),role:"player",status:"active",createdAt:Date.now(),memberNo,xp:0});myName=username;localStorage.setItem("sheikh_name",myName);await loadMyAdminAccess();if(roomCode)subscribe(roomCode);else home("تم تفعيل حساب الإدارة للعب والإشراف ✅");return true}catch(e){console.warn("admin player profile",e);authScreen("login","تعذر تفعيل حساب الإدارة داخل اللعبة: "+(e?.message||"خطأ"));return false}}completeProfileScreen(user);return false}const profile=p.val();if(!profile.memberNo){try{profile.memberNo=await ensureMemberNo(user,profile)}catch(e){console.warn("member number",e)}}if(profile.status!=="active"){authScreen("login","هذا الحساب غير نشط");return false}myName=profile.username||"لاعب";localStorage.setItem("sheikh_name",myName);await loadMyAdminAccess();if(roomCode)subscribe(roomCode);else home();return true}
 async function logoutPlayer(){cleanupSubs();stopHomeStats();await stopPresence();await releaseActiveGameSessionIfMine();if(activeSessionUnsub)try{activeSessionUnsub()}catch{}activeSessionUnsub=null;roomCode="";myName="";localStorage.removeItem("sheikh_room");localStorage.removeItem("sheikh_name");localStorage.removeItem("sheikh_admin_entry_mode");myAdmin=null;adminEntryMode="player";await signOut(auth);authScreen()}
 function formatAccountDate(ms){if(!ms)return "غير متوفر";try{return new Intl.DateTimeFormat("ar-AE",{year:"numeric",month:"long",day:"numeric"}).format(new Date(ms))}catch{return new Date(ms).toLocaleDateString("ar-AE")}}
 function profileAvatar(profile={}){return profile.avatarUrl||"icon-512.png"}
@@ -2134,6 +2172,12 @@ async function hostDealAllInitialHands(){
   updates[`rooms/${roomCode}/public/game/dealt`]=dealt;
   updates[`rooms/${roomCode}/public/game/dealLock`]=null;
   updates[`rooms/${roomCode}/public/game/dealtAt`]=Date.now();
+  // بعد نجاح توزيع الأربع أوراق للجميع ندخل مباشرة مرحلة حفظ أول ورقتين.
+  // هذا يلغي بوابة "توزيع الأوراق" التي كانت قد تعلق عند بعض الأجهزة.
+  updates[`rooms/${roomCode}/public/game/phase`]="memorize";
+  updates[`rooms/${roomCode}/public/game/memorizeUntil`]=Date.now()+20000;
+  updates[`rooms/${roomCode}/public/game/turnIndex`]=0;
+  updates[`rooms/${roomCode}/public/game/turnStartedAt`]=0;
   await update(ref(db),updates);
   return true;
  }catch(e){
@@ -2151,10 +2195,10 @@ async function tryAdvanceDealing(){
   const players=pub.players||{};
   const allDealt=order.every(id=>{const p=players[id];return p&&p.role==="player"&&String(p.dealToken||"")===token&&Number(p.dealRoundNo||0)===Number(g.roundNo||1)&&p.ready===true&&Number(p.cardCount)===4});
   if(!allDealt)return pub;
-  g.phase="memorize";g.memorizeUntil=Date.now()+10000;g.turnIndex=0;g.turnStartedAt=0;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;g.dealt=g.dealt||{};for(const id of order)g.dealt[id]=token;
+  g.phase="memorize";g.memorizeUntil=Date.now()+20000;g.turnIndex=0;g.turnStartedAt=0;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;g.dealt=g.dealt||{};for(const id of order)g.dealt[id]=token;
   advanced=true;return pub;
  });
- if(advanced&&tx.committed){try{await sendSystem("👁️ تم كشف أول ورقتين للجميع لمدة 10 ثوانٍ — بعدها يبدأ اللعب تلقائياً")}catch{}}
+ if(advanced&&tx.committed){try{await sendSystem("👁️ تم كشف أول ورقتين للجميع لمدة 20 ثانية — بعدها يبدأ اللعب تلقائياً")}catch{}}
  return advanced;
 }
 async function tryAdvanceMemorize(){
