@@ -1337,9 +1337,9 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 @media (orientation:landscape) and (max-height:500px){.refHandWrap .cardFace .emirBigSuit{font-size:29px!important}.refHandWrap .cardFace .emirAceSuit{font-size:33px!important}.refHandWrap .cardFace .emirPortrait>span{font-size:26px!important}.refHandWrap .cardFace .faceRank{font-size:15px!important}.refHandWrap .cardBack:after{font-size:5px!important;bottom:4px!important}}
 </style>
 
-<style id="real-card-assets-final">
+<style id="real-card-assets-fixed">
 .cardFace,.cardBack{padding:0!important;overflow:hidden!important;background:#fff!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important;aspect-ratio:5/7!important}
-.cardBack{background-image:url("cards/back.png")!important}
+.cardBack{background-image:url("Cards/back.png")!important}
 .cardFace .gameCardImage{display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;object-position:center!important;border:0!important;margin:0!important;padding:0!important;user-select:none!important;-webkit-user-drag:none!important}
 .cardFace .faceCardInner,.cardFace .pipGrid{display:none!important}
 </style>
@@ -1686,9 +1686,10 @@ function updateSfxUi(){
 }
 function cardLabel(c){if(!c)return"";if(c.r==="JOKER")return c.color==="color"?"🃏 ملون":"🃏 أسود";const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";return `${c.r}${sym}`}
 function cardImageFile(c){
- if(!c)return "cards/back.png";
- if(c.r==="JOKER")return c.color==="color"?"cards/joker_color.png":"cards/joker_black.png";
- return `cards/${c.r}${c.s}.png`;
+ if(!c)return "Cards/back.png";
+ if(c.r==="JOKER")return c.color==="color"?"Cards/joker_color.png":"Cards/joker_black.png";
+ const suitCode={"♠":"S","♥":"H","♦":"D","♣":"C",S:"S",H:"H",D:"D",C:"C"}[c.s]||c.s;
+ return `Cards/${c.r}${suitCode}.png`;
 }
 function cardFaceHtml(c){
  return `<img class="gameCardImage" src="${cardImageFile(c)}" alt="${esc(cardLabel(c)||"ورقة لعب")}" draggable="false">`;
