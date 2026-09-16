@@ -1339,10 +1339,40 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 
 <style id="real-card-assets-fixed">
 .cardFace,.cardBack{padding:0!important;overflow:hidden!important;background:#fff!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important;aspect-ratio:5/7!important}
-.cardBack{background-image:url("Cards/back.png?v=7")!important}
+.cardBack{background-image:url("Cards/back.png")!important}
 .cardFace .gameCardImage{display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;object-position:center!important;border:0!important;margin:0!important;padding:0!important;user-select:none!important;-webkit-user-drag:none!important}
 .cardFace .faceCardInner,.cardFace .pipGrid{display:none!important}
 </style>
+
+<style id="cards-full-face-v8">
+.cardFace{
+  padding:0!important;
+  overflow:hidden!important;
+  background:#fff!important;
+}
+.cardFace .gameCardImage{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  display:block!important;
+  object-fit:fill!important;
+  object-position:center!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:inherit!important;
+}
+.cardBack{
+  background-image:url("Cards/back.png?v=8")!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel">جاري الاتصال بـ Firebase...</div></main></div>
@@ -1692,7 +1722,7 @@ function cardImageFile(c){
  return `Cards/${c.r}${suitCode}.png`;
 }
 function cardFaceHtml(c){
- return `<img class="gameCardImage" src="${cardImageFile(c)}?v=7" alt="${esc(cardLabel(c)||"ورقة لعب")}" draggable="false" onerror="this.onerror=null;this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<span style=&quot;font-size:26px;font-weight:900&quot;>${esc(cardLabel(c))}</span>')">`;
+ return `<img class="gameCardImage" src="${cardImageFile(c)}" alt="${esc(cardLabel(c)||"ورقة لعب")}" draggable="false">`;
 }
 function isRed(c){return c&&(c.s==="H"||c.s==="D")}
 function cardClass(c){return !c?"":(c.r==="JOKER"?"joker":(isRed(c)?"red":"black"))}
@@ -1972,7 +2002,16 @@ async function beginRound(order,roundNo,totalRounds,totals){
  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
  toast(`بدأت الجولة ${roundNo} من ${totalRounds}`);
  // تشغيل الاسترداد فوراً بدل انتظار دورة onValue التالية.
- setTimeout(()=>autoGameWork().catch(e=>console.warn("round bootstrap",e)),50);
+ setTimeout(async()=>{
+  try{
+    // لا ننتظر تحديث onValue: المضيف يبدأ التوزيع فوراً.
+    if(uid===currentRoom?.hostId){
+      await hostDealAllInitialHands();
+    }
+    await autoGameWork();
+    await tryAdvanceDealing();
+  }catch(e){console.warn("round bootstrap",e)}
+},30);
 }
 async function hostDealAllInitialHands(){
  // التوزيع مركزي من جهاز المضيف، حتى لو كان المضيف متفرجاً. التحديث متعدد المسارات ذري: إما تصل الأربع أوراق للجميع أو لا يتغير شيء.
@@ -2047,7 +2086,7 @@ async function tryAdvanceMemorize(){
 }
 function scheduleRoundRecovery(){
  clearTimeout(window.__roundRecoveryTimer);
- const g=game();if(!currentRoom||currentRoom.status!=="game"||!g||!isActivePlayer())return;
+ const g=game();if(!currentRoom||currentRoom.status!=="game"||!g||(!isActivePlayer()&&uid!==currentRoom.hostId))return;
  window.__roundRecoveryTimer=setTimeout(async()=>{try{const gg=game();if(gg?.phase==="dealing")await tryAdvanceDealing();else if(gg?.phase==="memorize")await tryAdvanceMemorize();}catch(e){console.warn("round recovery",e)}finally{scheduleRoundRecovery()}},1200);
 }
 
