@@ -2011,21 +2011,21 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  setTimeout(async()=>{
   try{
     // لا ننتظر تحديث onValue: المضيف يبدأ التوزيع فوراً.
-    if(uid===currentRoom?.hostId){
-      await hostDealAllInitialHands();
-    }
+    await hostDealAllInitialHands();
     await autoGameWork();
     await tryAdvanceDealing();
   }catch(e){console.warn("round bootstrap",e)}
 },30);
 }
 async function hostDealAllInitialHands(){
- // التوزيع مركزي من جهاز المضيف، حتى لو كان المضيف متفرجاً. التحديث متعدد المسارات ذري: إما تصل الأربع أوراق للجميع أو لا يتغير شيء.
- if(!currentRoom||currentRoom.status!=="game"||uid!==currentRoom.hostId)return false;
- const g=game();if(!g||g.phase!=="dealing")return false;
+ // نقرأ حالة الغرفة الحية من Firebase. لا نعتمد على currentRoom لأن onValue قد يتأخر لحظة بدء الجولة.
+ const pubSnap=await get(ref(db,`rooms/${roomCode}/public`));
+ const livePub=pubSnap.val();
+ if(!livePub||livePub.status!=="game"||uid!==livePub.hostId)return false;
+ const g=livePub.game;if(!g||g.phase!=="dealing")return false;
  const token=String(g.roundToken||"");const order=Array.isArray(g.turnOrder)?g.turnOrder.filter(Boolean):[];
  if(!token||order.length<2)return false;
- const already=order.every(id=>String(g.dealt?.[id]||"")===token&&currentRoom.players?.[id]?.ready===true&&Number(currentRoom.players?.[id]?.cardCount)===4);
+ const already=order.every(id=>String(g.dealt?.[id]||"")===token&&livePub.players?.[id]?.ready===true&&Number(livePub.players?.[id]?.cardCount)===4);
  if(already)return true;
  // قفل قصير يمنع تنفيذ دفعتين في الوقت نفسه عند تكرار onValue.
  let locked=false;
@@ -2063,7 +2063,7 @@ async function hostDealAllInitialHands(){
  }
 }
 async function tryAdvanceDealing(){
- if(!currentRoom||currentRoom.status!=="game"||!isActivePlayer())return false;
+ if(!roomCode||!uid)return false;
  let advanced=false;
  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),pub=>{
   advanced=false;
@@ -2080,7 +2080,7 @@ async function tryAdvanceDealing(){
  return advanced;
 }
 async function tryAdvanceMemorize(){
- if(!currentRoom||currentRoom.status!=="game"||!isActivePlayer())return false;
+ if(!roomCode||!uid)return false;
  let advanced=false;
  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public/game`),g=>{
   advanced=false;if(!g||g.phase!=="memorize")return g;
@@ -2092,8 +2092,18 @@ async function tryAdvanceMemorize(){
 }
 function scheduleRoundRecovery(){
  clearTimeout(window.__roundRecoveryTimer);
- const g=game();if(!currentRoom||currentRoom.status!=="game"||!g||(!isActivePlayer()&&uid!==currentRoom.hostId))return;
- window.__roundRecoveryTimer=setTimeout(async()=>{try{const gg=game();if(gg?.phase==="dealing")await tryAdvanceDealing();else if(gg?.phase==="memorize")await tryAdvanceMemorize();}catch(e){console.warn("round recovery",e)}finally{scheduleRoundRecovery()}},1200);
+ if(!roomCode||!uid)return;
+ window.__roundRecoveryTimer=setTimeout(async()=>{
+  try{
+   const ps=await get(ref(db,`rooms/${roomCode}/public`)),pub=ps.val();
+   if(!pub||pub.status!=="game"||!pub.game)return;
+   if(pub.game.phase==="dealing"){
+    if(uid===pub.hostId)await hostDealAllInitialHands();
+    await tryAdvanceDealing();
+   }else if(pub.game.phase==="memorize")await tryAdvanceMemorize();
+  }catch(e){console.warn("round recovery",e)}
+  finally{scheduleRoundRecovery()}
+ },1200);
 }
 
 async function autoGameWork(){
@@ -2113,7 +2123,7 @@ async function autoGameWork(){
   const handMatches=myHand&&Number(myHand.roundNo||0)===Number(g.roundNo||1)&&String(myHand.roundToken||"")===String(g.roundToken||"")&&countCards(myHand.cards)===4;
   if(isActivePlayer()&&myHand&&!handMatches){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null;localRevealUntil={};}
   // المضيف يوزع الأربع أوراق للجميع دفعة واحدة. اللاعبون يقرأون أوراقهم فقط ولا يطالب كل جهاز بحصته.
-  if(uid===currentRoom.hostId)await hostDealAllInitialHands();
+  await hostDealAllInitialHands();
  }
  if(g.phase==="dealing"){
   // بعد اكتمال الدفعة، أي لاعب نشط يقدر ينقل الجولة تلقائياً لمرحلة حفظ أول ورقتين.
