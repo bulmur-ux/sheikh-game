@@ -2279,32 +2279,29 @@ async function tryAdvanceDealing(){
  return advanced;
 }
 async function tryAdvanceMemorize(){
- if(!roomCode||!uid)return false;
- let advanced=false;
- const tx=await runTransaction(ref(db,`rooms/${roomCode}/public/game`),g=>{
-  advanced=false;if(!g||g.phase!=="memorize")return g;
-  const until=Number(g.memorizeUntil||0);if(!until||until>Date.now())return g;
-  g.phase="playing";g.memorizeUntil=0;g.turnIndex=0;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;g.timeoutClaim=null;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;advanced=true;return g;
- });
- if(advanced&&tx.committed){try{const gg=tx.snapshot.val()||{};const firstId=(gg.turnOrder||[])[0];const firstName=currentRoom?.players?.[firstId]?.name||"لاعب";await sendSystem(`🎲 بدأ اللعب — البداية عشوائياً مع ${firstName} • لكل لاعب 60 ثانية`)}catch{}}
- return advanced;
+ if(!roomCode||!currentRoom||uid!==currentRoom.hostId)return false;
+ const expectedToken=String(currentRoom.game?.roundToken||"");
+ if(!expectedToken)return false;
+ const gameRef=ref(db,`rooms/${roomCode}/public/game`);
+ const result=await runTransaction(gameRef,g=>{
+   if(!g)return;
+   if(String(g.roundToken||"")!==expectedToken)return;
+   if(g.phase!=="memorize")return;
+   const until=Number(g.memorizeUntil||0);
+   if(!until||Date.now()<until)return;
+   g.phase="playing";
+   g.turnIndex=Math.max(0,Math.min(Number(g.turnIndex||0),(g.turnOrder||[]).length-1));
+   g.turnStartedAt=Date.now();
+   g.turnSeq=Number(g.turnSeq||0)+1;
+   g.timeoutClaim=null;
+   g.decisionUid=null;
+   g.decisionUntil=null;
+   g.hasDrawn=null;
+   g.lastAction="round_start";
+   return g;
+ },{applyLocally:false});
+ return !!result.committed;
 }
-function scheduleRoundRecovery(){
- clearTimeout(window.__roundRecoveryTimer);
- if(!roomCode||!uid)return;
- window.__roundRecoveryTimer=setTimeout(async()=>{
-  try{
-   const ps=await get(ref(db,`rooms/${roomCode}/public`)),pub=ps.val();
-   if(!pub||pub.status!=="game"||!pub.game)return;
-   if(pub.game.phase==="dealing"){
-    if(uid===pub.hostId)await hostDealAllInitialHands();
-    await tryAdvanceDealing();
-   }else if(pub.game.phase==="memorize")await tryAdvanceMemorize();
-  }catch(e){console.warn("round recovery",e)}
-  finally{scheduleRoundRecovery()}
- },1200);
-}
-
 async function autoGameWork(){
  if(!currentRoom||!uid)return;
  if(currentRoom.status==="lobby"&&currentRoom.readyCheck&&(uid===currentRoom.hostId||(currentRoom.readyCheck.order||[]).includes(uid))){
@@ -2349,14 +2346,14 @@ async function autoGameWork(){
    }else if(!myHand.introDone){await finishInitialPeek(String(g.roundToken||""));}
   }
   if(memorizeUntil){
-   if(memorizeUntil<=Date.now())await tryAdvanceMemorize();
+   if(memorizeUntil<=Date.now()&&uid===currentRoom.hostId)await tryAdvanceMemorize();
    else{
     clearTimeout(window.__memorizeHostTimer);
-    window.__memorizeHostTimer=setTimeout(()=>tryAdvanceMemorize().catch(e=>console.warn(e)),Math.max(0,memorizeUntil-Date.now()+120));
+    window.__memorizeHostTimer=setTimeout(()=>{if(uid===currentRoom?.hostId)tryAdvanceMemorize().catch(e=>console.warn("memorize advance",e))},Math.max(0,memorizeUntil-Date.now()+120));
    }
   }
  }
- if(g.phase==="playing"&&!g.turnStartedAt&&uid===currentRoom.hostId){await update(ref(db,`rooms/${roomCode}/public/game`),{turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1,timeoutClaim:null});}
+ // V5: بداية أول دور تتم ذرياً داخل tryAdvanceMemorize فقط.
  if(g.swapRequest)await processSwapRequest(g.swapRequest);
  if(g.jackSwap)await processJackSwap(g.jackSwap);
  if(g.phase==="reveal"&&isActivePlayer()&&myHand&&!currentRoom.reveals?.[uid]){
