@@ -1339,7 +1339,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 
 <style id="real-card-assets-fixed">
 .cardFace,.cardBack{padding:0!important;overflow:hidden!important;background:#fff!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important;aspect-ratio:5/7!important}
-.cardBack{background-image:url("Cards/back.png")!important}
+.cardBack{background-image:url("Cards/back.png?v=7")!important}
 .cardFace .gameCardImage{display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;object-position:center!important;border:0!important;margin:0!important;padding:0!important;user-select:none!important;-webkit-user-drag:none!important}
 .cardFace .faceCardInner,.cardFace .pipGrid{display:none!important}
 </style>
@@ -1692,7 +1692,7 @@ function cardImageFile(c){
  return `Cards/${c.r}${suitCode}.png`;
 }
 function cardFaceHtml(c){
- return `<img class="gameCardImage" src="${cardImageFile(c)}" alt="${esc(cardLabel(c)||"ورقة لعب")}" draggable="false">`;
+ return `<img class="gameCardImage" src="${cardImageFile(c)}?v=7" alt="${esc(cardLabel(c)||"ورقة لعب")}" draggable="false" onerror="this.onerror=null;this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<span style=&quot;font-size:26px;font-weight:900&quot;>${esc(cardLabel(c))}</span>')">`;
 }
 function isRed(c){return c&&(c.s==="H"||c.s==="D")}
 function cardClass(c){return !c?"":(c.r==="JOKER"?"joker":(isRed(c)?"red":"black"))}
