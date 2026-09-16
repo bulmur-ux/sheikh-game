@@ -1489,6 +1489,49 @@ let funnyAudio=null,lastFunnyEventId="",funnyEventPrimed=false,lastFunnySendAt=0
 const presenceSession=sessionStorage.getItem("sheikh_presence_session")||((crypto.randomUUID?.()||("s"+Date.now()+Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9_-]/g,""));
 sessionStorage.setItem("sheikh_presence_session",presenceSession);
 let presenceReady=false;
+
+// ===== Single active game session per account (admin.html is intentionally separate) =====
+const gameSessionId=sessionStorage.getItem("sheikh_game_session_id")||((crypto.randomUUID?.()||("g"+Date.now()+Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9_-]/g,""));
+sessionStorage.setItem("sheikh_game_session_id",gameSessionId);
+let activeSessionUnsub=null,sessionSuperseded=false,explicitLoginInProgress=false;
+function activeSessionRef(userId=auth.currentUser?.uid){return userId?ref(db,`activeSessions/${userId}`):null}
+async function claimActiveGameSession(user){
+ if(!user||user.isAnonymous)return false;
+ const ar=activeSessionRef(user.uid);
+ await set(ar,{sessionId:gameSessionId,ts:Date.now()});
+ watchActiveGameSession(user.uid);
+ return true;
+}
+async function verifyOrBootstrapGameSession(user){
+ if(!user||user.isAnonymous)return false;
+ const ar=activeSessionRef(user.uid),snap=await get(ar),v=snap.val()||{};
+ if(!v.sessionId){await set(ar,{sessionId:gameSessionId,ts:Date.now()});watchActiveGameSession(user.uid);return true}
+ if(v.sessionId!==gameSessionId){await handleSupersededSession();return false}
+ watchActiveGameSession(user.uid);return true;
+}
+function watchActiveGameSession(userId){
+ if(activeSessionUnsub)try{activeSessionUnsub()}catch{}
+ activeSessionUnsub=onValue(activeSessionRef(userId),snap=>{
+  const sid=String(snap.val()?.sessionId||"");
+  if(sid&&sid!==gameSessionId)handleSupersededSession();
+ });
+}
+async function handleSupersededSession(){
+ if(sessionSuperseded)return;sessionSuperseded=true;
+ if(activeSessionUnsub)try{activeSessionUnsub()}catch{}activeSessionUnsub=null;
+ try{cleanupSubs()}catch{}try{stopHomeStats()}catch{}
+ try{await voiceController?.stop?.(false)}catch{}try{stopRadio(false)}catch{}try{await stopPresence()}catch{}
+ roomCode="";currentRoom=null;myHand=null;uid=null;
+ // Do NOT call Firebase signOut here: Firebase local auth is shared by Safari tabs and would also sign out the new session.
+ app.innerHTML=`<div class="authShell"><div class="panel" style="text-align:center"><div style="font-size:52px">🔐</div><h2>تم تسجيل خروجك من هذه الصفحة</h2><p style="line-height:1.9">تم تسجيل الدخول إلى حسابك من صفحة أو جهاز آخر.<br>يسمح للحساب بدخول واحد فقط في نفس الوقت.</p><button id="sessionLoginAgain" class="btn">تسجيل الدخول من هذه الصفحة</button></div></div>`;
+ const b=document.getElementById("sessionLoginAgain");if(b)b.onclick=()=>{sessionSuperseded=false;authScreen("login","سجّل الدخول مرة ثانية لنقل الجلسة إلى هذه الصفحة")};
+}
+async function releaseActiveGameSessionIfMine(){
+ const ar=activeSessionRef();if(!ar)return;
+ try{await runTransaction(ar,cur=>cur?.sessionId===gameSessionId?null:cur,{applyLocally:false})}catch{}
+}
+// ===== End single-session guard =====
+
 function presenceRef(){return auth.currentUser?ref(db,`presence/${auth.currentUser.uid}/${presenceSession}`):null}
 async function startPresence(state="home",room=""){
  if(!auth.currentUser||auth.currentUser.isAnonymous)return;
@@ -1812,13 +1855,13 @@ async function ensureMemberNo(user,profile={}){
  return memberNo;
 }
 async function registerAccount(){const username=document.getElementById("regUser").value.trim(),email=document.getElementById("authEmail").value.trim().toLowerCase(),pass=document.getElementById("authPass").value,pass2=document.getElementById("authPass2").value,norm=normalizeUsername(username);if(username.length<2)return setAuthMsg("اسم المستخدم قصير");if(norm.length<2)return setAuthMsg("اكتب اسم مستخدم صحيح");if(!email)return setAuthMsg("اكتب البريد الإلكتروني");if(pass.length<6)return setAuthMsg("كلمة المرور يجب أن تكون 6 أحرف على الأقل");if(pass!==pass2)return setAuthMsg("تأكيد كلمة المرور غير مطابق");const btn=document.getElementById("authSubmit");btn.disabled=true;btn.textContent="جاري إنشاء الحساب...";let cred=null,reserved=false;accountSetupInProgress=true;try{cred=await createUserWithEmailAndPassword(auth,email,pass);uid=cred.user.uid;const claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>cur===null?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw Object.assign(new Error("اسم المستخدم مستخدم مسبقاً"),{code:"username-taken"});reserved=true;const memberNo=await allocateMemberNo();await set(ref(db,`users/${uid}`),{username,usernameNorm:norm,email,role:"player",status:"active",createdAt:Date.now(),memberNo,xp:0});myName=username;localStorage.setItem("sheikh_name",username);home("تم إنشاء حسابك بنجاح")}catch(e){if(reserved&&uid)try{await remove(ref(db,`usernames/${norm}`))}catch{}if(cred?.user)try{await deleteUser(cred.user)}catch{}if(e?.code==="username-taken")authScreen("signup","اسم المستخدم مستخدم مسبقاً — اختر اسماً آخر");else authScreen("signup",authErrorText(e))}finally{accountSetupInProgress=false}}
-async function loginAccount(){const email=document.getElementById("authEmail").value.trim().toLowerCase(),pass=document.getElementById("authPass").value;if(!email||!pass)return setAuthMsg("اكتب البريد الإلكتروني وكلمة المرور");const btn=document.getElementById("authSubmit");btn.disabled=true;btn.textContent="جاري الدخول...";try{const c=await signInWithEmailAndPassword(auth,email,pass);await loadPlayerAccount(c.user)}catch(e){setAuthMsg(authErrorText(e));btn.disabled=false;btn.textContent="دخول"}}
+async function loginAccount(){const email=document.getElementById("authEmail").value.trim().toLowerCase(),pass=document.getElementById("authPass").value;if(!email||!pass)return setAuthMsg("اكتب البريد الإلكتروني وكلمة المرور");const btn=document.getElementById("authSubmit");btn.disabled=true;btn.textContent="جاري الدخول...";explicitLoginInProgress=true;sessionSuperseded=false;try{const c=await signInWithEmailAndPassword(auth,email,pass);await claimActiveGameSession(c.user);await loadPlayerAccount(c.user)}catch(e){setAuthMsg(authErrorText(e));btn.disabled=false;btn.textContent="دخول"}finally{explicitLoginInProgress=false}}
 async function forgotPassword(){const email=document.getElementById("authEmail").value.trim().toLowerCase();if(!email)return setAuthMsg("اكتب بريدك الإلكتروني أولاً");try{await sendPasswordResetEmail(auth,email);setAuthMsg("تم إرسال رابط تغيير كلمة المرور إلى بريدك الإلكتروني","success")}catch(e){setAuthMsg(authErrorText(e))}}
 async function checkMyBan(){if(!auth.currentUser)return null;const s=await get(ref(db,`bans/${auth.currentUser.uid}`));return s.exists()?s.val():null}
 function completeProfileScreen(user,msg="تم إنشاء حساب الدخول، وباقي نثبت اسم المستخدم فقط."){cleanupSubs();roomCode="";localStorage.removeItem("sheikh_room");app.innerHTML=`<div class="authShell"><div class="authBrand"><h2>شيك شيك</h2><p>إكمال حساب اللاعب</p></div><div class="panel"><div class="authField"><label>اسم المستخدم</label><input id="repairUser" maxlength="20" autocomplete="nickname" placeholder="مثال: بو سعيد"><div class="authHint">اكتب نفس الاسم الذي اخترته. الاسم لن يتكرر حتى باختلاف المسافات.</div></div><div class="small" style="margin-bottom:12px">البريد: <span dir="ltr">${esc(user?.email||"")}</span></div><button id="repairSubmit" class="btn">إكمال إنشاء الحساب</button><div id="authMsg" class="authMsg error">${esc(msg)}</div><div class="center"><button id="repairLogout" class="authLink" type="button">تسجيل الخروج</button></div></div></div>`;document.getElementById("repairSubmit").onclick=()=>repairPlayerProfile(user);document.getElementById("repairLogout").onclick=logoutPlayer}
 async function repairPlayerProfile(user){const username=document.getElementById("repairUser").value.trim(),norm=normalizeUsername(username);if(username.length<2||norm.length<2)return setAuthMsg("اكتب اسم المستخدم الذي تريده");const btn=document.getElementById("repairSubmit");btn.disabled=true;btn.textContent="جاري الحفظ...";let reserved=false;try{uid=user.uid;const claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw Object.assign(new Error("اسم المستخدم مستخدم مسبقاً"),{code:"username-taken"});reserved=true;const memberNo=await allocateMemberNo();await set(ref(db,`users/${uid}`),{username,usernameNorm:norm,email:(user.email||"").toLowerCase(),role:"player",status:"active",createdAt:Date.now(),memberNo,xp:0});myName=username;localStorage.setItem("sheikh_name",username);home("تم إكمال حسابك بنجاح")}catch(e){if(reserved)try{await remove(ref(db,`usernames/${norm}`))}catch{}setAuthMsg(e?.code==="username-taken"?"اسم المستخدم مستخدم مسبقاً — اختر اسماً آخر":authErrorText(e));btn.disabled=false;btn.textContent="إكمال إنشاء الحساب"}}
 async function loadPlayerAccount(user){if(!user||user.isAnonymous){if(user)try{await signOut(auth)}catch{}authScreen();return false}uid=user.uid;const [p,b]=await Promise.all([get(ref(db,`users/${uid}`)),get(ref(db,`bans/${uid}`))]);if(b.exists()){const x=b.val()||{};authScreen("login",`هذا الحساب محظور${x.reason?": "+x.reason:""}`);return false}if(!p.exists()){const a=await get(ref(db,`admins/${uid}`));if(a.exists()&&a.val()?.active!==false){const av=a.val()||{};let username=String(av.label||av.username||((user.email||"").split("@")[0])||"مشرف").trim();let memberNo=await allocateMemberNo();let norm=normalizeUsername(username);try{let claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid){username=`مشرف ${memberNo}`;norm=normalizeUsername(username);claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>(cur===null||cur===uid)?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw new Error("تعذر حجز اسم حساب الإدارة")};await set(ref(db,`users/${uid}`),{username,usernameNorm:norm,email:(user.email||"").toLowerCase(),role:"player",status:"active",createdAt:Date.now(),memberNo,xp:0});myName=username;localStorage.setItem("sheikh_name",myName);await loadMyAdminAccess();if(roomCode)subscribe(roomCode);else home("تم تفعيل حساب الإدارة للعب والإشراف ✅");return true}catch(e){console.warn("admin player profile",e);authScreen("login","تعذر تفعيل حساب الإدارة داخل اللعبة: "+(e?.message||"خطأ"));return false}}completeProfileScreen(user);return false}const profile=p.val();if(!profile.memberNo){try{profile.memberNo=await ensureMemberNo(user,profile)}catch(e){console.warn("member number",e)}}if(profile.status!=="active"){authScreen("login","هذا الحساب غير نشط");return false}myName=profile.username||"لاعب";localStorage.setItem("sheikh_name",myName);await loadMyAdminAccess();if(roomCode)subscribe(roomCode);else home();return true}
-async function logoutPlayer(){cleanupSubs();stopHomeStats();await stopPresence();roomCode="";myName="";localStorage.removeItem("sheikh_room");localStorage.removeItem("sheikh_name");localStorage.removeItem("sheikh_admin_entry_mode");myAdmin=null;adminEntryMode="player";await signOut(auth);authScreen()}
+async function logoutPlayer(){cleanupSubs();stopHomeStats();await stopPresence();await releaseActiveGameSessionIfMine();if(activeSessionUnsub)try{activeSessionUnsub()}catch{}activeSessionUnsub=null;roomCode="";myName="";localStorage.removeItem("sheikh_room");localStorage.removeItem("sheikh_name");localStorage.removeItem("sheikh_admin_entry_mode");myAdmin=null;adminEntryMode="player";await signOut(auth);authScreen()}
 function formatAccountDate(ms){if(!ms)return "غير متوفر";try{return new Intl.DateTimeFormat("ar-AE",{year:"numeric",month:"long",day:"numeric"}).format(new Date(ms))}catch{return new Date(ms).toLocaleDateString("ar-AE")}}
 function profileAvatar(profile={}){return profile.avatarUrl||"icon-512.png"}
 async function saveAvatarUrl(url){if(!auth.currentUser)return;await update(ref(db,`users/${auth.currentUser.uid}`),{avatarUrl:url})}
@@ -2810,7 +2853,7 @@ async function sendChat(forced){if(chatModerationRemaining()>0){const mins=Math.
 async function sendSystem(text){try{await set(push(ref(db,`rooms/${roomCode}/chat`)),{uid:"system",name:"النظام",text,ts:Date.now()})}catch{}}
 function renderChat(){const box=document.getElementById("chatBox");if(!box)return;const arr=Object.values(latestChat).sort((a,b)=>(a.ts||0)-(b.ts||0));box.innerHTML=arr.map(m=>`<p><b>${esc(m.name)}:</b> ${esc(m.text)}</p>`).join("");box.scrollTop=box.scrollHeight}
 
-let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress)return;if(authBooted&&u&&uid===u.uid)return;authBooted=true;if(!u){uid=null;authScreen();return}if(u.isAnonymous){try{await signOut(auth)}catch{}authScreen();return}try{await loadPlayerAccount(u)}catch(e){authScreen("login","تعذر تحميل الحساب: "+authErrorText(e))}});
+let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress||explicitLoginInProgress||sessionSuperseded)return;if(authBooted&&u&&uid===u.uid)return;authBooted=true;if(!u){uid=null;authScreen();return}if(u.isAnonymous){try{await signOut(auth)}catch{}authScreen();return}try{const ok=await verifyOrBootstrapGameSession(u);if(ok&&!sessionSuperseded)await loadPlayerAccount(u)}catch(e){authScreen("login","تعذر تحميل الحساب: "+authErrorText(e))}});
 </script>
 
 <style id="game-layout-fix-20260915">
