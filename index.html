@@ -10,6 +10,7 @@
 <link rel="shortcut icon" href="icon-192.png?v=4">
 <link rel="manifest" href="manifest.webmanifest?v=4">
 <title>شيك شيك | لعبة المجلس أونلاين</title>
+<!-- GAME ENGINE STABLE 2026-09-17: Firebase-authoritative round start / atomic deal / host-only phase transitions -->
 <meta name="theme-color" content="#6d2633">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2085,13 +2086,8 @@ async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...d
   const confirmed=confirmSnap.val();
   if(!confirmed?.game?.roundToken || confirmed.status!=="game")
     throw new Error("لم يتم تأكيد بداية الجولة من الخادم");
-  currentRoom=confirmed;
-  try{render()}catch(e){console.warn("confirmed start render",e)}
-try{
- const fresh=await get(ref(db,`rooms/${roomCode}/public`));
- if(fresh.exists()){currentRoom=fresh.val();render()}
-}catch(e){console.warn("host start refresh",e)}
-try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue} — جاري توزيع 4 أوراق لكل لاعب`) }catch{}}catch(e){console.warn("start game",e);toast("تعذر بدء المباراة — جرّب مرة ثانية");if(btn){btn.disabled=false;btn.textContent="▶ ابدأ المباراة"}}}
+  // لا نغيّر currentRoom محلياً هنا. onValue هو المصدر الوحيد لحالة الجولة لكل الأجهزة، بما فيها المضيف.
+  try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue} — تم توزيع 4 أوراق لكل لاعب`) }catch{}}catch(e){console.warn("start game",e);toast("تعذر بدء المباراة — جرّب مرة ثانية");if(btn){btn.disabled=false;btn.textContent="▶ ابدأ المباراة"}}}
 async function confirmReadyToPlay(){
  const rc=currentRoom?.readyCheck;if(!rc||(rc.order||[]).includes(uid)===false)return;
  await set(ref(db,`rooms/${roomCode}/public/readyCheck/ready/${uid}`),true);
@@ -2206,7 +2202,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
 
  // لا يوجد render خاص بالمضيف ولا توزيع ثانٍ.
  // كل الأجهزة، بما فيها المضيف، تدخل من نفس Firebase onValue.
- myHand=null;
+ // مهم: لا نصفر myHand هنا؛ قد يكون privateHands listener استلم اليد بالفعل أثناء await update.
  toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"} — احفظ أول ورقتين`);
  try{await sendSystem("👁️ تم توزيع 4 أوراق لكل لاعب — أول ورقتين مكشوفتان 20 ثانية")}catch{}
 }
@@ -2262,7 +2258,7 @@ async function hostDealAllInitialHands(){
  }
 }
 async function tryAdvanceDealing(){
- if(!roomCode||!uid)return false;
+ if(!roomCode||!uid||!currentRoom||uid!==currentRoom.hostId)return false;
  let advanced=false;
  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),pub=>{
   advanced=false;
@@ -2321,8 +2317,8 @@ async function autoGameWork(){
   // المضيف يوزع الأربع أوراق للجميع دفعة واحدة. اللاعبون يقرأون أوراقهم فقط ولا يطالب كل جهاز بحصته.
   await hostDealAllInitialHands();
  }
- if(g.phase==="dealing"){
-  // بعد اكتمال الدفعة، أي لاعب نشط يقدر ينقل الجولة تلقائياً لمرحلة حفظ أول ورقتين.
+ if(g.phase==="dealing"&&uid===currentRoom.hostId){
+  // مسار استرداد للجولات القديمة فقط؛ المضيف وحده يملك انتقال dealing -> memorize.
   await tryAdvanceDealing();
  }
  if(g.phase==="memorize"){
@@ -2755,9 +2751,8 @@ async function autoWithdrawForInactivity(){return performRoundWithdrawal({automa
 function render(){if(!currentRoom)return;if(currentRoom.status==="lobby")return renderLobby();if(currentRoom.status==="game"){if(game().phase==="finished")return renderResults();renderGame();if(game().phase==="reveal")setTimeout(maybeFinishReveal,300)}}
 function renderLobby(){
  const ps=playerEntries(),host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers"),canManageHost=host||!!myAdmin,rc=currentRoom.readyCheck;
- // البداية الآن مباشرة: لا توجد شاشة «جاهزين نبدأ؟» ولا انتظار 20 ثانية.
- // تنظيف أي readyCheck قديم من نسخة سابقة بدون تعطيل دخول الغرفة.
- if(rc && host){remove(ref(db,`rooms/${roomCode}/public/readyCheck`)).catch(()=>{});}
+ // render واجهة فقط: لا توجد أي كتابة إلى Firebase من داخل الرسم.
+ // beginRound يمسح readyCheck القديم ضمن نفس التحديث الذري عند بدء الجولة.
  const selectedDefault=ps.slice(0,Math.min(4,ps.length)).map(([id])=>id);
  const scoreOf=id=>Number(currentRoom?.game?.cumulativeScores?.[id]||0);
  const avatarOf=p=>p?.avatarUrl||"icon-512.png";
