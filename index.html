@@ -10,7 +10,6 @@
 <link rel="shortcut icon" href="icon-192.png?v=4">
 <link rel="manifest" href="manifest.webmanifest?v=4">
 <title>شيك شيك | لعبة المجلس أونلاين</title>
-<!-- GAME ENGINE STABLE 2026-09-17: Firebase-authoritative round start / atomic deal / host-only phase transitions -->
 <meta name="theme-color" content="#6d2633">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1949,13 +1948,30 @@ async function home(msg=""){
  await startPresence("home","");bindHomeStats();
 }
 function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
-async function createRoom(){adminEntryMode="player";localStorage.setItem("sheikh_admin_entry_mode","player");const n=myName;if(!n){authScreen("login","سجل الدخول أولاً");return}try{await ensureAuth();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}const profSnap=await get(ref(db,`users/${uid}`)),prof=profSnap.val()||{};await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}});await set(ref(db,`roomIndex/${c}`),{hostId:uid,status:"lobby",createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);await startPresence("room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
+async function createRoom(){
+ adminEntryMode="player";localStorage.setItem("sheikh_admin_entry_mode","player");
+ const n=myName;if(!n){authScreen("login","سجل الدخول أولاً");return}
+ const err=document.getElementById("err");
+ try{
+  await ensureAuth();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));
+  uid=auth.currentUser.uid;let c=randomCode();
+  for(let i=0;i<5;i++){const snap=await get(ref(db,`rooms/${c}/public`));if(!snap.exists())break;c=randomCode()}
+  const profSnap=await get(ref(db,`users/${uid}`)),prof=profSnap.val()||{};
+  const publicRoom={hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,role:"spectator",cardCount:0,ready:false,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}};
+  await set(ref(db,`rooms/${c}/public`),publicRoom);
+  myName=n;roomCode=c;currentRoom=publicRoom;
+  localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);
+  subscribe(c);render();
+  set(ref(db,`roomIndex/${c}`),{hostId:uid,status:"lobby",createdAt:publicRoom.createdAt,playerCount:1,updatedAt:Date.now()}).catch(e=>console.warn("roomIndex create",e));
+  startPresence("room",c).catch(e=>console.warn("presence room",e));
+ }catch(e){console.error("createRoom",e);if(err)err.textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}
+}
 async function joinRoom(){const n=myName,c=document.getElementById("code").value.trim().toUpperCase();if(!n||!c){document.getElementById("err").textContent="اكتب كود الغرفة";return}try{await ensureAuth();uid=auth.currentUser.uid;await loadMyAdminAccess();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())throw new Error("الغرفة غير موجودة");const r=s.val(),ps=r.players||{};
  const ROOM_CAPACITY=8;
  const occupants=Object.keys(r.players||{});
  if(!occupants.includes(uid)&&occupants.length>=ROOM_CAPACITY){
    toast("الغرفة مكتملة 8/8");return;
- }let mode="player";if(myAdmin){mode=await chooseAdminEntryMode(c);if(!mode)return}adminEntryMode=mode;if(mode==="player"){if(r.status!=="lobby"&&!ps[uid])throw new Error("اللعبة بدأت");if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;const profSnap=await get(ref(db,`users/${uid}`)),prof=profSnap.val()||{};await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false,memberNo:prof.memberNo||ps[uid]?.memberNo||null,xp:Number(prof.xp||ps[uid]?.xp||0),avatarUrl:prof.avatarUrl||ps[uid]?.avatarUrl||"icon-512.png",joinedAt:ps[uid]?.joinedAt||Date.now()});try{await remove(ref(db,`rooms/${c}/public/moderators/${uid}`))}catch{}try{await remove(ref(db,`adminMonitoring/${c}/${uid}`))}catch{}}else if(mode==="moderator"){if(!adminHasPerm("enterAsModerator"))throw new Error("ما عندك صلاحية دخول كمشرف");await set(ref(db,`rooms/${c}/public/moderators/${uid}`),{name:n,role:adminRoleLabel(),visible:true,joinedAt:Date.now()});try{await remove(ref(db,`adminMonitoring/${c}/${uid}`))}catch{}}else if(mode==="hidden"){if(!adminHasPerm("hiddenMonitor"))throw new Error("ما عندك صلاحية المراقبة المخفية");try{await remove(ref(db,`rooms/${c}/public/moderators/${uid}`))}catch{}await set(ref(db,`adminMonitoring/${c}/${uid}`),{uid,label:n,stealth:true,active:true,role:adminRoleLabel(),at:Date.now()})}myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);localStorage.setItem("sheikh_admin_entry_mode",mode);await startPresence("room",c);subscribe(c)}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
+ }let mode="player";if(myAdmin){mode=await chooseAdminEntryMode(c);if(!mode)return}adminEntryMode=mode;if(mode==="player"){if(Object.keys(ps).length>=8&&!ps[uid])throw new Error("الغرفة مكتملة");const order=ps[uid]?.order??Object.keys(ps).length;const profSnap=await get(ref(db,`users/${uid}`)),prof=profSnap.val()||{};await update(ref(db,`rooms/${c}/public/players/${uid}`),{name:n,order,role:ps[uid]?.role||(r.status==="game"?"spectator":"spectator"),cardCount:ps[uid]?.cardCount||0,ready:ps[uid]?.ready||false,memberNo:prof.memberNo||ps[uid]?.memberNo||null,xp:Number(prof.xp||ps[uid]?.xp||0),avatarUrl:prof.avatarUrl||ps[uid]?.avatarUrl||"icon-512.png",joinedAt:ps[uid]?.joinedAt||Date.now()});try{await remove(ref(db,`rooms/${c}/public/moderators/${uid}`))}catch{}try{await remove(ref(db,`adminMonitoring/${c}/${uid}`))}catch{}}else if(mode==="moderator"){if(!adminHasPerm("enterAsModerator"))throw new Error("ما عندك صلاحية دخول كمشرف");await set(ref(db,`rooms/${c}/public/moderators/${uid}`),{name:n,role:adminRoleLabel(),visible:true,joinedAt:Date.now()});try{await remove(ref(db,`adminMonitoring/${c}/${uid}`))}catch{}}else if(mode==="hidden"){if(!adminHasPerm("hiddenMonitor"))throw new Error("ما عندك صلاحية المراقبة المخفية");try{await remove(ref(db,`rooms/${c}/public/moderators/${uid}`))}catch{}await set(ref(db,`adminMonitoring/${c}/${uid}`),{uid,label:n,stealth:true,active:true,role:adminRoleLabel(),at:Date.now()})}myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);localStorage.setItem("sheikh_admin_entry_mode",mode);subscribe(c);startPresence("room",c).catch(e=>console.warn("presence join",e))}catch(e){document.getElementById("err").textContent=e?.message||"تعذر دخول الغرفة"}}
 async function handleHostRoundRemoveRequest(nextRoom){
  const req=nextRoom?.roundRemoveRequests?.[uid];
  if(!req)return false;
@@ -2086,8 +2102,13 @@ async function startGame(){if(uid!==currentRoom?.hostId)return;const order=[...d
   const confirmed=confirmSnap.val();
   if(!confirmed?.game?.roundToken || confirmed.status!=="game")
     throw new Error("لم يتم تأكيد بداية الجولة من الخادم");
-  // لا نغيّر currentRoom محلياً هنا. onValue هو المصدر الوحيد لحالة الجولة لكل الأجهزة، بما فيها المضيف.
-  try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue} — تم توزيع 4 أوراق لكل لاعب`) }catch{}}catch(e){console.warn("start game",e);toast("تعذر بدء المباراة — جرّب مرة ثانية");if(btn){btn.disabled=false;btn.textContent="▶ ابدأ المباراة"}}}
+  currentRoom=confirmed;
+  try{render()}catch(e){console.warn("confirmed start render",e)}
+try{
+ const fresh=await get(ref(db,`rooms/${roomCode}/public`));
+ if(fresh.exists()){currentRoom=fresh.val();render()}
+}catch(e){console.warn("host start refresh",e)}
+try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue} — جاري توزيع 4 أوراق لكل لاعب`) }catch{}}catch(e){console.warn("start game",e);toast("تعذر بدء المباراة — جرّب مرة ثانية");if(btn){btn.disabled=false;btn.textContent="▶ ابدأ المباراة"}}}
 async function confirmReadyToPlay(){
  const rc=currentRoom?.readyCheck;if(!rc||(rc.order||[]).includes(uid)===false)return;
  await set(ref(db,`rooms/${roomCode}/public/readyCheck/ready/${uid}`),true);
@@ -2202,7 +2223,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
 
  // لا يوجد render خاص بالمضيف ولا توزيع ثانٍ.
  // كل الأجهزة، بما فيها المضيف، تدخل من نفس Firebase onValue.
- // مهم: لا نصفر myHand هنا؛ قد يكون privateHands listener استلم اليد بالفعل أثناء await update.
+ myHand=null;
  toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"} — احفظ أول ورقتين`);
  try{await sendSystem("👁️ تم توزيع 4 أوراق لكل لاعب — أول ورقتين مكشوفتان 20 ثانية")}catch{}
 }
@@ -2258,7 +2279,7 @@ async function hostDealAllInitialHands(){
  }
 }
 async function tryAdvanceDealing(){
- if(!roomCode||!uid||!currentRoom||uid!==currentRoom.hostId)return false;
+ if(!roomCode||!uid)return false;
  let advanced=false;
  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),pub=>{
   advanced=false;
@@ -2317,8 +2338,8 @@ async function autoGameWork(){
   // المضيف يوزع الأربع أوراق للجميع دفعة واحدة. اللاعبون يقرأون أوراقهم فقط ولا يطالب كل جهاز بحصته.
   await hostDealAllInitialHands();
  }
- if(g.phase==="dealing"&&uid===currentRoom.hostId){
-  // مسار استرداد للجولات القديمة فقط؛ المضيف وحده يملك انتقال dealing -> memorize.
+ if(g.phase==="dealing"){
+  // بعد اكتمال الدفعة، أي لاعب نشط يقدر ينقل الجولة تلقائياً لمرحلة حفظ أول ورقتين.
   await tryAdvanceDealing();
  }
  if(g.phase==="memorize"){
@@ -2751,8 +2772,8 @@ async function autoWithdrawForInactivity(){return performRoundWithdrawal({automa
 function render(){if(!currentRoom)return;if(currentRoom.status==="lobby")return renderLobby();if(currentRoom.status==="game"){if(game().phase==="finished")return renderResults();renderGame();if(game().phase==="reveal")setTimeout(maybeFinishReveal,300)}}
 function renderLobby(){
  const ps=playerEntries(),host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers"),canManageHost=host||!!myAdmin,rc=currentRoom.readyCheck;
- // render واجهة فقط: لا توجد أي كتابة إلى Firebase من داخل الرسم.
- // beginRound يمسح readyCheck القديم ضمن نفس التحديث الذري عند بدء الجولة.
+ // البداية الآن مباشرة: لا توجد شاشة «جاهزين نبدأ؟» ولا انتظار 20 ثانية.
+ // تنظيف أي readyCheck قديم من نسخة سابقة بدون تعطيل دخول الغرفة.
  const selectedDefault=ps.slice(0,Math.min(4,ps.length)).map(([id])=>id);
  const scoreOf=id=>Number(currentRoom?.game?.cumulativeScores?.[id]||0);
  const avatarOf=p=>p?.avatarUrl||"icon-512.png";
@@ -2783,7 +2804,7 @@ function renderLobby(){
 }
 
 function renderGame(){
- const g=game(),active=g.turnOrder||[],tuid=turnUid(),tname=currentRoom.players?.[tuid]?.name||"",totals=g.cumulativeScores||{},host=uid===currentRoom.hostId;
+ const g=game(),active=g.turnOrder||[],tuid=turnUid(),tname=currentRoom.players?.[tuid]?.name||"",totals=g.cumulativeScores||{},host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers");
  if(g.phase==="dealing"){
   const dealtCount=activePlayerEntries().filter(([,p])=>p.ready===true&&Number(p.cardCount)===4&&String(p.dealToken||"")===String(g.roundToken||"")).length;
   app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>🃏 توزيع الأوراق</h2><p>${isActivePlayer()?"يتم تجهيز 4 أوراق لك ولكل لاعب...":"👀 أنت متفرج — يتم تجهيز أوراق اللاعبين"}</p><div class="refWaiting"><b>${dealtCount} / ${active.length}</b> تم التوزيع</div>${isActivePlayer()?`<div class="small center" style="margin-top:12px">انتظر لحظات — التوزيع يتم تلقائياً من النظام.</div>`:`<div class="small center" style="margin-top:12px">تبدأ الجولة تلقائياً بعد استلام جميع اللاعبين أوراقهم.</div>`}</div></div></div>`;
