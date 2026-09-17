@@ -2158,6 +2158,18 @@ async function leaveRoomCleanly(){
  try{await remove(ref(db,`rooms/${code}/public/players/${uid}`))}catch{}
  localStorage.removeItem("sheikh_room");roomCode="";currentRoom=null;await startPresence("home","");home();
 }
+function roundDiag(step, detail=""){
+ try{
+  let el=document.getElementById("roundDiagBox");
+  if(!el){
+   el=document.createElement("div");el.id="roundDiagBox";
+   el.style.cssText="position:fixed;z-index:999999;left:10px;right:10px;bottom:10px;background:#111;color:#fff;border:2px solid #d7ad4a;border-radius:14px;padding:10px 12px;font:700 13px/1.6 system-ui;text-align:right;direction:rtl;box-shadow:0 6px 24px #0008;max-height:34vh;overflow:auto";
+   document.body.appendChild(el);
+  }
+  const row=document.createElement("div");row.textContent=`${new Date().toLocaleTimeString("ar-AE")} — ${step}${detail?" — "+detail:""}`;el.appendChild(row);el.scrollTop=el.scrollHeight;
+ }catch(e){}
+}
+function clearRoundDiag(){try{document.getElementById("roundDiagBox")?.remove()}catch(e){}}
 async function startGame(){
  if(uid!==currentRoom?.hostId)return;
  const order=[...document.querySelectorAll('[data-active]:checked')].map(x=>x.dataset.active);
@@ -2168,12 +2180,15 @@ async function startGame(){
  if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}
  const btn=document.getElementById("start");
  if(btn){btn.disabled=true;btn.textContent="جاري توزيع الأوراق..."}
+ clearRoundDiag(); roundDiag("START ✓",`اللاعبون: ${order.length}`);
  try{
    const totals={};for(const id of order)totals[id]=0;
    await beginRound(order,1,totalRounds,totals,{ruleMode:ruleModeValue,scoreLimit:scoreLimitValue});
+   roundDiag("ROUND READY ✓","تم نشر الجولة");
    try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue}`)}catch{}
  }catch(e){
    console.error("START_GAME_FAILED",e);
+   roundDiag("START ✗",String(e?.code||e?.message||e));
    toast("تعذر بدء المباراة: "+(e?.message||e?.code||"حاول مرة ثانية"));
    if(btn){btn.disabled=false;btn.textContent="▶ ابدأ المباراة"}
  }
@@ -2225,7 +2240,9 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  if(order.length<2)throw new Error("يلزم لاعبان على الأقل");
  totals={...(totals||{})};for(const id of order)if(totals[id]==null)totals[id]=0;
 
+ roundDiag("PUBLIC READ…");
  const pubSnap=await get(ref(db,`rooms/${roomCode}/public`));
+ roundDiag("PUBLIC READ ✓");
  const livePub=pubSnap.val()||currentRoom||{},livePlayers=livePub.players||{};
  for(const id of order)if(!livePlayers[id])throw new Error("لاعب مختار غير موجود في الغرفة");
 
@@ -2236,6 +2253,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  }
 
  const deck=buildDeck(),discard=deck.shift(),players={};
+ roundDiag("DECK ✓",`الرزمة ${deck.length} + الميدان`);
  const roundToken=`r${Number(roundNo)||1}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
  const previousGame=livePub.game||{};
  const matchId=(Number(roundNo)>1&&previousGame.matchId)?previousGame.matchId:`m_${Date.now()}_${Math.random().toString(36).slice(2,9)}`;
@@ -2260,22 +2278,33 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  }
 
  try{
-   await Promise.all(order.map(id=>set(ref(db,`rooms/${roomCode}/privateHands/${id}`),hands[id])));
+   for(let i=0;i<order.length;i++){
+     const id=order[i];
+     roundDiag(`HAND ${i+1}/${order.length}…`,livePlayers[id]?.name||id);
+     await set(ref(db,`rooms/${roomCode}/privateHands/${id}`),hands[id]);
+     const verify=await get(ref(db,`rooms/${roomCode}/privateHands/${id}`));
+     if(!verify.exists()||countCards(verify.val()?.cards)!==4)throw new Error(`HAND_VERIFY_FAILED:${i+1}`);
+     roundDiag(`HAND ${i+1}/${order.length} ✓`,livePlayers[id]?.name||id);
+   }
  }catch(err){
    console.error("ROUND_PRIVATE_HANDS_WRITE_FAILED",err);
-   throw new Error("تعذر توزيع أوراق اللاعبين في Firebase: "+(err?.message||err));
+   roundDiag("PRIVATE HANDS ✗",String(err?.code||err?.message||err));
+   throw new Error("تعذر توزيع أوراق اللاعبين في Firebase: "+(err?.code||err?.message||err));
  }
 
  // تبدأ العشرين ثانية بعد التأكد أن جميع الأيدي حُفظت فعلياً.
+ roundDiag("PRIVATE HANDS ✓","تم التحقق من 4 أوراق لكل لاعب");
  const memorizeStartedAt=Date.now();
  const memorizeUntil=memorizeStartedAt+20000;
  try{
    await Promise.all(order.map(id=>update(ref(db,`rooms/${roomCode}/privateHands/${id}`),{introRevealUntil:memorizeUntil,introDone:false})));
  }catch(err){
    console.error("ROUND_MEMORIZE_TIME_WRITE_FAILED",err);
+   roundDiag("MEMORIZE TIME ✗",String(err?.code||err?.message||err));
    throw new Error("تعذر تثبيت وقت حفظ الأوراق: "+(err?.message||err));
  }
 
+ roundDiag("MEMORIZE TIME ✓","20 ثانية");
  const inheritedRule=Number(settings.ruleMode||previousGame.ruleMode||1)===2?2:1;
  const inheritedLimit=Math.max(1,Number(settings.scoreLimit||previousGame.scoreLimit||100));
  const freshGame={
@@ -2291,14 +2320,17 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
 
  // بعد نجاح privateHands ننشر الجولة في public بتحديث واحد داخل الغرفة.
  try{
+   roundDiag("PUBLIC START…","نشر مرحلة الحفظ");
    await update(ref(db,`rooms/${roomCode}/public`),{
      status:"game",game:freshGame,players,reveals:null,readyCheck:null
    });
  }catch(err){
    console.error("ROUND_PUBLIC_START_WRITE_FAILED",err);
+   roundDiag("PUBLIC START ✗",String(err?.code||err?.message||err));
    throw new Error("تعذر بدء الجولة في Firebase: "+(err?.message||err));
  }
 
+ roundDiag("MEMORIZE ✓","بدأ حفظ أول ورقتين");
  // لا نصفر myHand هنا؛ listener الخاص باليد هو المصدر المحلي الموحد.
  toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"} — احفظ أول ورقتين`);
  try{await sendSystem("👁️ تم توزيع 4 أوراق لكل لاعب — أول ورقتين مكشوفتان 20 ثانية")}catch{}
