@@ -2229,7 +2229,11 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  const livePub=pubSnap.val()||currentRoom||{},livePlayers=livePub.players||{};
  for(const id of order)if(!livePlayers[id])throw new Error("لاعب مختار غير موجود في الغرفة");
 
- for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+ // نثبت ترتيب الجولة مرة واحدة، ولا يدخل أي لاعب متأخر في turnOrder الحالي.
+ for(let i=order.length-1;i>0;i--){
+   const j=Math.floor(Math.random()*(i+1));
+   [order[i],order[j]]=[order[j],order[i]];
+ }
 
  const deck=buildDeck(),discard=deck.shift(),players={};
  const roundToken=`r${Number(roundNo)||1}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
@@ -2239,50 +2243,63 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  for(const id of order)participationRounds[id]=Number(participationRounds[id]||0)+1;
 
  for(const [id,p] of Object.entries(livePlayers)){
-  players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:order.includes(id)?4:0,
-   ready:true,introDone:!order.includes(id),introStarted:order.includes(id),
-   dealRoundNo:order.includes(id)?Number(roundNo||1):0,dealToken:order.includes(id)?roundToken:""};
+   players[id]={...p,role:order.includes(id)?"player":"spectator",cardCount:order.includes(id)?4:0,
+     ready:true,introDone:!order.includes(id),introStarted:order.includes(id),
+     dealRoundNo:order.includes(id)?Number(roundNo||1):0,dealToken:order.includes(id)?roundToken:""};
  }
 
+ // محرك توزيع واحد فقط: نكتب الأيدي الخاصة أولاً.
+ // لا ننشر status=game قبل نجاح الأربع أوراق لكل لاعب، لذلك لا توجد مرحلة dealing معلقة.
  const dealt={},hands={};
  for(const id of order){
-  const cards=deck.splice(0,4);if(cards.length!==4)throw new Error("تعذر تجهيز أربع أوراق لكل لاعب");
-  dealt[id]=roundToken;
-  hands[id]={cards,pending:null,pendingSource:null,powerCards:null,lastKabasSeq:0,
-   roundNo:Number(roundNo||1),roundToken,introDone:false,introRevealUntil:0};
+   const cards=deck.splice(0,4);
+   if(cards.length!==4)throw new Error("تعذر تجهيز أربع أوراق لكل لاعب");
+   dealt[id]=roundToken;
+   hands[id]={cards,pending:null,pendingSource:null,powerCards:null,lastKabasSeq:0,
+     roundNo:Number(roundNo||1),roundToken,introDone:false,introRevealUntil:0};
+ }
+
+ try{
+   await Promise.all(order.map(id=>set(ref(db,`rooms/${roomCode}/privateHands/${id}`),hands[id])));
+ }catch(err){
+   console.error("ROUND_PRIVATE_HANDS_WRITE_FAILED",err);
+   throw new Error("تعذر توزيع أوراق اللاعبين في Firebase: "+(err?.message||err));
+ }
+
+ // تبدأ العشرين ثانية بعد التأكد أن جميع الأيدي حُفظت فعلياً.
+ const memorizeStartedAt=Date.now();
+ const memorizeUntil=memorizeStartedAt+20000;
+ try{
+   await Promise.all(order.map(id=>update(ref(db,`rooms/${roomCode}/privateHands/${id}`),{introRevealUntil:memorizeUntil,introDone:false})));
+ }catch(err){
+   console.error("ROUND_MEMORIZE_TIME_WRITE_FAILED",err);
+   throw new Error("تعذر تثبيت وقت حفظ الأوراق: "+(err?.message||err));
  }
 
  const inheritedRule=Number(settings.ruleMode||previousGame.ruleMode||1)===2?2:1;
  const inheritedLimit=Math.max(1,Number(settings.scoreLimit||previousGame.scoreLimit||100));
- // ننشر الجولة أولاً داخل public فقط. هذا يمنع Listener اليد من حذفها باعتبار الغرفة ما زالت lobby.
  const freshGame={
-  phase:"memorize",roundToken,matchId,participationRounds,turnOrder:order,turnIndex:0,
-  deck,discard,discardPile:[discard],discardSeq:1,dealt,
-  startedAt:Date.now(),dealtAt:0,memorizeStartedAt:0,memorizeUntil:0,memorizeSeq:1,
-  actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,
-  cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,
-  eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,
-  turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},decisionUid:null,decisionUntil:null,
-  hasDrawn:null,lastAction:"",results:null
+   phase:"memorize",roundToken,matchId,participationRounds,turnOrder:order,turnIndex:0,
+   deck,discard,discardPile:[discard],discardSeq:1,dealt,
+   startedAt:memorizeStartedAt,dealtAt:memorizeStartedAt,memorizeStartedAt,memorizeUntil,memorizeSeq:1,
+   actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,
+   cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,
+   eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,
+   turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},
+   decisionUid:null,decisionUntil:null,hasDrawn:null,lastAction:"",results:null
  };
 
+ // بعد نجاح privateHands ننشر الجولة في public بتحديث واحد داخل الغرفة.
  try{
-  await update(ref(db,`rooms/${roomCode}/public`),{status:"game",game:freshGame,players,reveals:null,readyCheck:null});
-  // بعدها يكتب المضيف يد كل لاعب في مسار privateHands المسموح له في Rules.
-  for(const id of order)await set(ref(db,`rooms/${roomCode}/privateHands/${id}`),hands[id]);
-  // لا تبدأ الـ20 ثانية إلا بعد نجاح وصول الأربع أوراق إلى Firebase.
-  const memorizeStartedAt=Date.now(),memorizeUntil=memorizeStartedAt+20000;
-  for(const id of order)await update(ref(db,`rooms/${roomCode}/privateHands/${id}`),{introRevealUntil:memorizeUntil,introDone:false});
-  await update(ref(db,`rooms/${roomCode}/public/game`),{dealtAt:memorizeStartedAt,memorizeStartedAt,memorizeUntil});
+   await update(ref(db,`rooms/${roomCode}/public`),{
+     status:"game",game:freshGame,players,reveals:null,readyCheck:null
+   });
  }catch(err){
-  console.error("ROUND_START_WRITE_FAILED",err);
-  // إذا فشل التوزيع لا نخلي الغرفة معلقة على شاشة اللعبة.
-  try{await update(ref(db,`rooms/${roomCode}/public`),{status:"lobby",game:null,reveals:null,readyCheck:null})}catch{}
-  throw new Error("تعذر توزيع الأوراق في Firebase: "+(err?.message||err));
+   console.error("ROUND_PUBLIC_START_WRITE_FAILED",err);
+   throw new Error("تعذر بدء الجولة في Firebase: "+(err?.message||err));
  }
 
- // المضيف يجلب يده فوراً؛ بقية الأجهزة ستستلمها من onValue أو fetch داخل memorize.
- try{const hs=await get(ref(db,`rooms/${roomCode}/privateHands/${uid}`));if(hs.exists())myHand=hs.val()}catch{}
+ // لا نصفر myHand هنا؛ listener الخاص باليد هو المصدر المحلي الموحد.
  toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"} — احفظ أول ورقتين`);
  try{await sendSystem("👁️ تم توزيع 4 أوراق لكل لاعب — أول ورقتين مكشوفتان 20 ثانية")}catch{}
 }
@@ -2390,17 +2407,7 @@ async function autoGameWork(){
   seenRoundToken=roundToken;clearTimeout(pendingStartTimer);pendingStartTimer=null;localRevealUntil={};
  }
  if(currentRoom.status==="lobby"&&myHand){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null;return}
- if(currentRoom.status==="game"&&g.phase==="dealing"){
-  if(!isActivePlayer()&&myHand){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null;return}
-  const handMatches=myHand&&Number(myHand.roundNo||0)===Number(g.roundNo||1)&&String(myHand.roundToken||"")===String(g.roundToken||"")&&countCards(myHand.cards)===4;
-  if(isActivePlayer()&&myHand&&!handMatches){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null;localRevealUntil={};}
-  // المضيف يوزع الأربع أوراق للجميع دفعة واحدة. اللاعبون يقرأون أوراقهم فقط ولا يطالب كل جهاز بحصته.
-  await hostDealAllInitialHands();
- }
- if(g.phase==="dealing"){
-  // بعد اكتمال الدفعة، أي لاعب نشط يقدر ينقل الجولة تلقائياً لمرحلة حفظ أول ورقتين.
-  await tryAdvanceDealing();
- }
+ // مسار dealing القديم متوقف عمداً؛ beginRound ينشر الجولة مباشرة في memorize بعد نجاح privateHands.
  if(g.phase==="memorize"){
   // إذا وصل public قبل privateHands على جهاز اللاعب، نقرأ اليد مباشرة ولا نفوّت فترة الحفظ.
   if(isActivePlayer()&&!myHand){
