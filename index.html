@@ -2282,8 +2282,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
      const id=order[i];
      roundDiag(`HAND ${i+1}/${order.length}…`,livePlayers[id]?.name||id);
      await set(ref(db,`rooms/${roomCode}/privateHands/${id}`),hands[id]);
-     const verify=await get(ref(db,`rooms/${roomCode}/privateHands/${id}`));
-     if(!verify.exists()||countCards(verify.val()?.cards)!==4)throw new Error(`HAND_VERIFY_FAILED:${i+1}`);
+     // نجاح set() هو تأكيد الكتابة. المضيف لا يحتاج قراءة يد لاعب آخر.
      roundDiag(`HAND ${i+1}/${order.length} ✓`,livePlayers[id]?.name||id);
    }
  }catch(err){
@@ -2293,7 +2292,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  }
 
  // تبدأ العشرين ثانية بعد التأكد أن جميع الأيدي حُفظت فعلياً.
- roundDiag("PRIVATE HANDS ✓","تم التحقق من 4 أوراق لكل لاعب");
+ roundDiag("PRIVATE HANDS ✓","تم حفظ 4 أوراق لكل لاعب");
  const memorizeStartedAt=Date.now();
  const memorizeUntil=memorizeStartedAt+20000;
  try{
