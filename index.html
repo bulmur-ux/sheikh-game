@@ -2191,7 +2191,6 @@ async function startGame(){
  clearRoundDiag(); roundDiag("START ✓",`اللاعبون: ${order.length}`);
  try{
    const totals={};for(const id of order)totals[id]=0;
-   try{const resetScores={};for(const id of order)resetScores[`players/${id}/roomScore`]=0;await update(ref(db,`rooms/${roomCode}/public`),resetScores)}catch(e){console.warn("room score reset",e)}
    await beginRound(order,1,totalRounds,totals,{ruleMode:ruleModeValue,scoreLimit:scoreLimitValue});
    roundDiag("ROUND READY ✓","تم نشر الجولة");
    try{await sendSystem(`🎮 بدأت المباراة — القانون ${ruleModeValue} • حد الخروج ${scoreLimitValue}`)}catch{}
@@ -2323,7 +2322,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
    cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,
    eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,
    turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},
-   decisionUid:null,decisionUntil:null,hasDrawn:null,lastAction:"",results:null
+   decisionUid:null,decisionUntil:null,hasDrawn:null,actionLockUid:null,lastAction:"",results:null
  };
 
  // بعد نجاح privateHands ننشر الجولة في public بتحديث واحد داخل الغرفة.
@@ -2426,7 +2425,7 @@ async function tryAdvanceDealing(){
   const players=pub.players||{};
   const allDealt=order.every(id=>{const p=players[id];return p&&p.role==="player"&&String(p.dealToken||"")===token&&Number(p.dealRoundNo||0)===Number(g.roundNo||1)&&p.ready===true&&Number(p.cardCount)===4});
   if(!allDealt)return pub;
-  g.phase="memorize";g.memorizeUntil=Date.now()+20000;g.turnIndex=0;g.turnStartedAt=0;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;g.dealt=g.dealt||{};for(const id of order)g.dealt[id]=token;
+  g.phase="memorize";g.memorizeUntil=Date.now()+20000;g.turnIndex=0;g.turnStartedAt=0;g.decisionUid=null;g.decisionUntil=null;g.hasDrawn=null;g.actionLockUid=null;g.dealt=g.dealt||{};for(const id of order)g.dealt[id]=token;
   advanced=true;return pub;
  });
  if(advanced&&tx.committed){try{await sendSystem("👁️ تم كشف أول ورقتين للجميع لمدة 20 ثانية — بعدها يبدأ اللعب تلقائياً")}catch{}}
@@ -2553,14 +2552,14 @@ function introCountdown(){
  return Math.max(0,Math.ceil((until-Date.now())/1000));
 }
 
-async function drawCard(){if(qPowerLocked()){toast("قوة Q قيد الكشف — انتظر انتهاء 10 ثواني");return;}sfx("draw");if(!isMyTurn()||myHand?.pending||game()?.hasDrawn===uid){toast("تم تنفيذ حركة السحب في هذا الدور — أكمل الورقة الحالية ثم شيك أو تمرير");return}const take=await takeDeckCards(1);if(!take.ok){toast("ما في أوراق كفاية لإعادة الرزمة");return}const drawn=take.cards[0];if(take.recycled){toast("🔄 خلصت الرزمة وتم خلط أوراق الميدان وتكملة اللعب");await sendSystem("🔄 خلصت رزمة السحب وتم خلط أوراق الميدان وإعادة الرزمة")};await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:drawn,pendingSource:"deck"});await update(ref(db,`rooms/${roomCode}/public/game`),{hasDrawn:uid});}
-async function takeFieldCard(){if(qPowerLocked()){toast("قوة Q قيد الكشف — انتظر انتهاء 10 ثواني");return;}sfx("take");if(!isMyTurn()||myHand?.pending||game()?.hasDrawn===uid){toast("تم تنفيذ حركة في هذا الدور — أكملها ثم شيك أو تمرير");return;}const d=game().discard;if(!d){toast("ما في كرت في الميدان");return}const pile=Array.isArray(game().discardPile)?game().discardPile.slice():[];if(pile.length&&cardKey(pile[pile.length-1])===cardKey(d))pile.pop();await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:d,pendingSource:"field"});await update(ref(db,`rooms/${roomCode}/public/game`),{discard:null,discardPile:pile,hasDrawn:uid,lastAction:`${myName} أخذ كرت الميدان`});}
+async function drawCard(){if(blockSecondAction())return;sfx("draw");if(!isMyTurn()||myHand?.pending){toast("مو دور السحب الحين");return}const take=await takeDeckCards(1);if(!take.ok){toast("ما في أوراق كفاية لإعادة الرزمة");return}const drawn=take.cards[0];if(take.recycled){toast("🔄 خلصت الرزمة وتم خلط أوراق الميدان وتكملة اللعب");await sendSystem("🔄 خلصت رزمة السحب وتم خلط أوراق الميدان وإعادة الرزمة")};await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:drawn,pendingSource:"deck"});await update(ref(db,`rooms/${roomCode}/public/game`),{hasDrawn:uid,actionLockUid:uid});}
+async function takeFieldCard(){if(blockSecondAction())return;sfx("take");if(!isMyTurn()||myHand?.pending)return;const d=game().discard;if(!d){toast("ما في كرت في الميدان");return}const pile=Array.isArray(game().discardPile)?game().discardPile.slice():[];if(pile.length&&cardKey(pile[pile.length-1])===cardKey(d))pile.pop();await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:d,pendingSource:"field"});await update(ref(db,`rooms/${roomCode}/public/game`),{discard:null,discardPile:pile,hasDrawn:uid,actionLockUid:uid,lastAction:`${myName} أخذ كرت الميدان`});}
 async function swapPendingWithSlot(i){if(qPowerLocked()){toast("قوة Q قيد الكشف — انتظر انتهاء 10 ثواني");return;}sfx("swap");if(!isMyTurn()||!myHand?.pending)return;const cards=(myHand.cards||[]).slice(),old=cards[i];if(!old){toast("الخانة فاضية");return}cards[i]=myHand.pending;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});await discardAndFinish(old,"بدّل ورقة")}
 async function throwPending(){if(powerFlowLocked()){toast("القوة قيد التنفيذ — أكمل القوة أولاً");return;}sfx("throw");if(!isMyTurn()||!myHand?.pending)return;const c=myHand.pending,src=myHand.pendingSource||"deck";if(src==="deck"&&c.r==="JOKER"){toast(c.color==="color"?"🃏 الجوكر الملون يبقى مع أوراقك ويخصم 3 نقاط عند الحساب":"🃏 الجوكر الأسود يبقى مع أوراقك ويخصم نقطة واحدة عند الحساب");return}await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});await putDiscard(c,`${myName} رمى ${cardLabel(c)}`);await finishTurn()}
 async function useRedQ(){sfx("queen");if(!isMyTurn()||!myHand?.pending||myHand.pendingSource!=="deck"||!powerEnabled(myHand.pending,"Q"))return;const c=myHand.pending;await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});await putDiscard(c,`${myName} استخدم قوة Q`);choosePeek()}
 async function useRedK(){sfx("king");if(!isMyTurn()||!myHand?.pending||myHand.pendingSource!=="deck"||!powerEnabled(myHand.pending,"K"))return;const k=myHand.pending;await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});await putDiscard(k,`${myName} استخدم قوة K`);await kingPower()}
-async function playFromHand(){if(qPowerLocked()){toast("قوة Q قيد الكشف — انتظر انتهاء 10 ثواني");return;}if(!isMyTurn()||myHand?.pending||game()?.hasDrawn===uid){toast("تم تنفيذ حركة في هذا الدور — ما تقدر تلعب حركة ثانية");return;}const cards=myHand?.cards||[];const d=game().discard;if(!d){toast("ما في كرت في الميدان");return}openModal(`<h3>ارمِ من أوراقك</h3><div class="notice">اختر الورقة اللي تعتقد أنها نفس رقم/رتبة كرت الميدان. إذا غلط، تاخذ ورقة زيادة.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-playhand="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);sheet.querySelectorAll("[data-playhand]").forEach(b=>b.onclick=()=>tryPlayHand(+b.dataset.playhand))}
-async function tryPlayHand(i){closeModal();const cards=(myHand?.cards||[]).slice(),c=cards[i],d=game().discard;if(!c||!d)return;if(sameRank(c,d)){cards[i]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});await putDiscard(c,`${myName} رمى ورقة صحيحة من أوراقه`);sfx("correct");toast("صح ✅");if(await checkEmptyAndEnd(cards))return;await finishTurn();return}const take=await takeDeckCards(1),penalty=take.ok?take.cards[0]:null;if(take.recycled){toast("🔄 تم خلط أوراق الميدان وإعادة الرزمة")};if(penalty){cards.push(penalty);await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});sfx("wrong");setTimeout(()=>sfx("penalty"),180);toast(`غلط ❌ صار عندك ${countCards(cards)} أوراق`);await sendSystem(`${myName} اختار ورقة غلط وأخذ ورقة زيادة`)}else toast("غلط، والرزمة خلصت");await finishTurn()}
+async function playFromHand(){if(blockSecondAction())return;if(!isMyTurn()||myHand?.pending)return;const cards=myHand?.cards||[];const d=game().discard;if(!d){toast("ما في كرت في الميدان");return}openModal(`<h3>ارمِ من أوراقك</h3><div class="notice">اختر الورقة اللي تعتقد أنها نفس رقم/رتبة كرت الميدان. إذا غلط، تاخذ ورقة زيادة.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-playhand="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);sheet.querySelectorAll("[data-playhand]").forEach(b=>b.onclick=()=>tryPlayHand(+b.dataset.playhand))}
+async function tryPlayHand(i){if(turnActionLocked()){closeModal();toast("الحركة الحالية مقفلة");return;}await update(ref(db,`rooms/${roomCode}/public/game`),{actionLockUid:uid});closeModal();const cards=(myHand?.cards||[]).slice(),c=cards[i],d=game().discard;if(!c||!d)return;if(sameRank(c,d)){cards[i]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});await putDiscard(c,`${myName} رمى ورقة صحيحة من أوراقه`);sfx("correct");toast("صح ✅");if(await checkEmptyAndEnd(cards))return;await finishTurn();return}const take=await takeDeckCards(1),penalty=take.ok?take.cards[0]:null;if(take.recycled){toast("🔄 تم خلط أوراق الميدان وإعادة الرزمة")};if(penalty){cards.push(penalty);await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});sfx("wrong");setTimeout(()=>sfx("penalty"),180);toast(`غلط ❌ صار عندك ${countCards(cards)} أوراق`);await sendSystem(`${myName} اختار ورقة غلط وأخذ ورقة زيادة`)}else toast("غلط، والرزمة خلصت");await finishTurn()}
 async function putDiscard(card,log){const seq=(game().discardSeq||0)+1,pile=Array.isArray(game().discardPile)?game().discardPile.slice():[];pile.push(card);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:card,discardPile:pile,discardSeq:seq,lastAction:log,hasDrawn:null,actionSeq:(game().actionSeq||0)+1})}
 async function checkEmptyAndEnd(cards){if(countCards(cards)!==0)return false;await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",emptyWinner:uid,ending:true,hasDrawn:null,lastAction:`${myName} خلص أوراقه — انتهت الجولة`});await sendSystem(`${myName} خلص أوراقه! نتيجته 0 وانتهت الجولة`);sfx("win");return true}
 async function discardAndFinish(card,log){await putDiscard(card,log);await finishTurn()}
@@ -2573,6 +2572,15 @@ function powerFlowLocked(){
  const jackMine=!!jackPowerTimer || (g.jackSwap&&g.jackSwap.initiatorUid===uid);
  const kingMine=Array.isArray(myHand?.powerCards)&&myHand.powerCards.filter(Boolean).length>0;
  return qPowerLocked()||jackMine||kingMine;
+}
+function turnActionLocked(){
+ const g=game()||{};
+ return isMyTurn()&&(g.actionLockUid===uid||g.hasDrawn===uid||!!myHand?.pending||powerFlowLocked()||g.decisionUid===uid);
+}
+function blockSecondAction(){
+ if(!turnActionLocked())return false;
+ toast("أكمل حركتك الحالية — ما تقدر تلعب مرتين في نفس الدور");
+ return true;
 }
 function choosePeek(){const cards=myHand?.cards||[];openModal(`<h3>قوة البنت Q</h3><div class="notice">اختر ورقة واحدة من أوراقك لتشوفها 10 ثوانٍ.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-peek="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);sheet.querySelectorAll("[data-peek]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.peek;const until=Date.now()+10000;localRevealUntil[i]=until;qRevealLockUntil=until;closeModal();render();await sendSystem(`${myName} استخدم قوة Q`);setTimeout(async()=>{localRevealUntil[i]=0;qRevealLockUntil=0;render();if(!isMyTurn())return;await finishTurn();render()},10050)})}
 async function kingPower(){
@@ -2722,7 +2730,7 @@ async function finishTurn(){
  // حماية نهائية: إذا وصلت اليد إلى صفر بأي مسار، تنتهي الجولة فوراً ويسجل اللاعب صفر.
  if(countCards(myHand?.cards||[])===0){if(await checkEmptyAndEnd(myHand?.cards||[]))return;}
  // بعد إنهاء اللعب: 5 ثوانٍ فقط لشيك أو تمرير.
- await update(ref(db,`rooms/${roomCode}/public/game`),{decisionUid:uid,decisionUntil:Date.now()+5000,hasDrawn:null,lastAction:`${myName} أنهى لعبه — عنده 5 ثواني: شيك أو تمرير`});
+ await update(ref(db,`rooms/${roomCode}/public/game`),{decisionUid:uid,decisionUntil:Date.now()+5000,hasDrawn:null,actionLockUid:uid,lastAction:`${myName} أنهى لعبه — عنده 5 ثواني: شيك أو تمرير`});
 }
 async function advanceTurnNow(fromCheck=false){
  const snap=await get(ref(db,`rooms/${roomCode}/public/game`));
@@ -2731,7 +2739,7 @@ async function advanceTurnNow(fromCheck=false){
  if(liveTurnUid!==uid&&!fromCheck)return;
  let remaining={...(g.finalRemaining||{})};
  if(g.ending&&!fromCheck&&remaining[uid]){delete remaining[uid];await set(ref(db,`rooms/${roomCode}/public/game/finalRemaining`),remaining)}
- if(g.ending&&Object.keys(remaining).length===0){await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",hasDrawn:null,turnStartedAt:0,timeoutClaim:null,decisionUntil:null,decisionUid:null});return}
+ if(g.ending&&Object.keys(remaining).length===0){await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",hasDrawn:null,actionLockUid:null,turnStartedAt:0,timeoutClaim:null,decisionUntil:null,decisionUid:null});return}
  let idx=Number(g.turnIndex||0),tries=0;
  do{
    idx=(idx+1)%order.length;tries++;
@@ -2739,7 +2747,7 @@ async function advanceTurnNow(fromCheck=false){
    const liveCount=Number(currentRoom?.players?.[nextId]?.cardCount??1);
    if(liveCount>0&&!isEliminated(nextId,g))break;
  }while(tries<order.length);
- await update(ref(db,`rooms/${roomCode}/public/game`),{turnIndex:idx,hasDrawn:null,turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1,timeoutClaim:null,decisionUntil:null,decisionUid:null,lastAction:`انتقل الدور إلى ${currentRoom?.players?.[order[idx]]?.name||"اللاعب التالي"}`});
+ await update(ref(db,`rooms/${roomCode}/public/game`),{turnIndex:idx,hasDrawn:null,actionLockUid:null,turnStartedAt:Date.now(),turnSeq:Number(g.turnSeq||0)+1,timeoutClaim:null,decisionUntil:null,decisionUid:null,lastAction:`انتقل الدور إلى ${currentRoom?.players?.[order[idx]]?.name||"اللاعب التالي"}`});
 }
 async function passAfterPlay(){const snap=await get(ref(db,`rooms/${roomCode}/public/game`)),g=snap.val()||game(),o=g.turnOrder||[],live=o[Number(g.turnIndex||0)]||null;if(live!==uid||g.decisionUid!==uid)return;await advanceTurnNow(false)}
 
@@ -2918,7 +2926,7 @@ function renderLobby(){
  // البداية الآن مباشرة: لا توجد شاشة «جاهزين نبدأ؟» ولا انتظار 20 ثانية.
  // renderLobby للعرض فقط؛ لا ننفذ أي كتابة Firebase أثناء الرسم.
  const selectedDefault=ps.slice(0,Math.min(4,ps.length)).map(([id])=>id);
- const scoreOf=id=>Number(currentRoom?.game?.cumulativeScores?.[id]??currentRoom?.players?.[id]?.roomScore??0);
+ const scoreOf=id=>Number(currentRoom?.game?.cumulativeScores?.[id]??currentRoom?.lastScores?.[id]??0);
  const avatarOf=p=>p?.avatarUrl||"icon-512.png";
  const ticker=ps.length?ps.map(([id,p])=>`<span class="roomTickerPerson"><img src="${esc(avatarOf(p))}" alt=""><b>${esc(p.name||"لاعب")}</b><em>${scoreOf(id)} سكور</em></span>`).join('<span class="tickerSep">•</span>'):'<span>بانتظار دخول الأعضاء...</span>';
  const seats=Array.from({length:4},(_,i)=>{const item=ps[i];if(!item)return `<div class="newLobbySeat seat${i}"><div class="newSeatAvatar empty">＋</div><div class="newSeatName">مقعد لاعب</div></div>`;const [id,p]=item;return `<label class="newLobbySeat seat${i} ${host?'selectable':''}" data-seatwrap="${id}">${host?`<input type="checkbox" data-active="${id}" ${selectedDefault.includes(id)?'checked':''}>`:''}<img class="newSeatAvatar" src="${esc(avatarOf(p))}" alt=""><div class="newSeatName">${esc(p.name||'لاعب')}${id===currentRoom.hostId?' 👑':''}</div><div class="newSeatState">${host?'مختار للطاولة':'في الغرفة'}</div></label>`}).join('');
@@ -2961,8 +2969,8 @@ function renderGame(){
  const spectators=playerEntries().filter(([id])=>!active.includes(id));
  const otherSeats=otherIds.map((id,i)=>{const p=currentRoom.players?.[id]||{},n=Math.max(0,p.cardCount||0),backs=Array.from({length:Math.min(n,5)},()=>`<span class="cardBack"></span>`).join("");return `<div class="refSeat ${positions[i]||"top"} ${id===tuid?'turn':''}"><div class="refSeatCards">${backs}</div><div class="refAvatar">${esc((p.name||"ل").trim().charAt(0)||"ل")}</div><div class="refSeatLabel"><b>${esc(p.name||"لاعب")}${rankInline(p.xp||0,false)}</b>${n} ورقة${canKick&&id!==uid?`<span class="hostSeatActions"><button class="roundOutMini" data-round-out="${id}" title="إخراج من الجولة فقط">🚪</button><button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button></span>`:""}</div></div>`}).join("");
  const mySeat=isActivePlayer()?`<div class="refSeat bottom ${uid===tuid?'turn':''}"><div class="refAvatar">${esc((myName||"أ").trim().charAt(0)||"أ")}</div><div class="refSeatLabel"><b>${esc(myName)}</b>${countCards(myHand?.cards)} ورقة</div></div>`:"";
- const pending=myHand?.pending,turn=isMyTurn(),memorizing=g.phase==="memorize",powerLocked=turn&&powerFlowLocked(),deciding=turn&&g.decisionUid===uid&&Number(g.decisionUntil||0)>Date.now(),turnActionLocked=turn&&g.hasDrawn===uid&&!pending&&!deciding;
- const controls=(powerLocked||turnActionLocked)?`<div class="refActions"><div class="notice" style="width:100%;text-align:center">⚡ القوة قيد التنفيذ — الحركات العادية مقفلة حتى تنتهي القوة بالكامل.</div></div>`:deciding&&countCards(myHand?.cards)>0?`<div class="refActions decisionActions compactDecision"><div class="decisionTitle">انتهى دورك — اختر: <b>شيك</b> أو <b>تمرير</b> خلال <b>${Math.max(0,Math.ceil((Number(g.decisionUntil||0)-Date.now())/1000))}</b> ثوانٍ</div><div class="decisionButtons"><button id="check" class="btn green" ${!g.ending?'':'disabled'}>✓ شيك</button><button id="passTurn" class="btn alt">تمرير الدور ▶</button></div></div>`:pending?`<div class="refActions">${myHand?.pendingSource==="deck"&&powerEnabled(pending,"J")?`<button id="useJack" class="btn blue">J تبديل</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"Q")?`<button id="useQ" class="btn blue">Q كشف</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"K")?`<button id="useK" class="btn blue">K سحب 2</button>`:""}${myHand?.pendingSource!=="field"?(pending?.r==="JOKER"?`<div class="notice" style="max-width:260px">🃏 احتفظ بالجوكر: اختر «بدّل بهذي» تحت إحدى أوراقك.</div>`:`<button id="throw" class="btn danger">رمي الورقة</button>`):""}</div>`:`<div class="refActions"><button id="check" class="btn green" ${turn&&!g.ending&&!memorizing?'':'disabled'}>✓ شيك</button><button id="playHand" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>رمي ورقة</button><button id="takeField" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>أخذ الميدان</button><button id="draw" class="btn danger" ${turn&&!memorizing?'':'disabled'}>سحب ورقة</button></div>`;
+ const pending=myHand?.pending,turn=isMyTurn(),memorizing=g.phase==="memorize",powerLocked=turn&&powerFlowLocked(),deciding=turn&&g.decisionUid===uid&&Number(g.decisionUntil||0)>Date.now(),actionLocked=turn&&(g.actionLockUid===uid||g.hasDrawn===uid);
+ const controls=powerLocked?`<div class="refActions"><div class="notice" style="width:100%;text-align:center">⚡ القوة قيد التنفيذ — الحركات العادية مقفلة حتى تنتهي القوة بالكامل.</div></div>`:deciding&&countCards(myHand?.cards)>0?`<div class="refActions decisionActions compactDecision"><div class="decisionTitle">انتهى دورك — اختر: <b>شيك</b> أو <b>تمرير</b> خلال <b>${Math.max(0,Math.ceil((Number(g.decisionUntil||0)-Date.now())/1000))}</b> ثوانٍ</div><div class="decisionButtons"><button id="check" class="btn green" ${!g.ending?'':'disabled'}>✓ شيك</button><button id="passTurn" class="btn alt">تمرير الدور ▶</button></div></div>`:pending?`<div class="refActions">${myHand?.pendingSource==="deck"&&powerEnabled(pending,"J")?`<button id="useJack" class="btn blue">J تبديل</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"Q")?`<button id="useQ" class="btn blue">Q كشف</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"K")?`<button id="useK" class="btn blue">K سحب 2</button>`:""}${myHand?.pendingSource!=="field"?(pending?.r==="JOKER"?`<div class="notice" style="max-width:260px">🃏 احتفظ بالجوكر: اختر «بدّل بهذي» تحت إحدى أوراقك.</div>`:`<button id="throw" class="btn danger">رمي الورقة</button>`):""}</div>`:actionLocked?`<div class="refActions"><div class="notice" style="width:100%;text-align:center">🔒 الحركة الحالية لم تنتهِ — السحب والرمي وأخذ الميدان مقفلة.</div></div>`:`<div class="refActions"><button id="check" class="btn green" ${turn&&!g.ending&&!memorizing?'':'disabled'}>✓ شيك</button><button id="playHand" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>رمي ورقة</button><button id="takeField" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>أخذ الميدان</button><button id="draw" class="btn danger" ${turn&&!memorizing?'':'disabled'}>سحب ورقة</button></div>`;
  const memorizeState=gameFlowUI.syncMemorize({phase:g.phase,myHand,memorizeUntil:g.memorizeUntil});
  const introActive=memorizing&&isActivePlayer();
  const introUntil=Number(myHand?.introRevealUntil||0),count=introCountdown();
@@ -3021,9 +3029,10 @@ function renderResults(){
 async function resetToLobby(){
  if(uid!==currentRoom?.hostId){toast("المضيف هو اللي يرجّع الجميع للغرفة");return}
  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
- const finalTotals={...(currentRoom?.game?.cumulativeScores||{})};
- const players={};for(const [id,p] of playerEntries())players[id]={name:p.name,order:p.order,role:"spectator",cardCount:0,ready:false,introDone:false,introStarted:false,dealRoundNo:0,memberNo:p.memberNo||null,xp:Number(p.xp||0),avatarUrl:p.avatarUrl||"icon-512.png",roomScore:Number(finalTotals[id]??p.roomScore??0)};
- await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,status:"lobby",createdAt:Date.now(),players});
+ const players={};for(const [id,p] of playerEntries())players[id]={name:p.name,order:p.order,role:"spectator",cardCount:0,ready:false,introDone:false,introStarted:false,dealRoundNo:0,memberNo:p.memberNo||null,xp:Number(p.xp||0),avatarUrl:p.avatarUrl||"icon-512.png"};
+ const lastScores={...(game()?.cumulativeScores||currentRoom?.lastScores||{})};
+ const lastCompletedRounds=Math.max(Number(currentRoom?.lastCompletedRounds||0),Number(game()?.roundNo||0));
+ await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,status:"lobby",createdAt:currentRoom.createdAt||Date.now(),players,lastScores,lastCompletedRounds});
  toast("تمت العودة إلى الغرفة")
 }
 
