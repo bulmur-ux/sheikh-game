@@ -1957,7 +1957,7 @@ async function home(msg=""){
  await startPresence("home","");bindHomeStats();
 }
 function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
-async function createRoom(){adminEntryMode="player";localStorage.setItem("sheikh_admin_entry_mode","player");const n=myName;if(!n){authScreen("login","سجل الدخول أولاً");return}try{await ensureAuth();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}const profSnap=await get(ref(db,`users/${uid}`)),prof=profSnap.val()||{};await set(ref(db,`rooms/${c}/public`),{hostId:uid,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}});await set(ref(db,`roomIndex/${c}`),{hostId:uid,status:"lobby",createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);await startPresence("room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
+async function createRoom(){adminEntryMode="player";localStorage.setItem("sheikh_admin_entry_mode","player");const n=myName;if(!n){authScreen("login","سجل الدخول أولاً");return}try{await ensureAuth();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}const profSnap=await get(ref(db,`users/${uid}`)),prof=profSnap.val()||{};await set(ref(db,`rooms/${c}/public`),{hostId:uid,creatorId:uid,creatorName:n,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}});await set(ref(db,`roomIndex/${c}`),{hostId:uid,status:"lobby",createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);await startPresence("room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
 async function joinRoom(){
  const n=myName,c=(document.getElementById("code")?.value||"").trim().toUpperCase();
  const err=document.getElementById("err");
@@ -2975,13 +2975,18 @@ function renderLobby(){
  const selectedDefault=ps.slice(0,Math.min(4,ps.length)).map(([id])=>id);
  const scoreOf=id=>Number(currentRoom?.game?.cumulativeScores?.[id]??currentRoom?.lastScores?.[id]??0);
  const avatarOf=p=>p?.avatarUrl||"icon-512.png";
- const ticker=ps.length?ps.map(([id,p])=>`<span class="roomTickerPerson"><img src="${esc(avatarOf(p))}" alt=""><b>${esc(p.name||"لاعب")}</b><em>${scoreOf(id)} سكور</em></span>`).join('<span class="tickerSep">•</span>'):'<span>بانتظار دخول الأعضاء...</span>';
+ // في شيك شيك الأقل مجموع هو المتصدر. التساوي يأخذ نفس المرتبة بدون تفضيل لاعب على الثاني.
+ const rankedPs=[...ps].sort((a,b)=>scoreOf(a[0])-scoreOf(b[0])||Number(a[1]?.order||0)-Number(b[1]?.order||0));
+ const distinctScores=[...new Set(rankedPs.map(([id])=>scoreOf(id)))];
+ const rankBadge=id=>{const r=distinctScores.indexOf(scoreOf(id));return ["🥇","🥈","🥉","4️⃣"][r]||`${r+1}.`};
+ const ticker=rankedPs.length?rankedPs.map(([id,p])=>`<span class="roomTickerPerson"><img src="${esc(avatarOf(p))}" alt=""><b>${rankBadge(id)} ${esc(p.name||"لاعب")}</b><em>المجموع ${scoreOf(id)}</em></span>`).join('<span class="tickerSep">•</span>'):'<span>بانتظار دخول الأعضاء...</span>';
  const seats=Array.from({length:4},(_,i)=>{const item=ps[i];if(!item)return `<div class="newLobbySeat seat${i}"><div class="newSeatAvatar empty">＋</div><div class="newSeatName">مقعد لاعب</div></div>`;const [id,p]=item;return `<label class="newLobbySeat seat${i} ${host?'selectable':''}" data-seatwrap="${id}">${host?`<input type="checkbox" data-active="${id}" ${selectedDefault.includes(id)?'checked':''}>`:''}<img class="newSeatAvatar" src="${esc(avatarOf(p))}" alt=""><div class="newSeatName">${esc(p.name||'لاعب')}${id===currentRoom.hostId?' 👑':''}</div><div class="newSeatState">${host?'مختار للطاولة':'في الغرفة'}</div></label>`}).join('');
  const hostEntry=ps.find(([id])=>id===currentRoom.hostId),hostP=hostEntry?.[1]||{};
- const people=ps.map(([id,p])=>`<div class="roomPerson"><img src="${esc(avatarOf(p))}" alt=""><div><b>${esc(p.name||'لاعب')}</b><small>${id===currentRoom.hostId?'👑 المضيف':'متواجد بالغرفة'} • ${scoreOf(id)} سكور</small></div>${canKick&&id!==uid?`<button class="kickMini" data-kick="${id}" title="إخراج من الغرفة">✕</button>`:''}</div>`).join('');
+ const people=ps.map(([id,p])=>`<div class="roomPerson"><img src="${esc(avatarOf(p))}" alt=""><div><b>${esc(p.name||'لاعب')}</b><small>${id===currentRoom.hostId?'👑 المضيف':'متواجد بالغرفة'} • المجموع ${scoreOf(id)}</small></div>${canKick&&id!==uid?`<button class="kickMini" data-kick="${id}" title="إخراج من الغرفة">✕</button>`:''}</div>`).join('');
  app.innerHTML=`<div class="lobbyScene lobbyV2">
   <section class="roomTopCard">
    <div class="roomCodeCompact"><span>كود الغرفة</span><strong>${esc(roomCode)}</strong><button id="copy" class="copyRoomCode">📋 نسخ</button></div>
+   <div style="text-align:center;margin-top:7px;font-size:13px;opacity:.82">نشأت بواسطة: <b>${esc(currentRoom.creatorName||currentRoom.players?.[currentRoom.creatorId]?.name||hostP.name||"—")}</b></div>
    <div class="roomQuickTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="roomHelp" class="toolBtn" title="تعليمات الغرفة">ℹ️<small>تعليمات</small></button></div>
   </section>
   <div class="roomTicker"><div class="roomTickerTrack">${ticker}</div></div>
@@ -3079,7 +3084,7 @@ async function resetToLobby(){
  const players={};for(const [id,p] of playerEntries())players[id]={name:p.name,order:p.order,role:"spectator",cardCount:0,ready:false,introDone:false,introStarted:false,dealRoundNo:0,memberNo:p.memberNo||null,xp:Number(p.xp||0),avatarUrl:p.avatarUrl||"icon-512.png"};
  const lastScores={...(game()?.cumulativeScores||currentRoom?.lastScores||{})};
  const lastCompletedRounds=Math.max(Number(currentRoom?.lastCompletedRounds||0),Number(game()?.roundNo||0));
- await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,status:"lobby",createdAt:currentRoom.createdAt||Date.now(),players,lastScores,lastCompletedRounds});
+ await set(ref(db,`rooms/${roomCode}/public`),{hostId:currentRoom.hostId,creatorId:currentRoom.creatorId||currentRoom.hostId,creatorName:currentRoom.creatorName||currentRoom.players?.[currentRoom.creatorId||currentRoom.hostId]?.name||"",status:"lobby",createdAt:currentRoom.createdAt||Date.now(),players,lastScores,lastCompletedRounds});
  toast("تمت العودة إلى الغرفة")
 }
 
