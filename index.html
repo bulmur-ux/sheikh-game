@@ -2397,7 +2397,8 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  // تبدأ العشرين ثانية بعد التأكد أن جميع الأيدي حُفظت فعلياً.
  roundDiag("PRIVATE HANDS ✓","تم حفظ 4 أوراق لكل لاعب");
  const memorizeStartedAt=Date.now();
- const memorizeUntil=memorizeStartedAt+20000;
+ // يبدأ عداد الحفظ بعد تأكيد وصول اليد وتهيؤ واجهات اللاعبين، وليس أثناء النقل.
+ const memorizeUntil=0;
  try{
    await Promise.all(order.map(id=>update(ref(db,`rooms/${roomCode}/privateHands/${id}`),{introRevealUntil:memorizeUntil,introDone:false})));
  }catch(err){
@@ -2414,7 +2415,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
    deck,discard,discardPile:[discard],discardSeq:1,dealt,
    startedAt:memorizeStartedAt,dealtAt:memorizeStartedAt,memorizeStartedAt,memorizeUntil,memorizeSeq:1,
    actionSeq:0,ending:false,finalRemaining:{},checkCalledBy:"",roundNo,totalRounds,
-   cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,
+   cumulativeScores:totals||{},scoreHistory:previousGame.scoreHistory||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,
    eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,
    turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},
    decisionUid:null,decisionUntil:null,hasDrawn:null,actionLockUid:null,lastAction:"",results:null
@@ -2577,7 +2578,16 @@ async function autoGameWork(){
     if(hs.exists())myHand=hs.val();
    }catch(e){console.warn("memorize hand fetch",e)}
   }
-  // الحفظ تلقائي للجميع: أول ورقتين مكشوفتان 20 ثانية، ولا ننتظر أي زر من اللاعبين.
+  // كل جهاز يؤكد أن الأربع أوراق وصلت؛ بعدها فقط يبدأ عداد الـ20 ثانية للجميع.
+  if(isActivePlayer()&&myHand&&String(myHand.roundToken||"")===String(g.roundToken||"")&&countCards(myHand.cards)===4){
+   const readyToken=String(currentRoom.players?.[uid]?.memorizeReadyToken||"");
+   if(readyToken!==String(g.roundToken||""))await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{memorizeReadyToken:String(g.roundToken||"")});
+  }
+  if(uid===currentRoom.hostId&&!Number(g.memorizeUntil||0)){
+   const ids=(g.turnOrder||[]),allReady=ids.length>=2&&ids.every(id=>String(currentRoom.players?.[id]?.memorizeReadyToken||"")===String(g.roundToken||""));
+   if(allReady){const until=Date.now()+20000;await update(ref(db,`rooms/${roomCode}/public/game`),{memorizeStartedAt:Date.now(),memorizeUntil:until});await Promise.all(ids.map(id=>update(ref(db,`rooms/${roomCode}/privateHands/${id}`),{introRevealUntil:until,introDone:false}))).catch(()=>{});return}
+  }
+  // الحفظ تلقائي للجميع: أول ورقتين مكشوفتان 20 ثانية بعد جاهزية الأجهزة.
   const memorizeUntil=Number(g.memorizeUntil||0);
   if(isActivePlayer()&&myHand&&String(myHand.roundToken||"")===String(g.roundToken||"")&&countCards(myHand.cards)===4){
    if(memorizeUntil>Date.now()){
@@ -2605,6 +2615,7 @@ async function autoGameWork(){
   await set(ref(db,`rooms/${roomCode}/public/reveals/${uid}`),{name:myName,cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)});
  }
  if(g.phase==="reveal")setTimeout(maybeFinishReveal,80);
+ if(g.phase==="finished"&&currentRoom?.systemRandom)await maybeAdvanceRandomResults();
  scheduleRoundRecovery();
 }
 async function claimInitialHand(){
@@ -2989,7 +3000,10 @@ async function maybeFinishReveal(){
   for(const id of order)if(Number(totals[id]||0)>=limit)eliminated[id]={at:Date.now(),score:Number(totals[id]||0),roundNo:Number(g.roundNo||1)};
   const tx=await runTransaction(ref(db,`rooms/${roomCode}/public/game`),state=>{
    if(!state||state.phase!=="reveal")return;
-   state.results=scores;state.cumulativeScores=totals;state.eliminated=eliminated;state.phase="finished";state.finishedAt=Date.now();
+   const rn=Number(state.roundNo||1),history={...(state.scoreHistory||{})};
+   for(const [id,x] of Object.entries(scores)){history[id]={...(history[id]||{}),[rn]:Number(x?.score||0)}}
+   state.results=scores;state.cumulativeScores=totals;state.scoreHistory=history;state.eliminated=eliminated;state.phase="finished";state.finishedAt=Date.now();
+   state.randomDecisions={};state.randomDecisionUntil=currentRoom?.systemRandom?Date.now()+15000:0;
    state.turnStartedAt=0;state.timeoutClaim=null;state.decisionUid=null;state.decisionUntil=null;
    return state;
   });
@@ -2997,6 +3011,50 @@ async function maybeFinishReveal(){
  }catch(e){console.warn("finish reveal",e)}finally{revealFinalizing=false}
 }
 
+async function markRandomRoundDecision(choice){
+ if(!currentRoom?.systemRandom||game()?.phase!=="finished")return;
+ const g=game(),limit=scoreLimit(g);
+ if(Number(g.cumulativeScores?.[uid]||0)>=limit){toast("وصلت حد الخروج ولا تقدر تكمل");return}
+ await set(ref(db,`rooms/${roomCode}/public/game/randomDecisions/${uid}`),choice==="withdraw"?"withdraw":"continue");
+ if(choice==="withdraw")toast("🚪 تم تسجيل الانسحاب من المباراة");else toast("✅ تم تسجيل الاستمرار");
+ await maybeAdvanceRandomResults();
+}
+async function maybeAdvanceRandomResults(){
+ const r=currentRoom,g=r?.game;if(!r?.systemRandom||g?.phase!=="finished")return false;
+ const limit=scoreLimit(g),eligible=(g.turnOrder||[]).filter(id=>r.players?.[id]&&Number(g.cumulativeScores?.[id]||0)<limit);
+ const decisions=g.randomDecisions||{},deadline=Number(g.randomDecisionUntil||0),expired=deadline>0&&Date.now()>=deadline;
+ const allAnswered=eligible.every(id=>decisions[id]==="continue"||decisions[id]==="withdraw");
+ if(!allAnswered&&!expired){
+  clearTimeout(window.__randomDecisionTimer);
+  if(deadline)window.__randomDecisionTimer=setTimeout(()=>maybeAdvanceRandomResults().catch(e=>console.warn("random next round",e)),Math.max(100,deadline-Date.now()+120));
+  return false;
+ }
+ const continuing=eligible.filter(id=>decisions[id]!=="withdraw");
+ if(continuing.length<2){
+  await update(ref(db,`rooms/${roomCode}/public/game`),{randomMatchEnded:true,randomEndedAt:Date.now()}).catch(()=>{});
+  return false;
+ }
+ const coordinator=[...continuing].sort()[0];
+ if(uid!==coordinator)return false;
+ if(r.hostId!==coordinator){await update(ref(db,`rooms/${roomCode}/public`),{hostId:coordinator});await update(ref(db,`roomIndex/${roomCode}`),{hostId:coordinator,updatedAt:Date.now()}).catch(()=>{});currentRoom.hostId=coordinator}
+ let claimed=false;
+ await runTransaction(ref(db,`rooms/${roomCode}/public/game/randomNextRoundLock`),x=>{if(x)return x;claimed=true;return {by:uid,at:Date.now()}});
+ if(!claimed)return false;
+ try{await beginRound(continuing,Number(g.roundNo||1)+1,Number(g.totalRounds||0),g.cumulativeScores||{},{ruleMode:g.ruleMode,scoreLimit:g.scoreLimit});return true}
+ catch(e){console.warn("random next round",e);await remove(ref(db,`rooms/${roomCode}/public/game/randomNextRoundLock`)).catch(()=>{});throw e}
+}
+async function withdrawRandomMatch(){
+ if(!confirm("متأكد أنك تريد الانسحاب من المباراة؟"))return;
+ const g=game();
+ if(["memorize","playing"].includes(g?.phase)){const ok=await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الانسحاب من المباراة"});if(ok)await leaveRoomCleanly();return}
+ if(g?.phase==="finished"){await markRandomRoundDecision("withdraw");return}
+ await leaveRoomCleanly();
+}
+function openRandomMatchMenu(){
+ openModal(`<h3 style="text-align:center;margin-top:0">⋮ خيارات المباراة</h3><button id="randomMenuWithdraw" class="btn danger">🚪 انسحاب من المباراة</button><div class="gap"></div><button id="randomMenuClose" class="btn alt">إلغاء</button>`);
+ document.getElementById("randomMenuClose").onclick=closeModal;
+ document.getElementById("randomMenuWithdraw").onclick=()=>{closeModal();withdrawRandomMatch()};
+}
 async function performRoundWithdrawal({automatic=false,reason="",kicked=false,voluntary=false}={}){
  const g=game();
  if(!isActivePlayer()||!["memorize","playing"].includes(g.phase))return false;
@@ -3128,7 +3186,7 @@ function renderGame(){
  const pendingPreview=pending?`<div class="refPendingPreview"><div class="refPendingLabel">${myHand?.pendingSource==="deck"?"الورقة المسحوبة":"ورقة الميدان"}</div><div class="cardFace ${cardClass(pending)}">${cardFaceHtml(pending)}</div></div>`:"";
  const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div>${pendingPreview}<div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
  const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
- app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${roundsLabel(g)}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="small center" style="margin:4px 0 6px">الجولات المكتملة: <b>${completedRounds}</b> • الكلي</div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([id,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span>${canKick&&id!==uid?`<button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button>`:""}</div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRoundBottom" class="btn danger refWithdrawBottom">🚪 انسحاب</button>`:""}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
+ app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${roundsLabel(g)}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="small center" style="margin:4px 0 6px">الجولات المكتملة: <b>${completedRounds}</b> • الكلي</div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([id,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span>${canKick&&id!==uid?`<button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button>`:""}</div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?(currentRoom.systemRandom?`<button id="randomMatchMenu" class="btn alt" style="margin-top:8px;width:100%">⋮ خيارات المباراة</button>`:`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`):""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
  wireCommon();
  try{
    if(g.phase==="playing"){
@@ -3143,7 +3201,7 @@ function renderGame(){
    }
  }catch(e){console.warn("turn notice",e)}
 
- document.querySelectorAll("[data-kick-game]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kickPlayer(b.dataset.kickGame)});document.querySelectorAll("[data-round-out]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();removePlayerFromRound(b.dataset.roundOut)});const rs=document.getElementById("refSfx");if(rs)rs.onclick=toggleSfx;const rv=document.getElementById("refVoice");if(rv)rv.onclick=()=>voiceActive?stopLiveVoice(true):startLiveVoice();const rc=document.getElementById("refChatFocus");if(rc)rc.onclick=()=>document.getElementById("chatInput")?.focus();const wr=document.getElementById("withdrawRound");if(wr)wr.onclick=withdrawFromRound;const wrb=document.getElementById("withdrawRoundBottom");if(wrb)wrb.onclick=withdrawFromRound;
+ document.querySelectorAll("[data-kick-game]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kickPlayer(b.dataset.kickGame)});document.querySelectorAll("[data-round-out]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();removePlayerFromRound(b.dataset.roundOut)});const rs=document.getElementById("refSfx");if(rs)rs.onclick=toggleSfx;const rv=document.getElementById("refVoice");if(rv)rv.onclick=()=>voiceActive?stopLiveVoice(true):startLiveVoice();const rc=document.getElementById("refChatFocus");if(rc)rc.onclick=()=>document.getElementById("chatInput")?.focus();const wr=document.getElementById("withdrawRound");if(wr)wr.onclick=withdrawFromRound;const rmm=document.getElementById("randomMatchMenu");if(rmm)rmm.onclick=openRandomMatchMenu;
  const sp=document.getElementById("startPeek");if(sp)sp.onclick=startInitialPeek;
  if(document.getElementById("draw"))document.getElementById("draw").onclick=drawCard;
  if(document.getElementById("takeField"))document.getElementById("takeField").onclick=takeFieldCard;
@@ -3161,17 +3219,33 @@ function renderGame(){
 
 function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);const g=game()||{};const memorizeReveal=g.phase==="memorize"&&!!myHand&&Number(g.memorizeUntil||0)>Date.now();return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><span class="slotNum">${i+1}</span><div class="emptyCardSlot">✓ فارغة</div></div>`;const reveal=(memorizeReveal&&i<2)||((localRevealUntil[i]||0)>Date.now());return `<div class="slot"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
 function renderResults(){
- const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),totals=g.cumulativeScores||{},limit=scoreLimit(g),eligibleIds=Object.keys(currentRoom.players||{}).filter(id=>Number(totals[id]||0)<limit),fixedDone=Number(g.totalRounds||0)>0&&Number(g.roundNo||1)>=Number(g.totalRounds||0),final=fixedDone||eligibleIds.length<2,totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));
+ const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),totals=g.cumulativeScores||{},history=g.scoreHistory||{},limit=scoreLimit(g),eligibleIds=Object.keys(currentRoom.players||{}).filter(id=>Number(totals[id]||0)<limit),fixedDone=Number(g.totalRounds||0)>0&&Number(g.roundNo||1)>=Number(g.totalRounds||0),final=fixedDone||eligibleIds.length<2,totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));
  const lowestTotal=totalArr.length?Number(totalArr[0][1]):null,leaders=totalArr.filter(([,v])=>Number(v)===lowestTotal).map(([id])=>id);
  const roundBest=arr.length?arr[0][1].score:null,roundWinners=arr.filter(([,x])=>x.score===roundBest).map(([,x])=>x.name);
- const resultCardHtml=c=>{if(!c)return'';if(c.r==='JOKER'){const colored=c.color==='color';return `<div class="resultMiniCard joker ${colored?'colored':''}"><div class="rmCorner">J</div><div class="rmJokerStar">${colored?'★':'★'}</div><div class="rmJokerText">JOKER</div></div>`}const sym={H:'♥',D:'♦',S:'♠',C:'♣'}[c.s]||'';const cls=(c.s==='H'||c.s==='D')?'red':'black';const court=['J','Q','K'].includes(c.r);return `<div class="resultMiniCard ${cls} ${court?'court':''}"><div class="rmCorner"><b>${c.r}</b><span>${sym}</span></div>${court?`<div class="rmCourtArt"><b>${c.r}</b><span>${sym}</span></div>`:`<div class="rmCenter"><b>${c.r}</b><span>${sym}</span></div>`}</div>`};
+ const resultCardHtml=c=>{if(!c)return'';if(c.r==='JOKER'){const colored=c.color==='color';return `<div class="resultMiniCard joker ${colored?'colored':''}"><div class="rmCorner">J</div><div class="rmJokerStar">★</div><div class="rmJokerText">JOKER</div></div>`}const sym={H:'♥',D:'♦',S:'♠',C:'♣'}[c.s]||'';const cls=(c.s==='H'||c.s==='D')?'red':'black';const court=['J','Q','K'].includes(c.r);return `<div class="resultMiniCard ${cls} ${court?'court':''}"><div class="rmCorner"><b>${c.r}</b><span>${sym}</span></div>${court?`<div class="rmCourtArt"><b>${c.r}</b><span>${sym}</span></div>`:`<div class="rmCenter"><b>${c.r}</b><span>${sym}</span></div>`}</div>`};
  const cardsHtml=cards=>(cards||[]).filter(Boolean).map(resultCardHtml).join("")||'<span class="small">بدون أوراق</span>';
- const host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers");
- const nextBlock=host&&!final?`<div class="gap"></div><div class="notice">👑 اختر من اللاعبين المستمرين للجولة التالية. من وصل ${limit} نقطة يخرج تلقائياً.</div>${playerEntries().map(([id,p])=>{const out=Number(totals[id]||0)>=limit;return `<label class="playerPick ${out?'disabled':''}"><input type="checkbox" data-nextactive="${id}" ${!out&&(g.turnOrder||[]).includes(id)?"checked":""} ${out?"disabled":""} style="width:auto;margin-left:8px">${esc(p.name)} ${out?`— 🚫 خرج (${Number(totals[id]||0)})`:""}</label>`}).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button><div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:(host&&final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`:(!host?`<div class="notice center">بانتظار المضيف ${final?'للعودة إلى الغرفة':'لبدء الجولة التالية'}</div>`:""));
- app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${roundsLabel(g)} • القانون ${ruleMode()} • حد الخروج ${limit}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — نقاط الجولة: <b>${x.score}</b> • الكلي: <b>${totals[id]||0}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="resultCards">${cardsHtml(x.cards)}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div><button id="leave" class="btn danger">خروج</button></div>${chatPanel()}`;
+ const roundNo=Number(g.roundNo||1),isRandom=!!currentRoom.systemRandom,decisions=g.randomDecisions||{},deadline=Number(g.randomDecisionUntil||0),remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+ const playerResult=([id,x])=>{const h=history[id]||{},prev=roundNo>1&&h[roundNo-1]!=null?Number(h[roundNo-1]):null;const hist=Object.keys(h).map(Number).sort((a,b)=>a-b).map(n=>`ج${n}: ${Number(h[n]||0)}`).join(' | ');return `<div class="playerPick"><b>${esc(x.name)}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="small" style="margin-top:6px">الجولة الحالية: <b>${x.score}</b>${prev!=null?` • السابقة: <b>${prev}</b>`:''} • ⭐ الكلي: <b>${totals[id]||0}</b></div><div class="resultCards">${cardsHtml(x.cards)}</div><button class="btn alt" data-history="${id}" style="margin-top:8px;width:100%">📊 سجل الجولات</button><div class="small hidden" data-history-box="${id}" style="margin-top:7px;line-height:1.9">${hist||`ج${roundNo}: ${x.score}`}</div></div>`};
+ let nextBlock='';
+ if(isRandom){
+  const mineOut=Number(totals[uid]||0)>=limit,myDecision=decisions[uid]||'',ended=!!g.randomMatchEnded||final;
+  const eligible=(g.turnOrder||[]).filter(id=>currentRoom.players?.[id]&&Number(totals[id]||0)<limit),answered=eligible.filter(id=>decisions[id]==='continue'||decisions[id]==='withdraw').length;
+  if(ended)nextBlock=`<div class="notice good center">🏁 انتهت المباراة العشوائية</div>`;
+  else if(mineOut)nextBlock=`<div class="notice center">🚫 وصلت حد الخروج ${limit} نقطة.</div>`;
+  else if(myDecision)nextBlock=`<div class="notice center">${myDecision==='continue'?'✅ اخترت الاستمرار':'🚪 اخترت الانسحاب'} • بانتظار قرارات اللاعبين ${answered}/${eligible.length}${remaining?` • ${remaining}ث`:''}</div>`;
+  else nextBlock=`<div class="gap"></div><div class="notice center">اختر قرارك للجولة التالية • ${remaining||15} ثانية</div><div class="row"><button id="randomContinue" class="btn green">✅ استمرار</button><button id="randomWithdraw" class="btn danger">🚪 انسحاب</button></div><div class="small center" style="margin-top:7px">بانتظار قرار اللاعبين ${answered}/${eligible.length}</div>`;
+ }else{
+  const host=uid===currentRoom.hostId;
+  nextBlock=host&&!final?`<div class="gap"></div><div class="notice">👑 اختر من اللاعبين المستمرين للجولة التالية. من وصل ${limit} نقطة يخرج تلقائياً.</div>${playerEntries().map(([id,p])=>{const out=Number(totals[id]||0)>=limit;return `<label class="playerPick ${out?'disabled':''}"><input type="checkbox" data-nextactive="${id}" ${!out&&(g.turnOrder||[]).includes(id)?"checked":""} ${out?"disabled":""} style="width:auto;margin-left:8px">${esc(p.name)} ${out?`— 🚫 خرج (${Number(totals[id]||0)})`:""}</label>`}).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button><div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:(host&&final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`:(!host?`<div class="notice center">بانتظار المضيف ${final?'للعودة إلى الغرفة':'لبدء الجولة التالية'}</div>`:""));
+ }
+ app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${roundsLabel(g)} • القانون ${ruleMode()} • حد الخروج ${limit}</div>${arr.map(playerResult).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div>${isRandom?'':`<button id="leave" class="btn danger">خروج</button>`}</div>${chatPanel()}`;
  wireCommon();
+ document.querySelectorAll('[data-history]').forEach(b=>b.onclick=()=>{const box=document.querySelector(`[data-history-box="${b.dataset.history}"]`);if(box)box.classList.toggle('hidden')});
  if(uid===currentRoom.hostId)setTimeout(async()=>{try{await commitRoundCareerStats(g);if(final&&!g.careerStatsCommittedAt)await commitMatchCareerStats(g)}catch(e){console.warn("career stats",e)}},80);
  const br=document.getElementById("backRoom");if(br)br.onclick=resetToLobby;
+ const rc=document.getElementById("randomContinue");if(rc)rc.onclick=()=>markRandomRoundDecision("continue");
+ const rw=document.getElementById("randomWithdraw");if(rw)rw.onclick=()=>markRandomRoundDecision("withdraw");
+ if(isRandom&&deadline&&!g.randomMatchEnded){clearTimeout(window.__randomResultRenderTimer);window.__randomResultRenderTimer=setTimeout(()=>{render();maybeAdvanceRandomResults().catch(()=>{})},Math.max(250,Math.min(1000,deadline-Date.now()+50)))}
  const nr=document.getElementById("nextRound");if(nr)nr.onclick=async()=>{const order=[...document.querySelectorAll("[data-nextactive]:checked")].map(x=>x.dataset.nextactive);if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}nr.disabled=true;nr.textContent="جاري تجهيز الجولة...";try{const allowed=order.filter(id=>Number(g.cumulativeScores?.[id]||0)<scoreLimit(g));if(allowed.length<2){toast("باقي أقل من لاعبين — انتهت المباراة");return}await beginRound(allowed,(g.roundNo||1)+1,Number(g.totalRounds||0),g.cumulativeScores||{},{ruleMode:g.ruleMode,scoreLimit:g.scoreLimit})}catch(e){console.warn(e);nr.disabled=false;nr.textContent="ابدأ الجولة التالية";toast("تعذر بدء الجولة التالية — جرّب مرة ثانية")}}
 }
 async function resetToLobby(){
