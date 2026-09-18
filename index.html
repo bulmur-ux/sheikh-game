@@ -1968,28 +1968,49 @@ async function joinRandomOnline(){
  const count=Math.max(2,Math.min(4,Number(document.getElementById("rndCount")?.value||2))),rule=Number(document.getElementById("rndRule")?.value||1)===2?2:1,msg=document.getElementById("rndMsg");
  if(msg)msg.textContent="🔎 جاري البحث عن غرفة نظام مناسبة...";
  try{
-  await ensureAuth();uid=auth.currentUser.uid;const idx=(await get(ref(db,"roomIndex"))).val()||{};
-  let code="";
-  const candidates=Object.entries(idx).filter(([c,x])=>x&&x.systemRandom===true&&x.status==="lobby"&&Number(x.targetPlayers)===count&&Number(x.ruleMode)===rule&&Number(x.playerCount||0)<count).sort((a,b)=>Number(a[1].createdAt||0)-Number(b[1].createdAt||0));
-  for(const [c] of candidates){const rs=await get(ref(db,`rooms/${c}/public`));if(!rs.exists())continue;const r=rs.val()||{},pc=Object.keys(r.players||{}).length;if(r.systemRandom===true&&r.status==="lobby"&&pc<count){code=c;break}}
-  if(!code){
-   code=randomCode();for(let i=0;i<8;i++){const ex=await get(ref(db,`rooms/${code}/public`));if(!ex.exists())break;code=randomCode()}
+  await ensureAuth();uid=auth.currentUser.uid;
+  const idx=(await get(ref(db,"roomIndex"))).val()||{};
+  const candidates=Object.entries(idx)
+   .filter(([c,x])=>x&&x.systemRandom===true&&x.status==="lobby"&&Number(x.targetPlayers)===count&&Number(x.ruleMode)===rule&&Number(x.playerCount||0)<count)
+   .sort((a,b)=>Number(a[1].createdAt||0)-Number(b[1].createdAt||0));
+
+  let code="",joinedExisting=false;
+  // لا نعتمد على playerCount في الفهرس وحده؛ نحاول الحجز فعلياً بمعاملة ذرّية.
+  for(const [c] of candidates){
+   const rr=ref(db,`rooms/${c}/public`);
+   let accepted=false;
+   const tx=await runTransaction(rr,r=>{
+    if(!r||r.systemRandom!==true||r.status!=="lobby")return;
+    if(Number(r.targetPlayers||0)!==count||Number(r.ruleMode||1)!==rule)return;
+    const ps=r.players||{},ids=Object.keys(ps);
+    if(ps[uid]){accepted=true;return r}
+    if(ids.length>=count)return;
+    r.players={...ps,[uid]:{name:myName,order:ids.length,cardCount:0,ready:true,role:"player",joinedAt:Date.now()}};
+    accepted=true;return r;
+   });
+   if(tx.committed&&accepted){code=c;joinedExisting=true;break}
+  }
+
+  // كل المرشحين امتلؤوا أثناء المحاولة؟ أنشئ غرفة انتظار جديدة بدل إظهار خطأ "مكتملة".
+  if(!joinedExisting){
+   code=randomCode();
+   for(let i=0;i<8;i++){const ex=await get(ref(db,`rooms/${code}/public`));if(!ex.exists())break;code=randomCode()}
    const prof=(await get(ref(db,`users/${uid}`))).val()||{};
-   await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:myName,order:0,cardCount:0,ready:true,role:"player",memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}});
-   // فهرسة غرفة العشوائي بعد إنشاء public. إذا تعثرت الفهرسة لا نلغي الغرفة نفسها.
+   await set(ref(db,`rooms/${code}/public`),{
+    hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt:Date.now(),
+    players:{[uid]:{name:myName,order:0,cardCount:0,ready:true,role:"player",memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}
+   });
    try{
     await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});
-   }catch(indexErr){
-    console.warn("random roomIndex write",indexErr);
-    if(msg)msg.textContent="تم إنشاء الغرفة، وتعذر تحديث فهرس المطابقة. جاري الدخول...";
-   }
-  }else{
-   const rr=ref(db,`rooms/${code}/public`);let joined=false;
-   await runTransaction(rr,r=>{if(!r||r.systemRandom!==true||r.status!=="lobby")return;const ps=r.players||{};if(ps[uid]){joined=true;return r}if(Object.keys(ps).length>=Number(r.targetPlayers||4))return;r.players={...ps,[uid]:{name:myName,order:Object.keys(ps).length,cardCount:0,ready:true,role:"player",joinedAt:Date.now()}};joined=true;return r});
-   if(!joined)throw new Error("الغرفة اكتملت — حاول مرة ثانية");
+   }catch(indexErr){console.warn("random roomIndex write",indexErr)}
   }
-  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code);subscribe(code);
- }catch(e){if(msg)msg.textContent="تعذر الدخول العشوائي: "+(e?.message||e?.code||"خطأ")}
+
+  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";
+  await startPresence("room",code);subscribe(code);
+ }catch(e){
+  console.warn("random online join",e);
+  if(msg)msg.textContent="تعذر الدخول العشوائي: "+(e?.message||e?.code||"خطأ");
+ }
 }
 async function maybeAutoStartRandomRoom(r){
  if(!r?.systemRandom||r.status!=="lobby"||uid!==r.hostId)return false;
