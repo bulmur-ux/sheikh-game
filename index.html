@@ -2467,7 +2467,13 @@ async function autoGameWork(){
  if(roundToken&&seenRoundToken!==roundToken){
   seenRoundToken=roundToken;clearTimeout(pendingStartTimer);pendingStartTimer=null;localRevealUntil={};
  }
- if(currentRoom.status==="lobby"&&myHand){await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null;return}
+ // مهم: لا نحذف privateHands لمجرد أن public ما زال lobby.
+ // beginRound يكتب الأيدي أولاً ثم ينشر status=game؛ حذفها هنا كان يسبب سباقاً يمسح اليد قبل مرحلة memorize.
+ if(currentRoom.status==="lobby"&&myHand){
+   const handToken=String(myHand.roundToken||"");
+   const publicToken=String(currentRoom.game?.roundToken||"");
+   if(publicToken && handToken && handToken!==publicToken){myHand=null;localRevealUntil={};}
+ }
  // مسار dealing القديم متوقف عمداً؛ beginRound ينشر الجولة مباشرة في memorize بعد نجاح privateHands.
  if(g.phase==="memorize"){
   // إذا وصل public قبل privateHands على جهاز اللاعب، نقرأ اليد مباشرة ولا نفوّت فترة الحفظ.
@@ -2931,7 +2937,7 @@ function renderLobby(){
 }
 
 function renderGame(){
- const g=game(),active=g.turnOrder||[],tuid=turnUid(),tname=currentRoom.players?.[tuid]?.name||"",totals=g.cumulativeScores||{},host=uid===currentRoom.hostId;
+ const g=game(),active=g.turnOrder||[],tuid=turnUid(),tname=currentRoom.players?.[tuid]?.name||"",totals=g.cumulativeScores||{},host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers");
  if(g.phase==="dealing"){
   const dealtCount=activePlayerEntries().filter(([,p])=>p.ready===true&&Number(p.cardCount)===4&&String(p.dealToken||"")===String(g.roundToken||"")).length;
   app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>🃏 توزيع الأوراق</h2><p>${isActivePlayer()?"يتم تجهيز 4 أوراق لك ولكل لاعب...":"👀 أنت متفرج — يتم تجهيز أوراق اللاعبين"}</p><div class="refWaiting"><b>${dealtCount} / ${active.length}</b> تم التوزيع</div>${isActivePlayer()?`<div class="small center" style="margin-top:12px">انتظر لحظات — التوزيع يتم تلقائياً من النظام.</div>`:`<div class="small center" style="margin-top:12px">تبدأ الجولة تلقائياً بعد استلام جميع اللاعبين أوراقهم.</div>`}</div></div></div>`;
