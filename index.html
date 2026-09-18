@@ -1944,6 +1944,51 @@ async function accountScreen(msg="",type=""){
  document.getElementById("avatarFile").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(!f.type.startsWith("image/")){message("اختر ملف صورة فقط","error");return}if(f.size>8*1024*1024){message("حجم الصورة كبير — الحد 8 MB","error");return}try{message("جاري تجهيز الصورة...");const data=await fileToAvatarData(f);await saveAvatarUrl(data);accountScreen("تم حفظ صورتك الشخصية","success")}catch{message("تعذر حفظ الصورة","error")}};
  document.getElementById("accountReset").onclick=async()=>{const el=document.getElementById("accountMsg"),btn=document.getElementById("accountReset");btn.disabled=true;btn.textContent="جاري الإرسال...";try{await sendPasswordResetEmail(auth,user.email);el.textContent="تم إرسال رابط تغيير كلمة المرور إلى بريدك الإلكتروني";el.className="accountMsg success"}catch(e){el.textContent=authErrorText(e);el.className="accountMsg error"}finally{btn.disabled=false;btn.textContent="تغيير كلمة المرور"}};
 }
+
+function savedRoomsKey(){return `sheikh_saved_rooms_${uid||auth.currentUser?.uid||"guest"}`}
+function getSavedRooms(){try{const a=JSON.parse(localStorage.getItem(savedRoomsKey())||"[]");return Array.isArray(a)?a.slice(0,5):[]}catch{return []}}
+function setSavedRooms(a){localStorage.setItem(savedRoomsKey(),JSON.stringify((a||[]).slice(0,5)))}
+function saveCurrentRoom(){
+ if(!roomCode||!currentRoom||uid!==currentRoom.creatorId){toast("حفظ الغرفة متاح لمنشئها الأصلي فقط");return}
+ let a=getSavedRooms().filter(x=>x.code!==roomCode);
+ a.unshift({code:roomCode,name:currentRoom.creatorName||myName||"غرفتي",savedAt:Date.now()});
+ if(a.length>5)a=a.slice(0,5);setSavedRooms(a);toast("⭐ تم حفظ الغرفة");
+ const b=document.getElementById("saveRoomBtn");if(b)b.textContent="⭐ محفوظة";
+}
+function removeSavedRoom(code){setSavedRooms(getSavedRooms().filter(x=>x.code!==code));home()}
+function savedRoomsHtml(){const a=getSavedRooms();return `<div class="panel homeRoomCard"><h3>⭐ الغرف المحفوظة <small style="opacity:.65">${a.length}/5</small></h3>${a.length?`<div style="display:grid;gap:8px">${a.map(x=>`<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px"><button class="btn alt" data-savedjoin="${esc(x.code)}" style="flex:1">🚪 ${esc(x.code)}</button><button class="btn danger" data-savedremove="${esc(x.code)}" title="حذف من المحفوظة">✕</button></div>`).join("")}</div>`:`<div class="small">ما عندك غرف محفوظة للحين.</div>`}</div>`}
+function randomPlaySetup(){
+ openModal(`<h3>🎲 اللعب العشوائي</h3><div class="notice">غرف النظام فقط — بدون متفرجين • حد الخروج 120 • الأقل مجموع يفوز.</div><label>عدد اللاعبين<select id="rndCount"><option value="2">2 لاعبين</option><option value="3">3 لاعبين</option><option value="4">4 لاعبين</option></select></label><div class="gap"></div><label>القانون<select id="rndRule"><option value="1">القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><div class="gap"></div><button id="rndOnline" class="btn green">👥 ابدأ أونلاين</button><button id="rndBot" class="btn alt" disabled title="يضاف بعد تثبيت المطابقة الأونلاين">🤖 ضد الكمبيوتر — المرحلة التالية</button><div id="rndMsg" class="small" style="margin-top:8px"></div>`);
+ document.getElementById("rndOnline").onclick=()=>joinRandomOnline();
+}
+async function joinRandomOnline(){
+ const count=Math.max(2,Math.min(4,Number(document.getElementById("rndCount")?.value||2))),rule=Number(document.getElementById("rndRule")?.value||1)===2?2:1,msg=document.getElementById("rndMsg");
+ if(msg)msg.textContent="🔎 جاري البحث عن غرفة نظام مناسبة...";
+ try{
+  await ensureAuth();uid=auth.currentUser.uid;const idx=(await get(ref(db,"roomIndex"))).val()||{};
+  let code="";
+  const candidates=Object.entries(idx).filter(([c,x])=>x&&x.systemRandom===true&&x.status==="lobby"&&Number(x.targetPlayers)===count&&Number(x.ruleMode)===rule&&Number(x.playerCount||0)<count).sort((a,b)=>Number(a[1].createdAt||0)-Number(b[1].createdAt||0));
+  for(const [c] of candidates){const rs=await get(ref(db,`rooms/${c}/public`));if(!rs.exists())continue;const r=rs.val()||{},pc=Object.keys(r.players||{}).length;if(r.systemRandom===true&&r.status==="lobby"&&pc<count){code=c;break}}
+  if(!code){
+   code=randomCode();for(let i=0;i<8;i++){const ex=await get(ref(db,`rooms/${code}/public`));if(!ex.exists())break;code=randomCode()}
+   const prof=(await get(ref(db,`users/${uid}`))).val()||{};
+   await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:myName,order:0,cardCount:0,ready:true,role:"player",memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}});
+   await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});
+  }else{
+   const rr=ref(db,`rooms/${code}/public`);let joined=false;
+   await runTransaction(rr,r=>{if(!r||r.systemRandom!==true||r.status!=="lobby")return;const ps=r.players||{};if(ps[uid]){joined=true;return r}if(Object.keys(ps).length>=Number(r.targetPlayers||4))return;r.players={...ps,[uid]:{name:myName,order:Object.keys(ps).length,cardCount:0,ready:true,role:"player",joinedAt:Date.now()}};joined=true;return r});
+   if(!joined)throw new Error("الغرفة اكتملت — حاول مرة ثانية");
+  }
+  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code);subscribe(code);
+ }catch(e){if(msg)msg.textContent="تعذر الدخول العشوائي: "+(e?.message||e?.code||"خطأ")}
+}
+async function maybeAutoStartRandomRoom(r){
+ if(!r?.systemRandom||r.status!=="lobby"||uid!==r.hostId)return false;
+ const order=Object.keys(r.players||{});const target=Number(r.targetPlayers||2);if(order.length!==target)return false;
+ let claimed=false;await runTransaction(ref(db,`rooms/${roomCode}/public/randomStarting`),x=>{if(x)return x;claimed=true;return {by:uid,at:Date.now()}});if(!claimed)return false;
+ try{const totals={};for(const id of order)totals[id]=0;await beginRound(order,1,0,totals,{ruleMode:Number(r.ruleMode||1),scoreLimit:120});await sendSystem(`🎲 اكتملت غرفة النظام — بدأت المباراة • القانون ${Number(r.ruleMode||1)} • حد الخروج 120`);return true}catch(e){await remove(ref(db,`rooms/${roomCode}/public/randomStarting`)).catch(()=>{});throw e}
+}
+
 async function home(msg=""){
  cleanupSubs(); currentRoom=null;myHand=null;
  if(!auth.currentUser||auth.currentUser.isAnonymous){authScreen("login",msg);return}
@@ -1952,8 +1997,8 @@ async function home(msg=""){
  await loadMyAdminAccess();
  const memberNo=profile.memberNo||"—";
  const avatar=profile.avatarUrl||"icon-512.png";
- app.innerHTML=`<div class="homePage"><section class="homeMember"><div class="homeIdentity"><div class="homeAvatar"><img src="${esc(avatar)}" alt="الصورة الشخصية"></div><div class="homeWho"><div class="homeHello">حيّاك الله</div><div class="homeName">${esc(myName)}</div><div class="homeMemberNo">رقم العضوية: <b>${esc(String(memberNo))}</b> • نورت مجلس شيك شيك</div>${(()=>{const r=rankForXp(profile.xp||0);return `<div class="homeRank"><img src="${r.icon}" alt="${r.name}"><span>${r.name} • ${Number(profile.xp||0)} XP</span></div>`})()}</div></div><div class="homeMemberActions">${myAdmin?`<button id="adminPanelBtn" style="border-color:#d8a83d">⚙️ لوحة التحكم</button>`:""}<button id="accountBtn">✏️ تعديل البيانات</button><button id="logoutBtn" class="logout">تسجيل الخروج</button></div></section><section class="homeRooms"><div class="panel homeRoomCard"><h3>إنشاء غرفة جديدة</h3><button id="create" class="btn">إنشاء غرفة</button><div id="err" class="${msg&&msg.includes('بنجاح')?'ok':'err'}">${esc(msg)}</div></div><div class="panel homeRoomCard"><h3>دخول غرفة موجودة</h3><div class="homeJoinRow"><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><button id="join" class="btn alt">دخول</button></div></div></section><section class="panel homeStatsBox"><div class="homeStatsHead"><h3>🏅 إحصائياتك</h3>${careerStatsHtml(profile)}</div><div class="homeStatsHead"><h3>📊 إحصائيات مجلس شيك شيك</h3><p>شوف حركة المجلس والربع الموجودين الآن</p></div><div class="homeStats"><div class="homeStat"><b id="statVisitors">—</b><span>الزوار الآن</span></div><div class="homeStat"><b id="statMembers">—</b><span>الأعضاء</span></div><div class="homeStat"><b id="statActive">—</b><span>المتفاعلين الآن</span></div></div></section></div>`;
- document.getElementById("create").onclick=createRoom;document.getElementById("join").onclick=joinRoom;const ap=document.getElementById("adminPanelBtn");if(ap)ap.onclick=openAdminPanel;document.getElementById("accountBtn").onclick=()=>accountScreen();document.getElementById("logoutBtn").onclick=logoutPlayer;
+ app.innerHTML=`<div class="homePage"><section class="homeMember"><div class="homeIdentity"><div class="homeAvatar"><img src="${esc(avatar)}" alt="الصورة الشخصية"></div><div class="homeWho"><div class="homeHello">حيّاك الله</div><div class="homeName">${esc(myName)}</div><div class="homeMemberNo">رقم العضوية: <b>${esc(String(memberNo))}</b> • نورت مجلس شيك شيك</div>${(()=>{const r=rankForXp(profile.xp||0);return `<div class="homeRank"><img src="${r.icon}" alt="${r.name}"><span>${r.name} • ${Number(profile.xp||0)} XP</span></div>`})()}</div></div><div class="homeMemberActions">${myAdmin?`<button id="adminPanelBtn" style="border-color:#d8a83d">⚙️ لوحة التحكم</button>`:""}<button id="accountBtn">✏️ تعديل البيانات</button><button id="logoutBtn" class="logout">تسجيل الخروج</button></div></section><section class="homeRooms"><div class="panel homeRoomCard"><h3>إنشاء غرفة جديدة</h3><button id="create" class="btn">إنشاء غرفة</button><div id="err" class="${msg&&msg.includes('بنجاح')?'ok':'err'}">${esc(msg)}</div></div><div class="panel homeRoomCard"><h3>دخول غرفة موجودة</h3><div class="homeJoinRow"><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><button id="join" class="btn alt">دخول</button></div></div>${savedRoomsHtml()}<div class="panel homeRoomCard"><h3>🎲 اللعب العشوائي</h3><div class="small" style="margin-bottom:10px">غرف ينشئها النظام • 2–4 لاعبين • بدون متفرجين • حد الخروج 120</div><button id="randomPlay" class="btn green">🎲 عشوائية</button></div></section><section class="panel homeStatsBox"><div class="homeStatsHead"><h3>🏅 إحصائياتك</h3>${careerStatsHtml(profile)}</div><div class="homeStatsHead"><h3>📊 إحصائيات مجلس شيك شيك</h3><p>شوف حركة المجلس والربع الموجودين الآن</p></div><div class="homeStats"><div class="homeStat"><b id="statVisitors">—</b><span>الزوار الآن</span></div><div class="homeStat"><b id="statMembers">—</b><span>الأعضاء</span></div><div class="homeStat"><b id="statActive">—</b><span>المتفاعلين الآن</span></div></div></section></div>`;
+ document.getElementById("create").onclick=createRoom;document.getElementById("join").onclick=joinRoom;document.getElementById("randomPlay").onclick=randomPlaySetup;document.querySelectorAll("[data-savedjoin]").forEach(b=>b.onclick=()=>{document.getElementById("code").value=b.dataset.savedjoin;joinRoom()});document.querySelectorAll("[data-savedremove]").forEach(b=>b.onclick=()=>removeSavedRoom(b.dataset.savedremove));const ap=document.getElementById("adminPanelBtn");if(ap)ap.onclick=openAdminPanel;document.getElementById("accountBtn").onclick=()=>accountScreen();document.getElementById("logoutBtn").onclick=logoutPlayer;
  await startPresence("home","");bindHomeStats();
 }
 function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
@@ -2079,6 +2124,7 @@ function subscribe(c){
     if(uid&&!nextRoom?.players?.[uid]&&adminEntryMode==="player"){
      localStorage.removeItem("sheikh_room");roomCode="";home("تم إخراجك من الغرفة بواسطة صاحب الغرفة");return;
     }
+    if(await maybeAutoStartRandomRoom(nextRoom))return;
     await autoGameWork();
     render();updateAdminVoiceIndicator();if(voiceActive)syncVoicePeers();
    }catch(e){console.warn("room post-work",e)}
@@ -2969,7 +3015,7 @@ async function autoWithdrawForInactivity(){return performRoundWithdrawal({automa
 
 function render(){if(!currentRoom)return;if(currentRoom.status==="lobby")return renderLobby();if(currentRoom.status==="game"){if(game().phase==="finished")return renderResults();renderGame();if(game().phase==="reveal")setTimeout(maybeFinishReveal,300)}}
 function renderLobby(){
- const ps=playerEntries(),host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers"),canManageHost=host||!!myAdmin,rc=currentRoom.readyCheck;
+ const ps=playerEntries(),host=uid===currentRoom.hostId,canKick=!currentRoom.systemRandom&&(host||adminHasPerm("kickPlayers")),canManageHost=!currentRoom.systemRandom&&(host||!!myAdmin),rc=currentRoom.readyCheck;
  // البداية الآن مباشرة: لا توجد شاشة «جاهزين نبدأ؟» ولا انتظار 20 ثانية.
  // renderLobby للعرض فقط؛ لا ننفذ أي كتابة Firebase أثناء الرسم.
  const selectedDefault=ps.slice(0,Math.min(4,ps.length)).map(([id])=>id);
@@ -2986,18 +3032,19 @@ function renderLobby(){
  app.innerHTML=`<div class="lobbyScene lobbyV2">
   <section class="roomTopCard">
    <div class="roomCodeCompact"><span>كود الغرفة</span><strong>${esc(roomCode)}</strong><button id="copy" class="copyRoomCode">📋 نسخ</button></div>
-   <div style="text-align:center;margin-top:7px;font-size:13px;opacity:.82">نشأت بواسطة: <b>${esc(currentRoom.creatorName||currentRoom.players?.[currentRoom.creatorId]?.name||hostP.name||"—")}</b></div>
-   <div class="roomQuickTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="roomHelp" class="toolBtn" title="تعليمات الغرفة">ℹ️<small>تعليمات</small></button></div>
+   <div style="text-align:center;margin-top:7px;font-size:13px;opacity:.82">${currentRoom.systemRandom?`🎲 غرفة عشوائية • بواسطة <b>النظام</b>`:`نشأت بواسطة: <b>${esc(currentRoom.creatorName||currentRoom.players?.[currentRoom.creatorId]?.name||hostP.name||"—")}</b>`}</div>
+   <div class="roomQuickTools">${!currentRoom.systemRandom&&uid===currentRoom.creatorId?`<button id="saveRoomBtn" class="toolBtn" title="حفظ الغرفة">⭐<small>${getSavedRooms().some(x=>x.code===roomCode)?"محفوظة":"حفظ"}</small></button>`:""}${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="roomHelp" class="toolBtn" title="تعليمات الغرفة">ℹ️<small>تعليمات</small></button></div>
   </section>
   <div class="roomTicker"><div class="roomTickerTrack">${ticker}</div></div>
   <section class="newTableWrap"><div class="newTable">${seats}<div class="newCenterPiles"><div><div class="cardFace black prettyFieldCard">${cardFaceHtml({r:'K',s:'S'})}</div><small>الميدان</small></div><div><div class="cardBack prettyDeck"></div><b class="deckCount">106</b><small>الرزمة</small></div></div></div></section>
-  ${host?`<section class="hostSetupV2"><div class="hostSetupTitle">👑 إعداد المباراة</div><div class="hostSetupRow"><label>عدد اللاعبين<select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select></label><label>القانون<select id="ruleMode"><option value="1" selected>القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><label>الجولات<select id="roundCount">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${i===2?'selected':''}>${i+1}</option>`).join('')}<option value="open">مفتوحة</option></select></label><label>حد الخروج<select id="scoreLimit"><option value="50">50</option><option value="75">75</option><option value="100" selected>100</option><option value="125">125</option><option value="150">150</option><option value="200">200</option></select></label></div><div class="notice small">إذا وصل اللاعب إلى حد الخروج أو تجاوزه، يخرج من المباراة ويكمل الباقون.</div><div class="hostSetupActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="transferHost" class="btn alt" ${ps.length<2?'disabled':''}>👑 تسليم المضيف</button></div></section>`:''}
+  ${currentRoom.systemRandom?`<section class="hostSetupV2"><div class="hostSetupTitle">🎲 غرفة نظام عشوائية</div><div class="notice">بانتظار اكتمال ${Number(currentRoom.targetPlayers||2)} لاعبين • القانون ${Number(currentRoom.ruleMode||1)} • حد الخروج 120 • تبدأ تلقائياً عند اكتمال العدد • بدون متفرجين</div></section>`:(host?`<section class="hostSetupV2"><div class="hostSetupTitle">👑 إعداد المباراة</div><div class="hostSetupRow"><label>عدد اللاعبين<select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select></label><label>القانون<select id="ruleMode"><option value="1" selected>القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><label>الجولات<select id="roundCount">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${i===2?'selected':''}>${i+1}</option>`).join('')}<option value="open">مفتوحة</option></select></label><label>حد الخروج<select id="scoreLimit"><option value="50">50</option><option value="75">75</option><option value="100" selected>100</option><option value="125">125</option><option value="150">150</option><option value="200">200</option></select></label></div><div class="notice small">إذا وصل اللاعب إلى حد الخروج أو تجاوزه، يخرج من المباراة ويكمل الباقون.</div><div class="hostSetupActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="transferHost" class="btn alt" ${ps.length<2?'disabled':''}>👑 تسليم المضيف</button></div></section>`:'')}
   <section class="roomHostCard"><div class="roomSectionHead"><h3>👑 المضيف</h3>${canManageHost&&ps.length>1?`<button id="transferHostCard" class="hostTransferMini">نقل المضيفية</button>`:''}</div><div class="roomPerson hostOnly"><img src="${esc(avatarOf(hostP))}" alt=""><div><b>${esc(hostP.name||'المضيف')}</b><small>${host?'أنت المضيف':'صاحب الغرفة'} • عند خروجه تنتقل للأقدم تلقائيًا</small></div></div></section>
   <section class="roomPresentCard"><div class="roomSectionHead"><h3>👥 المتواجدون في الغرفة</h3><span>${ps.length} / 8</span></div><div class="roomPeopleGrid">${people||'<div class="small">لا يوجد أعضاء</div>'}</div></section>
   <section class="roomChatCard"><div class="roomSectionHead"><h3>💬 شات الغرفة</h3><button id="leave" class="leaveCompact">خروج</button></div><div class="roomMediaTools"><button id="voiceTop" class="mediaPill">🎙️ المايك</button><button id="sfxTop" class="mediaPill">🔊 الصوت</button><button id="funTop" class="mediaPill">😂 التأثيرات</button><button id="radioTop" class="mediaPill">📻 الإذاعة</button></div>${chatPanel()}</section>
  </div>`;
  wireCommon();
- if(host){
+ const saveBtn=document.getElementById("saveRoomBtn");if(saveBtn)saveBtn.onclick=saveCurrentRoom;
+ if(host&&!currentRoom.systemRandom){
   const syncCount=()=>{const count=Math.max(2,Math.min(4,Number(document.getElementById('playerCount')?.value||2))),boxes=[...document.querySelectorAll('[data-active]')];boxes.forEach((b,i)=>{b.checked=i<count;const w=document.querySelector(`[data-seatwrap="${b.dataset.active}"]`);if(w){w.classList.toggle('active',b.checked);const st=w.querySelector('.newSeatState');if(st)st.textContent=b.checked?'مختار للطاولة':'متفرج'}})};
   document.getElementById('playerCount')?.addEventListener('change',syncCount);document.querySelectorAll('[data-active]').forEach(b=>b.addEventListener('change',()=>{const checked=[...document.querySelectorAll('[data-active]:checked')];if(checked.length>4){b.checked=false;toast('الحد الأعلى 4 لاعبين')}if(checked.length<2){b.checked=true;toast('لازم لاعبين على الأقل')}const w=document.querySelector(`[data-seatwrap="${b.dataset.active}"]`);if(w){w.classList.toggle('active',b.checked);const st=w.querySelector('.newSeatState');if(st)st.textContent=b.checked?'مختار للطاولة':'متفرج'}}));syncCount();
   const st=document.getElementById('start');if(st)st.onclick=startGame;const th=document.getElementById('transferHost');if(th)th.onclick=showHostTransfer;document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kickPlayer(b.dataset.kick)});
