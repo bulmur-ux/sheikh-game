@@ -1863,6 +1863,14 @@ async function takeDeckCards(n=1){
  });
  return {ok:tx.committed&&picked.length===n,cards:picked,recycled};
 }
+async function returnCardToDeckTop(card){
+ if(!card)return;
+ await runTransaction(ref(db,`rooms/${roomCode}/public/game/deck`),deck=>{
+  const next=Array.isArray(deck)?deck.slice():[];
+  next.unshift(card);
+  return next;
+ });
+}
 function playerEntries(){return Object.entries(currentRoom?.players||{}).sort((a,b)=>(a[1].order||0)-(b[1].order||0))}
 function activeIds(){return game().turnOrder||[]}
 function isActivePlayer(id=uid){return activeIds().includes(id)}
@@ -2586,8 +2594,8 @@ async function useKingDrawnPower(chosen,cards){
  const c=cards[chosen],other=cards[chosen?0:1];
  if(!["J","Q","K"].includes(c.r)||!powerEnabled(c,c.r)){toast("هذي الورقة ما لها قوة في قانون الغرفة");return}
  closeModal();
- // الورقة الثانية تنزل أولاً، ثم ورقة القوة تصبح أعلى الميدان.
- if(other)await putDiscard(other,`${myName} أنزل الورقة المصاحبة من سحبة K`);
+ // الورقة غير المختارة ترجع فوق الرزمة، والورقة المختارة تستخدم قوتها.
+ if(other)await returnCardToDeckTop(other);
  await putDiscard(c,`${myName} استخدم قوة ${c.r} من سحبة K`);
  await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:null,pending:null,pendingSource:null});
  if(c.r==="J"){
@@ -2602,7 +2610,7 @@ async function useKingDrawnPower(chosen,cards){
 }
 function chooseKingOwnSlot(chosen,cards){
  const mine=myHand?.cards||[];
- openModal(`<h3>بدّل بقوة K الأحمر</h3><div class="notice good">اختر ورقة من أوراقك. الورقة القديمة التي تستبدلها هي التي ستصبح فوق الميدان.</div><div class="choiceGrid">${mine.map((c,i)=>c?`<button class="btn alt" data-kslot="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);
+ openModal(`<h3>${ruleMode()===2?"بدّل بقوة K":"بدّل بقوة K الأحمر"}</h3><div class="notice good">اختر ورقة من أوراقك. الورقة القديمة التي تستبدلها هي التي ستصبح فوق الميدان.</div><div class="choiceGrid">${mine.map((c,i)=>c?`<button class="btn alt" data-kslot="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);
  sheet.querySelectorAll("[data-kslot]").forEach(b=>b.onclick=()=>finishKingSwap(chosen,+b.dataset.kslot,cards));
 }
 async function finishKingNoPick(cards){
@@ -2614,8 +2622,9 @@ async function finishKingNoPick(cards){
 async function finishKingSwap(chosen,slot,cards){
  if(!isMyTurn()||!myHand)return;const keep=cards[chosen],other=cards[chosen?0:1],mine=(myHand.cards||[]).slice(),old=mine[slot];if(!old){toast("الخانة فاضية");return}
  mine[slot]=keep;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),mine);await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:null,pending:null,pendingSource:null});
- // غير المختارة تحت، وورقة اللاعب القديمة فوق كما اتفقنا.
- await putDiscard(other,`${myName} أنزل الورقة غير المختارة من K`);await putDiscard(old,`${myName} بدّل ورقته رقم ${slot+1} بقوة K — ورقته القديمة أصبحت فوق الميدان`);
+ // الورقة غير المختارة ترجع فوق الرزمة، وورقة اللاعب القديمة تصبح فوق الميدان.
+ if(other)await returnCardToDeckTop(other);
+ await putDiscard(old,`${myName} بدّل ورقته رقم ${slot+1} بقوة K — ورقته القديمة أصبحت فوق الميدان`);
  closeModal();sfx("swap");toast(`تم التبديل — ورقتك القديمة رقم ${slot+1} أصبحت فوق الميدان`);await finishTurn();
 }
 let jackPowerTimer=null,jackPowerTick=null;
@@ -3033,11 +3042,12 @@ function showRulesModal(){
     <li><b>J الأحمر ♥♦:</b> إذا سحبته من الرزمة تختار ترميه عادي أو تستخدم التبديل. إذا اخترت التبديل عندك 10 ثواني وتبدّل ورقتين بين لاعبين مختلفين؛ ممكن ورقة منك مع لاعب آخر أو بين لاعبين آخرين. J الأسود ♠♣ بدون قوة خاصة.</li>
     <li><b>Q الأحمر ♥♦:</b> إذا سحبته من الرزمة تختار ورقة واحدة من أوراقك وتنكشف لك وحدك 10 ثوانٍ، ثم تنغلق ويظهر شيك أو تمرير.</li>
     <li><b>K الأحمر ♥♦:</b> يسحب كرتين. إذا ظهر K أحمر جديد يوضع فوق الميدان وتُسحب ورقتان جديدتان وتتكرر السلسلة. في آخر سحبتين: إذا اخترت ورقة لتدخل يدك، ورقتك القديمة المستبدلة تصبح فوق الميدان؛ وإذا لم تختر، تُرمى السحبتان وتكون الأولى فوق.</li>
-    <li><b>الجوكر:</b> يبقى بين أوراقك حتى نهاية الجولة. الأسود يلغي أعلى ورقة عند الحساب، والملون يلغي أعلى ورقتين. أكثر من جوكر تتجمع قوتهم.</li>
+    <li><b>الجوكر:</b> يبقى بين أوراقك حتى نهاية الجولة. الجوكر الأسود يخصم نقطة واحدة من مجموع الجولة، والجوكر الملون يخصم 3 نقاط. إذا كان عندك أكثر من جوكر تتجمع الخصومات.</li>
     <li><b>القوى الخاصة:</b> قوة J/Q/K الأحمر تعمل فقط إذا انْسحبت الورقة من الرزمة، وليس إذا أخذتها من الميدان.</li>
     <li><b>إذا خلصت الرزمة:</b> تُخلط أوراق الميدان القديمة وتعود كرزمة سحب جديدة، وأوراق اللاعبين ما تتغير.</li>
     <li><b>شيك:</b> تبدأ نهاية الجولة حسب نظام اللعبة، ثم تُكشف الأوراق وتُحسب النقاط.</li>
    </ol>
+   <div class="rulesSpecial"><b>⚡ تفعيل J / Q / K:</b><br>تتفعل القوة فقط إذا جاءت الورقة من سحب الرزمة، وتشمل الورقة المختارة من سحبة K. الورقة الموجودة أصلًا ضمن أوراق اللاعب أو المأخوذة من الميدان لا تفعل قوة J / Q / K. في القانون 1 القوة للأحمر ♥ ♦ فقط، وفي القانون 2 لجميع الأشكال.</div>
    <div class="rulesSpecial"><b>🔢 حساب النقاط:</b><br>A = 1 • من 2 إلى 9 بقيمتها • 10 الأحمر = 0 • 10 الأسود = 10 • J / Q / K = 10 • الجوكر الأسود يخصم 1 نقطة • الجوكر الملون يخصم 3 نقاط من مجموع الجولة.</div>
  </div>`;
  document.body.appendChild(el);
