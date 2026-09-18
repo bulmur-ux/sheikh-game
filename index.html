@@ -1389,18 +1389,6 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 </style>
 
 <!-- BUILD: GAMEPLAY_POWERS_JKQ_FIXED 2026-09-18 -->
-<style id="safe-random-ui">
-.randomSetupModal{color:#2b1b14}
-.randomSetupModal h3{color:#6d2633!important;font-size:25px!important;font-weight:1000!important;text-align:center!important;margin:0 0 14px!important}
-.randomSetupModal .notice{background:#fff4d9!important;border:1.5px solid #d0a13b!important;color:#2b1b14!important;font-weight:850!important}
-.randomSetupModal label{color:#6d2633!important;font-weight:1000!important}
-.randomSetupModal select{background:#fffdf7!important;color:#211712!important;border:2px solid #c9a45a!important;font-weight:900!important;opacity:1!important;-webkit-text-fill-color:#211712!important}
-.randomSetupModal select:disabled{background:#f1eadc!important;color:#4c4037!important;-webkit-text-fill-color:#4c4037!important;opacity:1!important}
-.randomSetupModal #rndStart{background:#2f6558!important;color:#fff!important;opacity:1!important}
-.randomSetupModal #rndStart:disabled{background:#5e8175!important;color:#fff!important;opacity:1!important}
-.randomSetupModal #rndCancel{background:#a33d36!important;color:#fff!important}
-.randomSetupModal .randomSearchMsg{color:#2b1b14!important;font-weight:900!important;text-align:center!important;font-size:14px!important}
-</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
@@ -1971,7 +1959,7 @@ function removeSavedRoom(code){setSavedRooms(getSavedRooms().filter(x=>x.code!==
 function savedRoomsHtml(){const a=getSavedRooms();return `<div class="panel homeRoomCard"><h3>⭐ الغرف المحفوظة <small style="opacity:.65">${a.length}/5</small></h3>${a.length?`<div style="display:grid;gap:8px">${a.map(x=>`<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px"><button class="btn alt" data-savedjoin="${esc(x.code)}" style="flex:1">🚪 ${esc(x.code)}</button><button class="btn danger" data-savedremove="${esc(x.code)}" title="حذف من المحفوظة">✕</button></div>`).join("")}</div>`:`<div class="small">ما عندك غرف محفوظة للحين.</div>`}</div>`}
 let randomQueueCancelToken=0;
 function randomPlaySetup(){
- openModal(`<div class="randomSetupModal"><h3>🎲 اللعب العشوائي</h3><div class="notice">غرف النظام فقط — بدون متفرجين • حد الخروج 120 • الأقل مجموع يفوز.</div><label>نوع اللعب<select id="rndMode"><option value="online">👥 أونلاين</option><option value="computer">🤖 الكمبيوتر</option></select></label><div class="gap"></div><label>عدد اللاعبين<select id="rndCount"><option value="2">2 لاعبين</option><option value="3">3 لاعبين</option><option value="4">4 لاعبين</option></select></label><div class="gap"></div><label>القانون<select id="rndRule"><option value="1">القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><div class="gap"></div><button id="rndStart" class="btn green">👥 ابدأ أونلاين</button><button id="rndCancel" class="btn danger" style="display:none;margin-top:8px">✕ إلغاء البحث</button><div id="rndMsg" class="small randomSearchMsg" style="margin-top:8px"></div></div>`);
+ openModal(`<h3>🎲 اللعب العشوائي</h3><div class="notice">غرف النظام فقط — بدون متفرجين • حد الخروج 120 • الأقل مجموع يفوز.</div><label>نوع اللعب<select id="rndMode"><option value="online">👥 أونلاين</option><option value="computer">🤖 الكمبيوتر</option></select></label><div class="gap"></div><label>عدد اللاعبين<select id="rndCount"><option value="2">2 لاعبين</option><option value="3">3 لاعبين</option><option value="4">4 لاعبين</option></select></label><div class="gap"></div><label>القانون<select id="rndRule"><option value="1">القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><div class="gap"></div><button id="rndStart" class="btn green">👥 ابدأ أونلاين</button><button id="rndCancel" class="btn danger" style="display:none;margin-top:8px">✕ إلغاء البحث</button><div id="rndMsg" class="small" style="margin-top:8px"></div>`);
  const mode=document.getElementById("rndMode"),start=document.getElementById("rndStart"),cancel=document.getElementById("rndCancel"),msg=document.getElementById("rndMsg");
  const sync=()=>{const bot=mode.value==="computer";start.textContent=bot?"🤖 ابدأ ضد الكمبيوتر":"👥 ابدأ أونلاين";start.className=bot?"btn alt":"btn green";if(msg)msg.textContent=bot?"وضع الكمبيوتر قيد التجهيز داخل نفس محرك اللعب — لن يبدأ قبل اكتمال منطق اللاعب الآلي.":""};
  mode.onchange=sync;sync();
@@ -1979,68 +1967,145 @@ function randomPlaySetup(){
  cancel.onclick=()=>{randomQueueCancelToken++;cancel.disabled=true;if(msg)msg.textContent="جاري إلغاء البحث..."};
 }
 async function joinRandomOnline(){
- const count=Math.max(2,Math.min(4,Number(document.getElementById("rndCount")?.value||2))),rule=Number(document.getElementById("rndRule")?.value||1)===2?2:1,msg=document.getElementById("rndMsg"),startBtn=document.getElementById("rndStart"),cancelBtn=document.getElementById("rndCancel"),mode=document.getElementById("rndMode"),countEl=document.getElementById("rndCount"),ruleEl=document.getElementById("rndRule");
- const token=++randomQueueCancelToken,sleep=ms=>new Promise(r=>setTimeout(r,ms));
- const matchKey=`online_${count}_law${rule}`,qref=ref(db,`randomQueue/${matchKey}`);
- let joinedQueue=false;
- const searching=on=>{if(startBtn){startBtn.disabled=on;startBtn.textContent=on?"🔎 جاري البحث عن لاعبين…":"👥 ابدأ أونلاين"}if(cancelBtn){cancelBtn.style.display=on?"block":"none";cancelBtn.disabled=false}if(mode)mode.disabled=on;if(countEl)countEl.disabled=on;if(ruleEl)ruleEl.disabled=on};
+ if(!uid){toast("سجّل الدخول أولاً");return}
+ const mode=$("rndMode")?.value||"online",count=Number($("rndCount")?.value||2),rule=Number($("rndRule")?.value||1);
+ if(mode!=="online"){toast("وضع الكمبيوتر بنفعّله بعد تثبيت الأونلاين");return}
+ if(![2,3,4].includes(count)||![1,2].includes(rule)){toast("اختيار غير صالح");return}
+
+ const msg=$("rndMsg"),startBtn=$("rndStart"),cancelBtn=$("rndCancel");
  const setMsg=t=>{if(msg)msg.textContent=t};
+ const searching=on=>{
+   if(startBtn){startBtn.disabled=on;startBtn.textContent=on?"🔎 جاري البحث عن لاعبين...":"👥 ابدأ أونلاين"}
+   if(cancelBtn)cancelBtn.style.display=on?"block":"none";
+   for(const id of ["rndMode","rndCount","rndRule"]){const el=$(id);if(el)el.disabled=on}
+ };
+ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ const key=`${count}_${rule}`,qref=ref(db,`randomQueue/${key}`);
+ const token=++randomQueueCancelToken;let joinedQueue=false;
+
  async function leaveQueue(){
-  if(!joinedQueue||!uid)return;
-  try{await runTransaction(qref,q=>{if(!q)return q;const ps={...(q.players||{})};delete ps[uid];if(!Object.keys(ps).length)return null;return {...q,players:ps,updatedAt:Date.now()}})}catch{}
+  if(!joinedQueue)return;
+  await runTransaction(qref,cur=>{
+   if(!cur)return cur;
+   const players={...(cur.players||{})};delete players[uid];
+   if(!Object.keys(players).length)return null;
+   return {...cur,players,updatedAt:Date.now()};
+  }).catch(()=>{});
   joinedQueue=false;
  }
+
+ searching(true);setMsg(`🔎 جاري البحث... 1 / ${count} • القانون ${rule}`);
+
  try{
-  searching(true);setMsg(`🔎 جاري البحث... 1 / ${count} • القانون ${rule}`);
-  await ensureAuth();uid=auth.currentUser.uid;
-  const prof=(await get(ref(db,`users/${uid}`))).val()||{};
-  const me={name:myName,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()};
+  await runTransaction(qref,cur=>{
+   cur=cur||{};
+   let players={...(cur.players||{})};
+   // إذا المطابقة القديمة انتهت، افتح دورة Queue جديدة.
+   if(cur.roomCode && Object.keys(players).length>=count){
+    cur={players:{}};
+    players={};
+   }
+   if(!players[uid] && Object.keys(players).length<count){
+    players[uid]={name:myName||"لاعب",memberNo:myProfile?.memberNumber||myProfile?.memberNo||null,xp:Number(myProfile?.xp||0),avatarUrl:myProfile?.avatarUrl||"icon-512.png",joinedAt:Date.now()};
+   }
+   return {...cur,players,count,rule,updatedAt:Date.now()};
+  });
+  joinedQueue=true;
 
-  // طابور مركزي واحد لكل (عدد لاعبين + قانون). Firebase transaction تمنع تكوين طابورين متوازيين.
-  let admitted=false;
-  for(let attempt=0;attempt<40&&!admitted&&token===randomQueueCancelToken;attempt++){
-   const tx=await runTransaction(qref,q=>{
-    const now=Date.now();
-    if(q?.roomCode)return; // المباراة السابقة قيد النقل؛ انتظر تنظيفها.
-    let ps={...(q?.players||{})};
-    // تنظيف انتظار قديم جداً حتى لا يعلق الطابور إلى الأبد.
-    for(const [id,p] of Object.entries(ps))if(now-Number(p?.joinedAt||now)>120000)delete ps[id];
-    if(ps[uid]){admitted=true;return {...q,players:ps,targetPlayers:count,ruleMode:rule,updatedAt:now}}
-    if(Object.keys(ps).length>=count)return;
-    ps[uid]=me;admitted=true;
-    return {mode:"online",targetPlayers:count,ruleMode:rule,players:ps,createdAt:Number(q?.createdAt||now),updatedAt:now};
-   });
-   if(tx.committed&&tx.snapshot.exists()&&tx.snapshot.val()?.players?.[uid]){admitted=true;joinedQueue=true;break}
-   await sleep(250);
-  }
-  if(token!==randomQueueCancelToken){await leaveQueue();searching(false);setMsg("تم إلغاء البحث");return}
-  if(!admitted)throw new Error("تعذر حجز مكان في البحث — حاول مرة ثانية");
+  const started=Date.now();
+  while(token===randomQueueCancelToken && Date.now()-started<120000){
+   const snap=await get(qref);
+   if(!snap.exists()){await sleep(300);continue}
+   const q=snap.val()||{},ids=Object.keys(q.players||{}).sort(),pc=ids.length;
 
-  while(token===randomQueueCancelToken){
-   const qs=await get(qref);if(!qs.exists()){joinedQueue=false;throw new Error("انتهى البحث — حاول مرة ثانية")}
-   const q=qs.val()||{},ids=Object.keys(q.players||{}).sort(),pc=ids.length;
+   // أي جهاز يرى roomCode ينتقل لنفس الغرفة.
    if(q.roomCode){
-    const code=String(q.roomCode),rs=await get(ref(db,`rooms/${code}/public`));
-    if(rs.exists()&&rs.val()?.players?.[uid]){
-     joinedQueue=false;closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code);subscribe(code);return;
+    const code=String(q.roomCode);
+    const rs=await get(ref(db,`rooms/${code}/public`)).catch(()=>null);
+    if(rs?.exists() && rs.val()?.players?.[uid]){
+     joinedQueue=false;
+     closeModal();
+     roomCode=code;
+     localStorage.setItem("sheikh_room",code);
+     adminEntryMode="player";
+     await startPresence("room",code).catch(()=>{});
+     subscribe(code);
+     return;
     }
    }
+
    setMsg(pc>=count?"✅ اكتمل العدد — جاري تجهيز المباراة...":`🔎 جاري البحث... ${pc} / ${count} • القانون ${rule}`);
-   if(pc===count&&!q.roomCode){
-    const leader=ids[0];
-    if(uid===leader){
-     let code=randomCode();for(let i=0;i<8;i++){const ex=await get(ref(db,`rooms/${code}/public`));if(!ex.exists())break;code=randomCode()}
-     const createdAt=Date.now(),players={};ids.forEach((id,i)=>{const p=q.players[id]||{};players[id]={name:p.name||"لاعب",order:i,cardCount:0,ready:true,role:"player",memberNo:p.memberNo||null,xp:Number(p.xp||0),avatarUrl:p.avatarUrl||"icon-512.png",joinedAt:Number(p.joinedAt||createdAt)}});
-     await set(ref(db,`rooms/${code}/public`),{hostId:leader,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt,players});
-     await set(ref(db,`roomIndex/${code}`),{hostId:leader,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt,playerCount:count,updatedAt:createdAt});
-     await runTransaction(qref,cur=>{if(!cur)return cur;const curIds=Object.keys(cur.players||{}).sort();if(cur.roomCode||curIds.join("|")!==ids.join("|"))return;return {...cur,roomCode:code,matchedAt:Date.now(),updatedAt:Date.now()}});
+
+   if(pc===count && !q.roomCode){
+    // Claim بمهلة: لا نعتمد للأبد على أول UID. إذا جهاز الـleader تعطل، جهاز آخر يستلم الإنشاء.
+    const now=Date.now(),claim=q.createClaim||null;
+    const claimExpired=!claim || !Number(claim.at) || now-Number(claim.at)>3500;
+    let iOwnClaim=claim?.by===uid;
+
+    if(claimExpired){
+     const claimTx=await runTransaction(qref,cur=>{
+      if(!cur||cur.roomCode)return cur;
+      const curIds=Object.keys(cur.players||{}).sort();
+      if(curIds.length!==count)return cur;
+      const c=cur.createClaim||null;
+      if(c && Number(c.at) && Date.now()-Number(c.at)<=3500)return cur;
+      return {...cur,createClaim:{by:uid,at:Date.now()},updatedAt:Date.now()};
+     });
+     const claimed=claimTx.snapshot?.val?.()||{};
+     iOwnClaim=claimed.createClaim?.by===uid && !claimed.roomCode;
+    }
+
+    if(iOwnClaim){
+     // افحص مرة ثانية قبل الإنشاء حتى لا ننشئ غرفتين.
+     const fresh=(await get(qref)).val()||{};
+     if(fresh.roomCode){await sleep(150);continue}
+     const freshIds=Object.keys(fresh.players||{}).sort();
+     if(freshIds.length!==count || fresh.createClaim?.by!==uid){await sleep(150);continue}
+
+     let code=randomCode();
+     for(let i=0;i<8;i++){
+      const ex=await get(ref(db,`rooms/${code}/public`));
+      if(!ex.exists())break;
+      code=randomCode();
+     }
+     const createdAt=Date.now(),players={};
+     freshIds.forEach((id,i)=>{
+      const p=fresh.players[id]||{};
+      players[id]={name:p.name||"لاعب",order:i,cardCount:0,ready:true,role:"player",memberNo:p.memberNo||null,xp:Number(p.xp||0),avatarUrl:p.avatarUrl||"icon-512.png",joinedAt:Number(p.joinedAt||createdAt)};
+     });
+
+     try{
+      await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt,players});
+      await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt,playerCount:count,updatedAt:createdAt});
+      await runTransaction(qref,cur=>{
+       if(!cur)return cur;
+       const curIds=Object.keys(cur.players||{}).sort();
+       if(cur.roomCode || curIds.join("|")!==freshIds.join("|"))return cur;
+       if(cur.createClaim?.by!==uid)return cur;
+       return {...cur,roomCode:code,matchedAt:Date.now(),updatedAt:Date.now()};
+      });
+     }catch(createErr){
+      // حرر الـclaim حتى يقدر الجهاز الثاني يحاول بدل بقاء الجميع معلّقين.
+      await runTransaction(qref,cur=>{
+       if(!cur||cur.roomCode)return cur;
+       if(cur.createClaim?.by!==uid)return cur;
+       const next={...cur};delete next.createClaim;next.updatedAt=Date.now();return next;
+      }).catch(()=>{});
+      console.warn("random room create",createErr);
+     }
     }
    }
    await sleep(250);
   }
-  await leaveQueue();searching(false);setMsg("تم إلغاء البحث");
+
+  await leaveQueue();
+  searching(false);
+  setMsg(token===randomQueueCancelToken?"انتهت مهلة البحث — حاول مرة ثانية":"تم إلغاء البحث");
  }catch(e){
-  console.warn("random central queue",e);if(token===randomQueueCancelToken)await leaveQueue();searching(false);setMsg("تعذر البحث العشوائي: "+(e?.message||e?.code||"خطأ"));
+  console.warn("random central queue",e);
+  if(token===randomQueueCancelToken)await leaveQueue();
+  searching(false);
+  setMsg("تعذر البحث العشوائي: "+(e?.message||e?.code||"خطأ"));
  }
 }
 async function maybeAutoStartRandomRoom(r){
@@ -3179,7 +3244,7 @@ function renderResults(){
  const resultCardHtml=c=>{if(!c)return'';if(c.r==='JOKER'){const colored=c.color==='color';return `<div class="resultMiniCard joker ${colored?'colored':''}"><div class="rmCorner">J</div><div class="rmJokerStar">${colored?'★':'★'}</div><div class="rmJokerText">JOKER</div></div>`}const sym={H:'♥',D:'♦',S:'♠',C:'♣'}[c.s]||'';const cls=(c.s==='H'||c.s==='D')?'red':'black';const court=['J','Q','K'].includes(c.r);return `<div class="resultMiniCard ${cls} ${court?'court':''}"><div class="rmCorner"><b>${c.r}</b><span>${sym}</span></div>${court?`<div class="rmCourtArt"><b>${c.r}</b><span>${sym}</span></div>`:`<div class="rmCenter"><b>${c.r}</b><span>${sym}</span></div>`}</div>`};
  const cardsHtml=cards=>(cards||[]).filter(Boolean).map(resultCardHtml).join("")||'<span class="small">بدون أوراق</span>';
  const host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers");
- const nextBlock=host&&!final?`<div class="gap"></div><div class="notice">👑 اختر من اللاعبين المستمرين للجولة التالية. من وصل ${limit} نقطة يخرج تلقائياً.</div>${playerEntries().map(([id,p])=>{const out=Number(totals[id]||0)>=limit;return `<label class="playerPick ${out?'disabled':''}"><input type="checkbox" data-nextactive="${id}" ${!out&&(g.turnOrder||[]).includes(id)?"checked":""} ${out?"disabled":""} style="width:auto;margin-left:8px">${esc(p.name)} ${out?`— 🚫 خرج (${Number(totals[id]||0)})`:""}</label>`}).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button><div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`;
+ const nextBlock=host&&!final?`<div class="gap"></div><div class="notice">👑 اختر من اللاعبين المستمرين للجولة التالية. من وصل ${limit} نقطة يخرج تلقائياً.</div>${playerEntries().map(([id,p])=>{const out=Number(totals[id]||0)>=limit;return `<label class="playerPick ${out?'disabled':''}"><input type="checkbox" data-nextactive="${id}" ${!out&&(g.turnOrder||[]).includes(id)?"checked":""} ${out?"disabled":""} style="width:auto;margin-left:8px">${esc(p.name)} ${out?`— 🚫 خرج (${Number(totals[id]||0)})`:""}</label>`}).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button><div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:(host&&final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`:(!host?`<div class="notice center">بانتظار المضيف ${final?'للعودة إلى الغرفة':'لبدء الجولة التالية'}</div>`:""));
  app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${roundsLabel(g)} • القانون ${ruleMode()} • حد الخروج ${limit}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — نقاط الجولة: <b>${x.score}</b> • الكلي: <b>${totals[id]||0}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="resultCards">${cardsHtml(x.cards)}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div><button id="leave" class="btn danger">خروج</button></div>${chatPanel()}`;
  wireCommon();
  if(uid===currentRoom.hostId)setTimeout(async()=>{try{await commitRoundCareerStats(g);if(final&&!g.careerStatsCommittedAt)await commitMatchCareerStats(g)}catch(e){console.warn("career stats",e)}},80);
