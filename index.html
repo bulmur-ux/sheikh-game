@@ -2078,8 +2078,17 @@ function subscribe(c){
  unsubChat=onValue(query(ref(db,`rooms/${c}/chat`),limitToLast(60)),s=>{latestChat=s.val()||{};renderChat()});
  unsubHand=onValue(ref(db,`rooms/${c}/privateHands/${uid}`),s=>{
   myHand=s.exists()?s.val():null;
+  const g=currentRoom?.game||{};
+  if(myHand&&g.phase==="memorize"&&String(myHand.roundToken||"")===String(g.roundToken||"")&&countCards(myHand.cards)===4){
+    const until=Number(g.memorizeUntil||myHand.introRevealUntil||0);
+    if(until>Date.now())localRevealUntil={0:until,1:until};
+    roundDiag("HAND RECEIVED ✓","MY HAND 4 ✓");
+  }
   render();
-  Promise.resolve(autoGameWork()).then(()=>render()).catch(e=>console.warn("hand work",e));
+  Promise.resolve(autoGameWork()).then(()=>{
+    if(currentRoom?.game?.phase==="memorize"&&myHand)roundDiag("MEMORIZE UI ✓","تمت مزامنة واجهة اللاعب");
+    render();
+  }).catch(e=>console.warn("hand work",e));
  });
  unsubFunny=onValue(ref(db,`rooms/${c}/public/funnySound`),s=>handleFunnyEvent(s.val()));
 }
@@ -2330,7 +2339,28 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
  }
 
  roundDiag("MEMORIZE ✓","بدأ حفظ أول ورقتين");
- // لا نصفر myHand هنا؛ listener الخاص باليد هو المصدر المحلي الموحد.
+ // مزامنة فورية على جهاز المضيف: لا ننتظر onValue كي يعرض مرحلة الحفظ.
+ try{
+   const freshPubSnap=await get(ref(db,`rooms/${roomCode}/public`));
+   if(freshPubSnap.exists()){
+     currentRoom=freshPubSnap.val();
+     roundDiag("PUBLIC SYNC ✓",`${currentRoom.status||"?"} / ${currentRoom.game?.phase||"?"}`);
+   }
+   if(order.includes(uid)){
+     const ownHandSnap=await get(ref(db,`rooms/${roomCode}/privateHands/${uid}`));
+     if(ownHandSnap.exists()){
+       myHand=ownHandSnap.val();
+       if(String(myHand.roundToken||"")===roundToken&&countCards(myHand.cards)===4){
+         localRevealUntil={0:memorizeUntil,1:memorizeUntil};
+         roundDiag("MY HAND ✓","4 أوراق — عرض أول ورقتين");
+       }else roundDiag("MY HAND ✗","اليد لا تطابق الجولة");
+     }else roundDiag("MY HAND ✗","لا توجد يد على جهاز اللاعب");
+   }
+   render();
+ }catch(syncErr){
+   console.warn("ROUND_LOCAL_SYNC_FAILED",syncErr);
+   roundDiag("LOCAL SYNC ✗",String(syncErr?.code||syncErr?.message||syncErr));
+ }
  toast(`بدأت الجولة ${roundNo}${Number(totalRounds)>0?` من ${totalRounds}`:" • مفتوحة"} — احفظ أول ورقتين`);
  try{await sendSystem("👁️ تم توزيع 4 أوراق لكل لاعب — أول ورقتين مكشوفتان 20 ثانية")}catch{}
 }
