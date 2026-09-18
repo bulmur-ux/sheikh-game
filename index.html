@@ -1388,6 +1388,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 #gameTurnNotice.mine{outline:3px solid #f1c84b}
 </style>
 
+<!-- BUILD: GAMEPLAY_POWERS_JKQ_FIXED 2026-09-18 -->
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
@@ -2175,17 +2176,7 @@ async function leaveRoomCleanly(){
  try{await remove(ref(db,`rooms/${code}/public/players/${uid}`))}catch{}
  localStorage.removeItem("sheikh_room");roomCode="";currentRoom=null;await startPresence("home","");home();
 }
-function roundDiag(step, detail=""){
- try{
-  let el=document.getElementById("roundDiagBox");
-  if(!el){
-   el=document.createElement("div");el.id="roundDiagBox";
-   el.style.cssText="position:fixed;z-index:999999;left:10px;right:10px;bottom:10px;background:#111;color:#fff;border:2px solid #d7ad4a;border-radius:14px;padding:10px 12px;font:700 13px/1.6 system-ui;text-align:right;direction:rtl;box-shadow:0 6px 24px #0008;max-height:34vh;overflow:auto";
-   document.body.appendChild(el);
-  }
-  const row=document.createElement("div");row.textContent=`${new Date().toLocaleTimeString("ar-AE")} — ${step}${detail?" — "+detail:""}`;el.appendChild(row);el.scrollTop=el.scrollHeight;
- }catch(e){}
-}
+function roundDiag(step, detail=""){ /* diagnostics disabled after round-start fix */ }
 function clearRoundDiag(){try{document.getElementById("roundDiagBox")?.remove()}catch(e){}}
 async function startGame(){
  if(uid!==currentRoom?.hostId)return;
@@ -2576,6 +2567,7 @@ async function discardAndFinish(card,log){await putDiscard(card,log);await finis
 function chooseClear(n,title){const cards=myHand?.cards||[];openModal(`<h3>${title}</h3><div class="notice">اختر ${n} ${n===1?'ورقة':'ورقتين'} من أوراقك للمسح.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-clear="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div><div class="gap"></div><button id="cancelPower" class="btn danger">إلغاء القوة وإنهاء الدور</button>`);let chosen=[];sheet.querySelectorAll("[data-clear]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.clear;if(chosen.includes(i))return;chosen.push(i);b.disabled=true;b.textContent="تم الاختيار";if(chosen.length>=n){const cs=(myHand.cards||[]).slice();for(const k of chosen)cs[k]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cs)});closeModal();await sendSystem(`${myName} استخدم قوة الجوكر`);if(await checkEmptyAndEnd(cs))return;await finishTurn()}});document.getElementById("cancelPower").onclick=async()=>{closeModal();await finishTurn()}}
 function choosePeek(){const cards=myHand?.cards||[];openModal(`<h3>قوة البنت Q</h3><div class="notice">اختر ورقة واحدة من أوراقك لتشوفها 10 ثوانٍ.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-peek="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);sheet.querySelectorAll("[data-peek]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.peek;localRevealUntil[i]=Date.now()+10000;closeModal();render();await sendSystem(`${myName} استخدم قوة Q`);setTimeout(async()=>{localRevealUntil[i]=0;render();if(isMyTurn())await finishTurn()},10050)})}
 async function kingPower(){
+ await update(ref(db,`rooms/${roomCode}/public/game`),{lastAction:`👑 ${myName} يستخدم قوة K — يختار من ورقتين`,actionSeq:(game().actionSeq||0)+1});
  const take=await takeDeckCards(2),picked=take.cards||[];
  if(!take.ok||picked.length<2){toast("ما في ورقتين كفاية");return finishTurn()}
  if(take.recycled)toast("🔄 تم خلط أوراق الميدان وإعادة الرزمة");
@@ -2624,8 +2616,8 @@ async function finishKingSwap(chosen,slot,cards){
  mine[slot]=keep;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),mine);await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{powerCards:null,pending:null,pendingSource:null});
  // الورقة غير المختارة ترجع فوق الرزمة، وورقة اللاعب القديمة تصبح فوق الميدان.
  if(other)await returnCardToDeckTop(other);
- await putDiscard(old,`${myName} بدّل ورقته رقم ${slot+1} بقوة K — ورقته القديمة أصبحت فوق الميدان`);
- closeModal();sfx("swap");toast(`تم التبديل — ورقتك القديمة رقم ${slot+1} أصبحت فوق الميدان`);await finishTurn();
+ await putDiscard(old,`🔄 ${myName} بدّل كرت بقوة K`);
+ closeModal();sfx("swap");toast(`تم التبديل — الكرت الذي استبدلته أصبح فوق الميدان`);await finishTurn();
 }
 let jackPowerTimer=null,jackPowerTick=null;
 function stopJackPowerTimer(){clearTimeout(jackPowerTimer);clearInterval(jackPowerTick);jackPowerTimer=null;jackPowerTick=null}
@@ -2640,7 +2632,7 @@ async function useJackPower(){sfx("jack");
  if(!isMyTurn()||!powerEnabled(myHand?.pending,"J")||myHand?.pendingSource!=="deck")return;
  const c=myHand.pending;
  await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});
- await putDiscard(c,`${myName} اختار تبديل J الأحمر`);
+ await putDiscard(c,`🔄 ${myName} يستخدم قوة J`);
  startJackPowerTimer();chooseJack();
 }
 function chooseJack(){
@@ -2702,7 +2694,7 @@ async function processJackSwap(req){
        await update(ref(db,`rooms/${roomCode}/public/game/jackSwap`),{status:"finishing"});
        const aName=req.aName||currentRoom.players?.[req.aUid]?.name||"لاعب";
        const bName=req.bName||currentRoom.players?.[req.bUid]?.name||"لاعب";
-       const msg=`🔄 ${myName} استخدم J للتبديل — تم التبديل بين أوراق ${aName} وأوراق ${bName}`;
+       const msg=(req.aUid===uid||req.bUid===uid)?`🔄 ${myName} بدّل كرت من ${req.aUid===uid?bName:aName}`:`🔄 ${myName} بدّل كرت بين ${aName} و${bName}`;
        stopJackPowerTimer();sfx("swap");toast(msg);await sendSystem(msg);
        await set(ref(db,`rooms/${roomCode}/public/game/jackSwap`),null);
        await finishTurn();
@@ -3002,7 +2994,7 @@ function renderGame(){
  if(globalIntroUntil>Date.now()){clearTimeout(pendingStartTimer);pendingStartTimer=setTimeout(()=>finishInitialPeek(String(g.roundToken||"")),Math.max(0,globalIntroUntil-Date.now()+80));const tick=()=>{const el=document.getElementById("introCount");if(el){const n=Math.max(0,Math.ceil((globalIntroUntil-Date.now())/1000));el.textContent=n;if(n>0)setTimeout(tick,250)}};tick()}
 }
 
-function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><span class="slotNum">${i+1}</span><div class="emptyCardSlot">✓ فارغة</div></div>`;const reveal=(localRevealUntil[i]||0)>Date.now();return `<div class="slot"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
+function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);const g=game()||{};const memorizeReveal=g.phase==="memorize"&&!!myHand&&Number(g.memorizeUntil||0)>Date.now();return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><span class="slotNum">${i+1}</span><div class="emptyCardSlot">✓ فارغة</div></div>`;const reveal=(memorizeReveal&&i<2)||((localRevealUntil[i]||0)>Date.now());return `<div class="slot"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
 function renderResults(){
  const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),totals=g.cumulativeScores||{},limit=scoreLimit(g),eligibleIds=Object.keys(currentRoom.players||{}).filter(id=>Number(totals[id]||0)<limit),fixedDone=Number(g.totalRounds||0)>0&&Number(g.roundNo||1)>=Number(g.totalRounds||0),final=fixedDone||eligibleIds.length<2,totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));
  const lowestTotal=totalArr.length?Number(totalArr[0][1]):null,leaders=totalArr.filter(([,v])=>Number(v)===lowestTotal).map(([id])=>id);
