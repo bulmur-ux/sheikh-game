@@ -1969,70 +1969,66 @@ function randomPlaySetup(){
 async function joinRandomOnline(){
  const count=Math.max(2,Math.min(4,Number(document.getElementById("rndCount")?.value||2))),rule=Number(document.getElementById("rndRule")?.value||1)===2?2:1,msg=document.getElementById("rndMsg"),startBtn=document.getElementById("rndStart"),cancelBtn=document.getElementById("rndCancel"),mode=document.getElementById("rndMode"),countEl=document.getElementById("rndCount"),ruleEl=document.getElementById("rndRule");
  const token=++randomQueueCancelToken,sleep=ms=>new Promise(r=>setTimeout(r,ms));
- let code="",createdByMe=false;
+ const matchKey=`online_${count}_law${rule}`,qref=ref(db,`randomQueue/${matchKey}`);
+ let joinedQueue=false;
  const searching=on=>{if(startBtn){startBtn.disabled=on;startBtn.textContent=on?"🔎 جاري البحث عن لاعبين…":"👥 ابدأ أونلاين"}if(cancelBtn){cancelBtn.style.display=on?"block":"none";cancelBtn.disabled=false}if(mode)mode.disabled=on;if(countEl)countEl.disabled=on;if(ruleEl)ruleEl.disabled=on};
  const setMsg=t=>{if(msg)msg.textContent=t};
  async function leaveQueue(){
-  if(!code||!uid)return;
-  try{await remove(ref(db,`rooms/${code}/public/players/${uid}`))}catch{}
-  try{
-   const rs=await get(ref(db,`rooms/${code}/public`));
-   if(rs.exists()&&Object.keys(rs.val()?.players||{}).length===0){await remove(ref(db,`rooms/${code}/public`)).catch(()=>{});await remove(ref(db,`roomIndex/${code}`)).catch(()=>{})}
-   else await update(ref(db,`roomIndex/${code}`),{playerCount:Object.keys(rs.val()?.players||{}).length,updatedAt:Date.now()}).catch(()=>{});
-  }catch{}
+  if(!joinedQueue||!uid)return;
+  try{await runTransaction(qref,q=>{if(!q)return q;const ps={...(q.players||{})};delete ps[uid];if(!Object.keys(ps).length)return null;return {...q,players:ps,updatedAt:Date.now()}})}catch{}
+  joinedQueue=false;
  }
  try{
-  searching(true);setMsg(`🔎 جاري البحث عن ${count} لاعبين • القانون ${rule}...`);
+  searching(true);setMsg(`🔎 جاري البحث... 1 / ${count} • القانون ${rule}`);
   await ensureAuth();uid=auth.currentUser.uid;
   const prof=(await get(ref(db,`users/${uid}`))).val()||{};
-  const me={name:myName,cardCount:0,ready:true,role:"player",memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()};
-  async function candidates(){
-   const idx=(await get(ref(db,"roomIndex"))).val()||{};
-   return Object.entries(idx).filter(([c,x])=>x&&x.systemRandom===true&&x.status==="lobby"&&Number(x.targetPlayers)===count&&Number(x.ruleMode)===rule&&Number(x.playerCount||0)<count).sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
-  }
-  async function tryJoin(c){
-   const rr=ref(db,`rooms/${c}/public`);let accepted=false;
-   const tx=await runTransaction(rr,r=>{
-    if(!r||r.systemRandom!==true||r.status!=="lobby"||Number(r.targetPlayers||0)!==count||Number(r.ruleMode||1)!==rule)return;
-    const ps=r.players||{},ids=Object.keys(ps);if(ps[uid]){accepted=true;return r}if(ids.length>=count)return;
-    r.players={...ps,[uid]:{...me,order:ids.length,joinedAt:Date.now()}};accepted=true;return r;
+  const me={name:myName,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()};
+
+  // طابور مركزي واحد لكل (عدد لاعبين + قانون). Firebase transaction تمنع تكوين طابورين متوازيين.
+  let admitted=false;
+  for(let attempt=0;attempt<40&&!admitted&&token===randomQueueCancelToken;attempt++){
+   const tx=await runTransaction(qref,q=>{
+    const now=Date.now();
+    if(q?.roomCode)return; // المباراة السابقة قيد النقل؛ انتظر تنظيفها.
+    let ps={...(q?.players||{})};
+    // تنظيف انتظار قديم جداً حتى لا يعلق الطابور إلى الأبد.
+    for(const [id,p] of Object.entries(ps))if(now-Number(p?.joinedAt||now)>120000)delete ps[id];
+    if(ps[uid]){admitted=true;return {...q,players:ps,targetPlayers:count,ruleMode:rule,updatedAt:now}}
+    if(Object.keys(ps).length>=count)return;
+    ps[uid]=me;admitted=true;
+    return {mode:"online",targetPlayers:count,ruleMode:rule,players:ps,createdAt:Number(q?.createdAt||now),updatedAt:now};
    });
-   if(tx.committed&&accepted){const pc=Object.keys(tx.snapshot?.val?.()?.players||{}).length;update(ref(db,`roomIndex/${c}`),{playerCount:pc,updatedAt:Date.now()}).catch(()=>{});return true}return false;
+   if(tx.committed&&tx.snapshot.exists()&&tx.snapshot.val()?.players?.[uid]){admitted=true;joinedQueue=true;break}
+   await sleep(250);
   }
-  // نافذة بحث قصيرة قبل إنشاء مقعد انتظار جديد، لتجميع الضغوط المتزامنة.
-  for(let pass=0;pass<4&&!code;pass++){
-   for(const [c] of await candidates())if(await tryJoin(c)){code=c;break}
-   if(!code)await sleep(250);
-  }
-  if(!code){
-   code=randomCode();for(let i=0;i<8;i++){const ex=await get(ref(db,`rooms/${code}/public`));if(!ex.exists())break;code=randomCode()}
-   const createdAt=Date.now();createdByMe=true;
-   await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt,players:{[uid]:{...me,order:0,joinedAt:createdAt}}});
-   await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt,playerCount:1,updatedAt:createdAt});
-  }
-  // اللاعب يبقى في شاشة البحث، ولا ينتقل للطاولة إلا بعد اكتمال العدد.
+  if(token!==randomQueueCancelToken){await leaveQueue();searching(false);setMsg("تم إلغاء البحث");return}
+  if(!admitted)throw new Error("تعذر حجز مكان في البحث — حاول مرة ثانية");
+
   while(token===randomQueueCancelToken){
-   // إذا ظهرت غرفة أقدم مطابقة أثناء الانتظار، انضم لها وأغلق مقعدنا القديم.
-   const cs=await candidates();
-   for(const [c] of cs){
-    if(c===code)continue;
-    // لا نعتمد على createdAt لأن ساعة كل جهاز قد تختلف. كل الأجهزة تختار أصغر كود غرفة كمفتاح موحّد.
-    if(String(c).localeCompare(String(code))>=0)continue;
-    if(await tryJoin(c)){const old=code;code=c;await remove(ref(db,`rooms/${old}/public/players/${uid}`)).catch(()=>{});const os=await get(ref(db,`rooms/${old}/public`)).catch(()=>null);if(os&&os.exists()&&Object.keys(os.val()?.players||{}).length===0){await remove(ref(db,`rooms/${old}/public`)).catch(()=>{});await remove(ref(db,`roomIndex/${old}`)).catch(()=>{})}break}
+   const qs=await get(qref);if(!qs.exists()){joinedQueue=false;throw new Error("انتهى البحث — حاول مرة ثانية")}
+   const q=qs.val()||{},ids=Object.keys(q.players||{}).sort(),pc=ids.length;
+   if(q.roomCode){
+    const code=String(q.roomCode),rs=await get(ref(db,`rooms/${code}/public`));
+    if(rs.exists()&&rs.val()?.players?.[uid]){
+     joinedQueue=false;closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code);subscribe(code);return;
+    }
    }
-   const rs=await get(ref(db,`rooms/${code}/public`));
-   if(!rs.exists()){code="";throw new Error("انتهت غرفة البحث — حاول مرة ثانية")}
-   const r=rs.val()||{},pc=Object.keys(r.players||{}).length;
-   setMsg(pc>=count?"✅ اكتمل العدد — جاري دخول المباراة...":`🔎 جاري البحث... ${pc} / ${count} • القانون ${rule}`);
-   if(pc>=count){
-    closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";
-    await startPresence("room",code);subscribe(code);return;
+   setMsg(pc>=count?"✅ اكتمل العدد — جاري تجهيز المباراة...":`🔎 جاري البحث... ${pc} / ${count} • القانون ${rule}`);
+   if(pc===count&&!q.roomCode){
+    const leader=ids[0];
+    if(uid===leader){
+     let code=randomCode();for(let i=0;i<8;i++){const ex=await get(ref(db,`rooms/${code}/public`));if(!ex.exists())break;code=randomCode()}
+     const createdAt=Date.now(),players={};ids.forEach((id,i)=>{const p=q.players[id]||{};players[id]={name:p.name||"لاعب",order:i,cardCount:0,ready:true,role:"player",memberNo:p.memberNo||null,xp:Number(p.xp||0),avatarUrl:p.avatarUrl||"icon-512.png",joinedAt:Number(p.joinedAt||createdAt)}});
+     await set(ref(db,`rooms/${code}/public`),{hostId:leader,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt,players});
+     await set(ref(db,`roomIndex/${code}`),{hostId:leader,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt,playerCount:count,updatedAt:createdAt});
+     await runTransaction(qref,cur=>{if(!cur)return cur;const curIds=Object.keys(cur.players||{}).sort();if(cur.roomCode||curIds.join("|")!==ids.join("|"))return;return {...cur,roomCode:code,matchedAt:Date.now(),updatedAt:Date.now()}});
+    }
    }
-   await sleep(450);
+   await sleep(250);
   }
   await leaveQueue();searching(false);setMsg("تم إلغاء البحث");
  }catch(e){
-  console.warn("random online join",e);if(token===randomQueueCancelToken)await leaveQueue();searching(false);setMsg("تعذر البحث العشوائي: "+(e?.message||e?.code||"خطأ"));
+  console.warn("random central queue",e);if(token===randomQueueCancelToken)await leaveQueue();searching(false);setMsg("تعذر البحث العشوائي: "+(e?.message||e?.code||"خطأ"));
  }
 }
 async function maybeAutoStartRandomRoom(r){
