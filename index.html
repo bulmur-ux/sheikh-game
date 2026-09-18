@@ -1976,7 +1976,13 @@ async function joinRandomOnline(){
    code=randomCode();for(let i=0;i<8;i++){const ex=await get(ref(db,`rooms/${code}/public`));if(!ex.exists())break;code=randomCode()}
    const prof=(await get(ref(db,`users/${uid}`))).val()||{};
    await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:myName,order:0,cardCount:0,ready:true,role:"player",memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}});
-   await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});
+   // فهرسة غرفة العشوائي بعد إنشاء public. إذا تعثرت الفهرسة لا نلغي الغرفة نفسها.
+   try{
+    await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});
+   }catch(indexErr){
+    console.warn("random roomIndex write",indexErr);
+    if(msg)msg.textContent="تم إنشاء الغرفة، وتعذر تحديث فهرس المطابقة. جاري الدخول...";
+   }
   }else{
    const rr=ref(db,`rooms/${code}/public`);let joined=false;
    await runTransaction(rr,r=>{if(!r||r.systemRandom!==true||r.status!=="lobby")return;const ps=r.players||{};if(ps[uid]){joined=true;return r}if(Object.keys(ps).length>=Number(r.targetPlayers||4))return;r.players={...ps,[uid]:{name:myName,order:Object.keys(ps).length,cardCount:0,ready:true,role:"player",joinedAt:Date.now()}};joined=true;return r});
