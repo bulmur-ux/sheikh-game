@@ -2558,8 +2558,55 @@ async function swapPendingWithSlot(i){if(qPowerLocked()){toast("قوة Q قيد 
 async function throwPending(){if(powerFlowLocked()){toast("القوة قيد التنفيذ — أكمل القوة أولاً");return;}sfx("throw");if(!isMyTurn()||!myHand?.pending)return;const c=myHand.pending,src=myHand.pendingSource||"deck";if(src==="deck"&&c.r==="JOKER"){toast(c.color==="color"?"🃏 الجوكر الملون يبقى مع أوراقك ويخصم 3 نقاط عند الحساب":"🃏 الجوكر الأسود يبقى مع أوراقك ويخصم نقطة واحدة عند الحساب");return}await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});await putDiscard(c,`${myName} رمى ${cardLabel(c)}`);await finishTurn()}
 async function useRedQ(){sfx("queen");if(!isMyTurn()||!myHand?.pending||myHand.pendingSource!=="deck"||!powerEnabled(myHand.pending,"Q"))return;const c=myHand.pending;await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});await putDiscard(c,`${myName} استخدم قوة Q`);choosePeek()}
 async function useRedK(){sfx("king");if(!isMyTurn()||!myHand?.pending||myHand.pendingSource!=="deck"||!powerEnabled(myHand.pending,"K"))return;const k=myHand.pending;await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{pending:null,pendingSource:null});await putDiscard(k,`${myName} استخدم قوة K`);await kingPower()}
-async function playFromHand(){if(blockSecondAction())return;if(!isMyTurn()||myHand?.pending)return;const cards=myHand?.cards||[];const d=game().discard;if(!d){toast("ما في كرت في الميدان");return}openModal(`<h3>ارمِ من أوراقك</h3><div class="notice">اختر الورقة اللي تعتقد أنها نفس رقم/رتبة كرت الميدان. إذا غلط، تاخذ ورقة زيادة.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-playhand="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div>`);sheet.querySelectorAll("[data-playhand]").forEach(b=>b.onclick=()=>tryPlayHand(+b.dataset.playhand))}
-async function tryPlayHand(i){if(turnActionLocked()){closeModal();toast("الحركة الحالية مقفلة");return;}await update(ref(db,`rooms/${roomCode}/public/game`),{actionLockUid:uid});closeModal();const cards=(myHand?.cards||[]).slice(),c=cards[i],d=game().discard;if(!c||!d)return;if(sameRank(c,d)){cards[i]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});await putDiscard(c,`${myName} رمى ورقة صحيحة من أوراقه`);sfx("correct");toast("صح ✅");if(await checkEmptyAndEnd(cards))return;await finishTurn();return}const take=await takeDeckCards(1),penalty=take.ok?take.cards[0]:null;if(take.recycled){toast("🔄 تم خلط أوراق الميدان وإعادة الرزمة")};if(penalty){cards.push(penalty);await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});sfx("wrong");setTimeout(()=>sfx("penalty"),180);toast(`غلط ❌ صار عندك ${countCards(cards)} أوراق`);await sendSystem(`${myName} اختار ورقة غلط وأخذ ورقة زيادة`)}else toast("غلط، والرزمة خلصت");await finishTurn()}
+async function playFromHand(){
+ if(blockSecondAction())return;
+ if(!isMyTurn()||myHand?.pending)return;
+ const cards=myHand?.cards||[],d=game().discard;
+ if(!d){toast("ما في كرت في الميدان");return}
+ openModal(`<h3>ارمِ من أوراقك</h3><div class="notice">تقدر تحدد ورقة وحدة أو أكثر ثم تضغط «رمي المحدد». لازم <b>كل</b> الأوراق المحددة تكون نفس رتبة ورقة الميدان. إذا وحدة فقط غلط، ترجع الرمية كلها وتأخذ ورقة عقوبة واحدة.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-playhand="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div><div class="gap"></div><button id="throwSelected" class="btn danger" disabled>رمي المحدد (0)</button>`);
+ const selected=new Set(),submit=document.getElementById("throwSelected");
+ sheet.querySelectorAll("[data-playhand]").forEach(b=>b.onclick=()=>{
+   const i=+b.dataset.playhand;
+   if(selected.has(i)){selected.delete(i);b.classList.remove("green");b.classList.add("alt");b.textContent=`الورقة ${i+1}`}
+   else{selected.add(i);b.classList.remove("alt");b.classList.add("green");b.textContent=`✓ الورقة ${i+1}`}
+   submit.disabled=selected.size===0;submit.textContent=`رمي المحدد (${selected.size})`;
+ });
+ submit.onclick=()=>tryPlayHands([...selected]);
+}
+async function tryPlayHand(i){return tryPlayHands([i])}
+async function tryPlayHands(indices){
+ if(turnActionLocked()){closeModal();toast("الحركة الحالية مقفلة");return}
+ const unique=[...new Set((indices||[]).map(Number))].filter(Number.isInteger);
+ const cards=(myHand?.cards||[]).slice(),d=game().discard;
+ const chosen=unique.map(i=>cards[i]).filter(Boolean);
+ if(!d||!chosen.length||chosen.length!==unique.length){toast("حدد ورقة واحدة على الأقل");return}
+ await update(ref(db,`rooms/${roomCode}/public/game`),{actionLockUid:uid});
+ closeModal();
+ const allCorrect=chosen.every(c=>sameRank(c,d));
+ if(allCorrect){
+   for(const i of unique)cards[i]=null;
+   await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);
+   await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});
+   const g=game(),pile=Array.isArray(g.discardPile)?g.discardPile.slice():[];
+   pile.push(...chosen);
+   await update(ref(db,`rooms/${roomCode}/public/game`),{discard:chosen[chosen.length-1],discardPile:pile,discardSeq:Number(g.discardSeq||0)+chosen.length,lastAction:`${myName} رمى ${chosen.length} ${chosen.length===1?"ورقة":"أوراق"} صحيحة`,hasDrawn:null,actionSeq:Number(g.actionSeq||0)+1});
+   sfx("correct");toast(chosen.length===1?"صح ✅":"كل الأوراق المحددة صحيحة ✅");
+   if(await checkEmptyAndEnd(cards))return;
+   await finishTurn();return;
+ }
+ // أي خطأ يلغي الرمية كاملة: لا نحذف أي ورقة مختارة، ونضيف عقوبة واحدة فقط.
+ const take=await takeDeckCards(1),penalty=take.ok?take.cards[0]:null;
+ if(take.recycled)toast("🔄 تم خلط أوراق الميدان وإعادة الرزمة");
+ if(penalty){
+   cards.push(penalty);
+   await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);
+   await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});
+   sfx("wrong");setTimeout(()=>sfx("penalty"),180);
+   toast(`رمية غلط ❌ رجعت كل الأوراق المحددة + ورقة عقوبة`);
+   await sendSystem(`${myName} رميته فيها ورقة غلط — رجعت كل الأوراق المحددة وأخذ ورقة عقوبة واحدة`);
+ }else toast("الرمية غلط ورجعت كلها، لكن الرزمة خلصت");
+ await finishTurn();
+}
 async function putDiscard(card,log){const seq=(game().discardSeq||0)+1,pile=Array.isArray(game().discardPile)?game().discardPile.slice():[];pile.push(card);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:card,discardPile:pile,discardSeq:seq,lastAction:log,hasDrawn:null,actionSeq:(game().actionSeq||0)+1})}
 async function checkEmptyAndEnd(cards){if(countCards(cards)!==0)return false;await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",emptyWinner:uid,ending:true,hasDrawn:null,lastAction:`${myName} خلص أوراقه — انتهت الجولة`});await sendSystem(`${myName} خلص أوراقه! نتيجته 0 وانتهت الجولة`);sfx("win");return true}
 async function discardAndFinish(card,log){await putDiscard(card,log);await finishTurn()}
@@ -3046,8 +3093,8 @@ function showRulesModal(){
    <div class="rulesModalHead"><h2>📖 قواعد شيك شيك</h2><button id="rulesClose" class="rulesClose">✕</button></div>
    <div class="rulesQuick"><div><b>🎯 الهدف</b><br>أقل مجموع كلي بعد نهاية كل الجولات.</div><div><b>🃏 البداية</b><br>المضيف يبدأ المباراة مباشرة. بعدها تُوزع 4 أوراق لكل لاعب، وتنكشف أول ورقتين تلقائياً 20 ثانية للحفظ.</div></div>
    <ol class="rulesList">
-    <li><b>في دورك:</b> تسحب من الرزمة، أو تأخذ ورقة الميدان، أو ترمي ورقة من أوراقك إذا كانت نفس رتبة ورقة الميدان.</li>
-    <li><b>الرمي الخطأ:</b> الورقة تبقى عندك وتأخذ ورقة عقوبة.</li>
+    <li><b>في دورك:</b> تسحب من الرزمة، أو تأخذ ورقة الميدان، أو تحدد ورقة واحدة أو أكثر من يدك وترميها معًا إذا كانت كلها نفس رتبة ورقة الميدان. هذا ينطبق في القانون 1 والقانون 2.</li>
+    <li><b>الرمي المتعدد والخطأ:</b> لك حرية تحديد ورقة واحدة أو أكثر. إذا كانت كل الأوراق المحددة صحيحة تُرمى كلها. إذا كانت حتى ورقة واحدة منها غلط، تُلغى الرمية كاملة وتبقى/ترجع جميع الأوراق المحددة في يدك، وتسحب ورقة عقوبة واحدة فقط.</li>
     <li><b>وقت الدور:</b> 60 ثانية. أول 3 مرات ينتهي وقتك تأخذ ورقة عقوبة وينتقل الدور؛ في المرة الرابعة تخرج من الجولة تلقائياً وترجع أوراقك إلى رزمة السحب.</li>
     <li><b>بعد ما تخلص لعبك:</b> عندك 5 ثواني تختار «شيك» أو «تمرير الدور». إذا ما اخترت، ينتقل الدور تلقائياً.</li>
     <li><b>J الأحمر ♥♦:</b> إذا سحبته من الرزمة تختار ترميه عادي أو تستخدم التبديل. إذا اخترت التبديل عندك 10 ثواني وتبدّل ورقتين بين لاعبين مختلفين؛ ممكن ورقة منك مع لاعب آخر أو بين لاعبين آخرين. J الأسود ♠♣ بدون قوة خاصة.</li>
