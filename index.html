@@ -1988,7 +1988,7 @@ async function joinRandomOnline(){
   const me={name:myName,cardCount:0,ready:true,role:"player",memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()};
   async function candidates(){
    const idx=(await get(ref(db,"roomIndex"))).val()||{};
-   return Object.entries(idx).filter(([c,x])=>x&&x.systemRandom===true&&x.status==="lobby"&&Number(x.targetPlayers)===count&&Number(x.ruleMode)===rule&&Number(x.playerCount||0)<count).sort((a,b)=>Number(a[1].createdAt||0)-Number(b[1].createdAt||0));
+   return Object.entries(idx).filter(([c,x])=>x&&x.systemRandom===true&&x.status==="lobby"&&Number(x.targetPlayers)===count&&Number(x.ruleMode)===rule&&Number(x.playerCount||0)<count).sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
   }
   async function tryJoin(c){
    const rr=ref(db,`rooms/${c}/public`);let accepted=false;
@@ -2016,9 +2016,8 @@ async function joinRandomOnline(){
    const cs=await candidates();
    for(const [c] of cs){
     if(c===code)continue;
-    const ix=(await get(ref(db,`roomIndex/${c}`))).val()||{};
-    const mine=(await get(ref(db,`roomIndex/${code}`))).val()||{};
-    if(Number(ix.createdAt||0)>=Number(mine.createdAt||Infinity))continue;
+    // لا نعتمد على createdAt لأن ساعة كل جهاز قد تختلف. كل الأجهزة تختار أصغر كود غرفة كمفتاح موحّد.
+    if(String(c).localeCompare(String(code))>=0)continue;
     if(await tryJoin(c)){const old=code;code=c;await remove(ref(db,`rooms/${old}/public/players/${uid}`)).catch(()=>{});const os=await get(ref(db,`rooms/${old}/public`)).catch(()=>null);if(os&&os.exists()&&Object.keys(os.val()?.players||{}).length===0){await remove(ref(db,`rooms/${old}/public`)).catch(()=>{});await remove(ref(db,`roomIndex/${old}`)).catch(()=>{})}break}
    }
    const rs=await get(ref(db,`rooms/${code}/public`));
