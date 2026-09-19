@@ -94,6 +94,48 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 .memberCard{padding:8px 10px!important}.memberCard .actions{display:grid!important;grid-template-columns:repeat(3,1fr);gap:6px!important}.memberCard .actions .btn{min-width:0!important;padding:8px 5px!important;font-size:12px!important}.memberMeta{font-weight:700}.memberNoStrong{color:#f1c75b;font-weight:950}
 .pinGate{position:fixed;inset:0;z-index:99999;background:rgba(5,2,1,.94);display:flex;align-items:center;justify-content:center;padding:18px;direction:rtl}.pinBox{width:min(390px,100%);background:#160d08;border:1px solid #b98532;border-radius:20px;padding:20px;box-shadow:0 20px 70px #000}.pinBox h2{margin:0 0 8px;color:#f4d27e}.pinBox p{color:#c8b18a;line-height:1.7}.pinBox input{width:100%;font-size:28px;letter-spacing:10px;text-align:center;padding:12px;border-radius:12px;border:1px solid #72501f;background:#090604;color:#fff;margin:8px 0}.pinChoices{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pinLenBtn{background:#211611!important;color:#ffe29a!important;border:1px solid #6a4c25!important}.pinLenBtn.selected{background:linear-gradient(180deg,#f5c44f,#d89a18)!important;color:#241507!important;border-color:#f4cf6a!important;box-shadow:0 0 0 2px rgba(244,207,106,.16) inset}.pinLenBtn:focus{outline:none}.pinError{color:#ff8e8e;min-height:22px;font-size:13px;margin-top:6px}.returnRoomTop{display:none;margin-bottom:10px}.returnRoomTop.show{display:block}
 @media(max-width:430px){.memberCard .actions{grid-template-columns:repeat(3,1fr)!important}.memberCard .actions .btn{font-size:10.5px!important;padding:7px 2px!important}.memberName{font-size:14px}.rankMini{width:24px!important;height:24px!important}}
+
+/* ===== Room management: compact organized mobile layout ===== */
+.roomTools{
+  display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin:0 0 10px
+}
+.roomTools .btn{min-height:44px}
+.roomSearch{
+  width:100%;height:44px;border-radius:13px;border:1px solid #5d431f;
+  background:#0d0907;color:#fff;padding:0 13px;outline:none;margin:0 0 9px
+}
+.roomSearch:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8b84a22}
+.roomFilters{display:flex;gap:6px;overflow-x:auto;padding:1px 0 10px;scrollbar-width:none}
+.roomFilters::-webkit-scrollbar{display:none}
+.roomFilter{
+  flex:0 0 auto;border:1px solid #5d431f;background:#17100d;color:#d8c49d;
+  border-radius:999px;padding:8px 11px;font-weight:800;white-space:nowrap
+}
+.roomFilter.active{background:#5a3b12;color:#ffe29a;border-color:#a8792b}
+.roomSummary{font-size:11px;color:#a99673;margin:0 2px 8px}
+.roomItem{margin:8px 0}
+.roomItem .itemHead{padding:10px 11px;align-items:center}
+.roomMain{min-width:0}
+.roomLine{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.roomState{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;
+  font-size:10px;font-weight:900;border:1px solid #5d431f;background:#17100d;color:#e9d7b1}
+.roomState.playing{border-color:#27734e;color:#caffdf;background:#123c2a}
+.roomState.waiting{border-color:#7a5725;color:#ffe29a;background:#2a1b0e}
+.roomState.empty{color:#b8aa90;background:#120d0a}
+.roomItem .actions{flex-wrap:nowrap}
+.roomItem .actions .btn{min-height:38px;padding:0 12px}
+@media(max-width:600px){
+  .roomTools{grid-template-columns:1fr 1fr}
+  .roomItem .itemHead{flex-direction:row;align-items:center}
+  .roomItem .actions{width:auto}
+  .roomItem .actions .btn{flex:0 0 auto;font-size:11px;padding:0 10px}
+}
+@media(max-width:390px){
+  .roomItem .itemHead{align-items:flex-start}
+  .roomItem .actions{flex-direction:column}
+  .roomItem .actions .btn{width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -138,9 +180,21 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 
     <div id="panel-rooms" class="panel active">
       <div class="section">
-        <div class="sectionTitle"><h2>إدارة الغرف</h2><button id="refreshRooms" class="btn btnDark refresh">تحديث ↻</button></div>
-        <button id="cleanupStaleBtn" class="btn btnGold btnWide" style="margin:0 0 10px;display:none">🧹 تنظيف الغرف الفارغة دفعة واحدة</button>
-        <div class="note" id="cleanupRoomsNote" style="margin:0 0 12px;display:none">يحذف الغرف التي لا يوجد فيها مستخدم متصل فعليًا ولا مباراة جارية، ويترك الغرف المستخدمة بدون تغيير.</div>
+        <div class="sectionTitle"><h2>إدارة الغرف</h2></div>
+        <div class="roomTools">
+          <button id="refreshRooms" class="btn btnDark">↻ تحديث</button>
+          <button id="cleanupStaleBtn" class="btn btnGold" style="display:none">🧹 تنظيف الغرف الفارغة</button>
+        </div>
+        <input id="roomSearch" class="roomSearch" inputmode="text" autocomplete="off" placeholder="🔎 ابحث برقم الغرفة">
+        <div class="roomFilters" id="roomFilters">
+          <button class="roomFilter active" data-room-filter="all">الكل</button>
+          <button class="roomFilter" data-room-filter="playing">🎮 جارية</button>
+          <button class="roomFilter" data-room-filter="occupied">👥 فيها لاعبين</button>
+          <button class="roomFilter" data-room-filter="waiting">⏳ انتظار</button>
+          <button class="roomFilter" data-room-filter="empty">⚪ فارغة</button>
+        </div>
+        <div class="roomSummary" id="roomSummary"></div>
+        <div class="note" id="cleanupRoomsNote" style="margin:0 0 10px;display:none">التنظيف يحذف الغرف الخاملة الآمنة فقط، ولا يحذف غرفة فيها مستخدم متصل فعليًا أو مباراة جارية.</div>
         <div id="roomsList"><div class="empty">جاري تحميل الغرف...</div></div>
       </div>
       <button id="closeAllBtn" class="btn btnRed btnWide" style="margin-top:12px">إغلاق جميع الغرف</button>
@@ -310,11 +364,67 @@ function renderStats(){
   $('gamesCount').textContent=games;
   $('bansCount').textContent=Object.keys(currentBans||{}).length;
 }
+
+let roomListFilter='all';
+
+function roomLiveInfo(code,room){
+  const roomCode=String(code||'').trim().toUpperCase();
+  const pub=room?.public||{};
+  const players=getPlayers(room);
+  const sessions=activePresenceSessions().filter(x=>x.room===roomCode && (x.state==='room'||x.state==='game'));
+  const liveUids=new Set(sessions.map(x=>x.uid));
+  const gameLive=sessions.filter(x=>x.state==='game');
+  const playing=isActuallyPlaying(pub) && new Set(gameLive.map(x=>x.uid)).size>=2;
+  const occupied=liveUids.size>0 || players.length>0;
+  const waiting=!playing && occupied;
+  const empty=!playing && !occupied;
+  return {players,playing,occupied,waiting,empty,liveCount:liveUids.size};
+}
+
+function roomSortWeight(info){
+  if(info.playing) return 0;
+  if(info.occupied) return 1;
+  return 2;
+}
+
 function renderRooms(){
-  renderStats();const entries=Object.entries(currentRooms||{}),list=$('roomsList');
-  if(!entries.length){list.innerHTML='<div class="empty">لا توجد غرف مفتوحة حاليًا ✅</div>';return}
-  list.innerHTML=entries.map(([code,room])=>{
-    const pub=room?.public||{},players=getPlayers(room);
+  renderStats();
+  const list=$('roomsList');
+  const search=String($('roomSearch')?.value||'').trim().toUpperCase();
+
+  let entries=Object.entries(currentRooms||{}).map(([code,room])=>{
+    const info=roomLiveInfo(code,room);
+    return {code,room,info};
+  });
+
+  entries.sort((a,b)=>{
+    const d=roomSortWeight(a.info)-roomSortWeight(b.info);
+    if(d) return d;
+    return String(a.code).localeCompare(String(b.code));
+  });
+
+  entries=entries.filter(x=>{
+    if(search && !String(x.code).toUpperCase().includes(search)) return false;
+    if(roomListFilter==='playing') return x.info.playing;
+    if(roomListFilter==='occupied') return x.info.occupied;
+    if(roomListFilter==='waiting') return x.info.waiting;
+    if(roomListFilter==='empty') return x.info.empty;
+    return true;
+  });
+
+  if($('roomSummary')){
+    $('roomSummary').textContent=`عرض ${entries.length} من ${Object.keys(currentRooms||{}).length} غرفة`;
+  }
+
+  if(!entries.length){
+    list.innerHTML='<div class="empty">لا توجد غرف مطابقة حاليًا.</div>';
+    return;
+  }
+
+  list.innerHTML=entries.map(({code,room,info})=>{
+    const players=info.players;
+    const stateClass=info.playing?'playing':(info.empty?'empty':'waiting');
+    const stateText=info.playing?'🎮 جارية':(info.empty?'⚪ فارغة':'⏳ انتظار');
     const phtml=players.length?players.map(p=>`
       <div class="player">
         <div><div class="pname">${esc(p.name||'بدون اسم')}</div><div class="prole">${esc(p.role||'player')} • UID: ${esc(p.uid.slice(0,8))}...</div></div>
@@ -323,15 +433,26 @@ function renderRooms(){
           ${canRooms()?`<button class="btn btnBlue smallbtn" data-kick="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">إخراج</button>`:''}
         </div>
       </div>`).join(''):'<div class="empty" style="padding:12px">لا يوجد لاعبون</div>';
-    return `<div class="item">
+
+    return `<div class="item roomItem">
       <div class="itemHead">
-        <div><div class="itemTitle">#${esc(code)}</div><div class="itemMeta">${roomStatus(pub)} • ${players.length} لاعب</div></div>
-        <div class="actions"><button class="btn btnBlue" data-toggle="${esc(code)}">اللاعبون</button>${canRooms()?`<button class="btn btnRed" data-close="${esc(code)}">إغلاق الغرفة</button>`:''}</div>
+        <div class="roomMain">
+          <div class="roomLine">
+            <div class="itemTitle">#${esc(code)}</div>
+            <span class="roomState ${stateClass}">${stateText}</span>
+          </div>
+          <div class="itemMeta">👥 ${players.length} لاعب${info.liveCount?` • 🟢 ${info.liveCount} متصل فعليًا`:''}</div>
+        </div>
+        <div class="actions">
+          <button class="btn btnBlue" data-toggle="${esc(code)}">اللاعبون</button>
+          ${canRooms()?`<button class="btn btnRed" data-close="${esc(code)}">إغلاق</button>`:''}
+        </div>
       </div>
       <div id="players-${esc(code)}" class="players">${phtml}</div>
     </div>`;
   }).join('');
 }
+
 function monitorVoiceUid(){
   return auth.currentUser ? `admin_${auth.currentUser.uid}` : "";
 }
@@ -558,6 +679,16 @@ document.querySelector('.tabs').addEventListener('click',e=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));$('panel-'+b.dataset.tab).classList.add('active');
 });
+
+$('roomSearch')?.addEventListener('input',()=>renderRooms());
+$('roomFilters')?.addEventListener('click',e=>{
+  const b=e.target.closest('[data-room-filter]');
+  if(!b)return;
+  roomListFilter=b.dataset.roomFilter||'all';
+  document.querySelectorAll('[data-room-filter]').forEach(x=>x.classList.toggle('active',x===b));
+  renderRooms();
+});
+
 $('roomsList').addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.toggle){$('players-'+t.dataset.toggle)?.classList.toggle('open');return}
