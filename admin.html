@@ -139,10 +139,11 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
     <div id="panel-rooms" class="panel active">
       <div class="section">
         <div class="sectionTitle"><h2>إدارة الغرف</h2><button id="refreshRooms" class="btn btnDark refresh">تحديث ↻</button></div>
+        <button id="cleanupStaleBtn" class="btn btnGold btnWide" style="margin:0 0 10px;display:none">🧹 تنظيف الغرف الفارغة دفعة واحدة</button>
+        <div class="note" id="cleanupRoomsNote" style="margin:0 0 12px;display:none">يحذف الغرف التي لا يوجد فيها مستخدم متصل فعليًا ولا مباراة جارية، ويترك الغرف المستخدمة بدون تغيير.</div>
         <div id="roomsList"><div class="empty">جاري تحميل الغرف...</div></div>
       </div>
       <button id="closeAllBtn" class="btn btnRed btnWide" style="margin-top:12px">إغلاق جميع الغرف</button>
-      <button id="cleanupStaleBtn" class="btn btnGold btnWide" style="margin-top:8px;display:none">🧹 تنظيف الغرف الخاملة</button>
     </div>
 
 
@@ -230,7 +231,7 @@ function showDash(user){
   const rr=ADMIN_ROLES[currentAdmin?.role];$('roleBadge').textContent=isSuper()?'👑 SUPER ADMIN':`${rr?.name||'مشرف'}`;
   document.querySelectorAll('.superOnly').forEach(el=>el.style.display=isSuper()?'':'none');
   document.querySelectorAll('.memberAccess').forEach(el=>el.style.display=(isSuper()||hasPerm('manageMembers'))?'':'none');
-  $('cleanupStaleBtn').style.display=isSuper()?'block':'none';
+  $('cleanupStaleBtn').style.display=isSuper()?'block':'none';$('cleanupRoomsNote').style.display=isSuper()?'block':'none';
   subscribeAll();
 }
 async function logAction(action,details='',meta={}){
@@ -630,7 +631,7 @@ $('cleanupStaleBtn').onclick=async()=>{
     return !isActuallyPlaying(pub) && !activeRooms.has(code);
   }).map(([code])=>code);
   if(!stale.length){alert('لا توجد غرف خاملة آمنة للتنظيف حاليًا ✅');return}
-  if(!confirm(`سيتم حذف ${stale.length} غرفة خاملة فقط.\nلن تُحذف أي غرفة فيها مستخدم متصل أو مباراة جارية.\n\nمتابعة؟`))return;
+  if(!confirm(`وجدت ${stale.length} غرفة فارغة/خاملة.\nسيتم تنظيفها دفعة واحدة، ولن تُحذف أي غرفة فيها مستخدم متصل أو مباراة جارية.\n\nمتابعة؟`))return;
   try{
     const ch={};
     stale.forEach(code=>{ch[`rooms/${code}`]=null;ch[`roomIndex/${code}`]=null});
