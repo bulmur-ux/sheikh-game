@@ -2341,20 +2341,11 @@ async function runComputerBotWork(){
 async function joinRandomOnline(){
  const diagLines=[];
  const diag=(stage,detail="")=>{
+   // التشخيص مخفي من الواجهة؛ نحتفظ بالتسجيل في Console فقط بدون إنشاء صندوق مرئي.
    const stamp=new Date().toLocaleTimeString("ar-AE");
    const line=`${diagLines.length+1}. [${stamp}] ${stage}${detail?` — ${detail}`:""}`;
    diagLines.push(line);
    console.log("[RANDOM-DIAG]",line);
-   let box=document.getElementById("rndDiag");
-   if(!box){
-     box=document.createElement("div");
-     box.id="rndDiag";
-     box.style.cssText="margin-top:12px;padding:12px;border:2px solid #9b6b24;border-radius:14px;background:#17110d;color:#fff;font-size:13px;line-height:1.8;text-align:right;direction:rtl;white-space:pre-wrap;max-height:280px;overflow:auto";
-     const msg=document.getElementById("rndMsg");
-     (msg?.parentElement||document.body).appendChild(box);
-   }
-   box.textContent="🔧 تشخيص الأونلاين\n"+diagLines.join("\n");
-   box.scrollTop=box.scrollHeight;
  };
  diag("تم الضغط على ابدأ أونلاين");
  const diagError=(label,e)=>diag("❌ "+label,String(e?.stack||e?.message||e||"خطأ غير معروف"));
