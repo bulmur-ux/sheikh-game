@@ -1,6 +1,6 @@
 // ============================================================
 // شيك شيك - نظام الصوت المستقل
-// Voice v6.3 (Fix: State Conflict & Stable Guard)
+// Voice v6.4 (Full Fix: State Conflict + Robust TURN/STUN Relay)
 // ============================================================
 
 (function () {
@@ -51,13 +51,12 @@
     // SETTINGS
     // ========================================================
 
-    const VOICE_VERSION = "6.3";
+    const VOICE_VERSION = "6.4";
     const VOICE_DEBUG = true;
 
     const SYNC_MS = 1200;
     const HEARTBEAT_MS = 5000;
     const ICE_CHECK_TIMEOUT = 12000;
-    const OFFER_TIMEOUT = 12000;
 
     let lastHeartbeatAt = 0;
 
@@ -516,7 +515,7 @@
     }
 
     // ========================================================
-    // MAKE PEER (معالجة إعدادات الاتصال وخوادم STUN)
+    // MAKE PEER (مع خوادم STUN & TURN لتجاوز حظر الشبكات)
     // ========================================================
 
     async function makePeer(otherUid, pairKey = "") {
@@ -536,15 +535,20 @@
 
       const pc = new RTCPeerConnection({
         iceServers: [
-          { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:stun.cloudflare.com:3478"] },
+          { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
           {
-            urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443"],
-            username: "openrelayproject",
-            credential: "openrelayproject"
+            urls: [
+              'turn:relay.metered.ca:80',
+              'turn:relay.metered.ca:443',
+              'turn:relay.metered.ca:443?transport=tcp'
+            ],
+            username: '0c7b2c01d4a696ebf4581ed7',
+            credential: 'cR8/4tG+r7Y2+gB1'
           }
         ],
-        iceCandidatePoolSize: 6,
-        bundlePolicy: "max-bundle"
+        iceTransportPolicy: 'all',
+        iceCandidatePoolSize: 10,
+        bundlePolicy: 'max-bundle'
       });
 
       pc._addedRemoteIce = new Set();
@@ -576,8 +580,8 @@
           const currentPairKey = pc._pairKey;
           if (!currentPairKey) return;
 
-          await set(
-            push(ref(db, `rooms/${roomCode}/public/voiceSignals/${pair}/ice/${currentPairKey}/${uid}`)),
+          await push(
+            ref(db, `rooms/${roomCode}/public/voiceSignals/${pair}/ice/${currentPairKey}/${uid}`),
             event.candidate.toJSON()
           );
         } catch (e) {
@@ -637,7 +641,7 @@
     }
 
     // ========================================================
-    // SYNC & SIGNALING (معالجة State Conflict نهائياً)
+    // SYNC & SIGNALING
     // ========================================================
 
     async function sync() {
@@ -725,7 +729,6 @@
               const answer = signal?.answer || null;
               const answerMatches = answer?.sdp && answer?.pairKey === pairKey && answer?.from === otherUid;
 
-              // الحماية المضافة ضد Called in wrong state: stable
               if (answerMatches && !pc.currentRemoteDescription) {
                 if (pc.signalingState === "have-local-offer") {
                   setPeerDebug(otherUid, { stage: "📥 Answer وصل" });
