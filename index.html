@@ -3562,6 +3562,23 @@ async function performRoundWithdrawal({automatic=false,reason="",kicked=false,vo
 }
 async function withdrawFromRound(){
  if(!isActivePlayer()||!["memorize","playing"].includes(game().phase)){toast("أنت مو داخل الجولة حالياً");return false}
+ if(currentRoom?.computerMatch){
+  openModal(`<h3 style="text-align:center;margin-top:0">🚪 الخروج من مباراة الكمبيوتر</h3><div class="notice center">إذا خرجت بتنتهي مباراة الكمبيوتر وبترد مباشرة للصفحة الرئيسية.</div><div class="gap"></div><button id="withdrawComputerConfirm" class="btn danger">🚪 تأكيد الخروج</button><div class="gap"></div><button id="withdrawCancel" class="btn">إلغاء</button>`);
+  document.getElementById("withdrawCancel").onclick=closeModal;
+  document.getElementById("withdrawComputerConfirm").onclick=async()=>{
+   closeModal();
+   const code=roomCode;
+   try{
+    await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الخروج من مباراة الكمبيوتر"});
+    if(code)await remove(ref(db,`rooms/${code}`)).catch(()=>{});
+   }finally{
+    try{await leaveRoomCleanly()}catch(e){}
+    roomCode=null;currentRoom=null;myHand=null;
+    renderHome();
+   }
+  };
+  return true;
+ }
  if(currentRoom?.systemRandom){
   openModal(`<h3 style="text-align:center;margin-top:0">🚪 الانسحاب من المباراة</h3><div class="notice center">إذا انسحبت من اللعب العشوائي بتطلع من المباراة وترجع للصفحة الرئيسية.</div><div class="gap"></div><button id="withdrawRandomConfirm" class="btn danger">🚪 تأكيد الانسحاب</button><div class="gap"></div><button id="withdrawCancel" class="btn">إلغاء</button>`);
   document.getElementById("withdrawCancel").onclick=closeModal;
