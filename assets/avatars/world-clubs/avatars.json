@@ -1,0 +1,144 @@
+{
+  "category": "world-clubs",
+  "count": 23,
+  "avatars": [
+    {
+      "id": "club-001",
+      "name": "Real Madrid",
+      "file": "club-001-real-madrid.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-002",
+      "name": "Barcelona",
+      "file": "club-002-barcelona.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-003",
+      "name": "Manchester United",
+      "file": "club-003-manchester-united.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-004",
+      "name": "Manchester City",
+      "file": "club-004-manchester-city.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-005",
+      "name": "Liverpool",
+      "file": "club-005-liverpool.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-006",
+      "name": "Chelsea",
+      "file": "club-006-chelsea.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-007",
+      "name": "Arsenal",
+      "file": "club-007-arsenal.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-008",
+      "name": "Tottenham",
+      "file": "club-008-tottenham.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-009",
+      "name": "Juventus",
+      "file": "club-009-juventus.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-010",
+      "name": "AC Milan",
+      "file": "club-010-ac-milan.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-011",
+      "name": "Inter Milan",
+      "file": "club-011-inter-milan.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-012",
+      "name": "Bayern Munich",
+      "file": "club-012-bayern-munich.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-013",
+      "name": "PSG",
+      "file": "club-013-psg.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-014",
+      "name": "Al Nassr",
+      "file": "club-014-al-nassr.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-015",
+      "name": "Al Hilal",
+      "file": "club-015-al-hilal.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-016",
+      "name": "Al Ittihad",
+      "file": "club-016-al-ittihad.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-017",
+      "name": "Al Ahli",
+      "file": "club-017-al-ahli.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-018",
+      "name": "Al Shabab",
+      "file": "club-018-al-shabab.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-019",
+      "name": "Al Qadsiah",
+      "file": "club-019-al-qadsiah.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-020",
+      "name": "Al Ettifaq",
+      "file": "club-020-al-ettifaq.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-021",
+      "name": "Al Fateh",
+      "file": "club-021-al-fateh.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-022",
+      "name": "Al Taawoun",
+      "file": "club-022-al-taawoun.webp",
+      "category": "world-clubs"
+    },
+    {
+      "id": "club-023",
+      "name": "Al Riyadh",
+      "file": "club-023-al-riyadh.webp",
+      "category": "world-clubs"
+    }
+  ]
+}
