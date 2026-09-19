@@ -2191,6 +2191,102 @@ async function botRevealAll(g){
   await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),{name:currentRoom?.players?.[id]?.name||"الكمبيوتر",cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)});
  }
 }
+
+function botPowerEnabled(card,rank,g=currentRoom?.game||{}){
+ return !!card&&card.r===rank&&(Number(g.ruleMode||currentRoom?.ruleMode||1)===2||isRed(card));
+}
+async function botPutDiscard(card,lastAction){
+ if(!card)return;
+ const gs=(await get(ref(db,`rooms/${roomCode}/public/game`))).val()||{};
+ const pile=Array.isArray(gs.discardPile)?gs.discardPile.slice():[];
+ pile.push(card);
+ await update(ref(db,`rooms/${roomCode}/public/game`),{
+  discard:card,discardPile:pile,discardSeq:Number(gs.discardSeq||0)+1,
+  lastAction:lastAction||"تم تنفيذ حركة الكمبيوتر"
+ });
+}
+async function botUseJack(botId,g){
+ const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
+ const active=(g.turnOrder||[]).filter(id=>Number(r.players?.[id]?.cardCount||0)>0);
+ if(active.length<2)return false;
+ // الاختيار لا يعتمد على قيم الأوراق المخفية: لاعبان مختلفان + خانة عشوائية من كل لاعب.
+ const shuffled=active.slice().sort(()=>Math.random()-.5),aUid=shuffled[0],bUid=shuffled[1];
+ const [aSnap,bSnap]=await Promise.all([
+  get(ref(db,`rooms/${roomCode}/privateHands/${aUid}`)),
+  get(ref(db,`rooms/${roomCode}/privateHands/${bUid}`))
+ ]);
+ const a=(aSnap.val()?.cards||[]).slice(),b=(bSnap.val()?.cards||[]).slice();
+ const ai=a.map((c,i)=>c?i:-1).filter(i=>i>=0),bi=b.map((c,i)=>c?i:-1).filter(i=>i>=0);
+ if(!ai.length||!bi.length)return false;
+ const ax=ai[Math.floor(Math.random()*ai.length)],bx=bi[Math.floor(Math.random()*bi.length)];
+ const tmp=a[ax];a[ax]=b[bx];b[bx]=tmp;
+ await Promise.all([
+  set(ref(db,`rooms/${roomCode}/privateHands/${aUid}/cards`),a),
+  set(ref(db,`rooms/${roomCode}/privateHands/${bUid}/cards`),b)
+ ]);
+ const botName=r.players?.[botId]?.name||"الكمبيوتر";
+ const aName=r.players?.[aUid]?.name||"لاعب",bName=r.players?.[bUid]?.name||"لاعب";
+ await sendSystem(`🃏 ${botName} استخدم قوة J — تم التبديل بين ${aName} و${bName}`);
+ return true;
+}
+async function botUseQueen(botId){
+ const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
+ const botName=r.players?.[botId]?.name||"الكمبيوتر";
+ // Q للكمبيوتر تنفذ كقوة نظامية، ولا نكشف للاعب أي رقم أو قيمة ورقة.
+ await sendSystem(`🃏 ${botName} استخدم قوة Q`);
+ return true;
+}
+async function botUseKing(botId,g,depth=0){
+ if(depth>8)return false;
+ const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
+ const botName=r.players?.[botId]?.name||"الكمبيوتر";
+ await sendSystem(`👑 ${botName} استخدم قوة K — سحب ورقتين`);
+ const take=await takeDeckCards(2);
+ if(!take.ok||!take.cards||take.cards.length<2)return false;
+ const picks=take.cards.slice(0,2);
+
+ // مثل اللاعب: إذا ظهر J/Q/K وقوته فعالة من سحبة K، يقدر يستخدمها مباشرة.
+ const specialIndex=picks.findIndex(c=>["J","Q","K"].includes(c?.r)&&botPowerEnabled(c,c.r,g));
+ if(specialIndex>=0){
+  const chosen=picks[specialIndex],other=picks[specialIndex?0:1];
+  if(other)await returnCardToDeckTop(other);
+  await botPutDiscard(chosen,`${botName} استخدم قوة ${chosen.r} من سحبة K`);
+  if(chosen.r==="J")return botUseJack(botId,g);
+  if(chosen.r==="Q")return botUseQueen(botId);
+  if(chosen.r==="K")return botUseKing(botId,g,depth+1);
+ }
+
+ // وإلا يختار الأفضل من الورقتين ويبدله مع أعلى ورقة في يده، مثل قراره العادي.
+ const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${botId}`))).val()||{};
+ const cards=(hs.cards||[]).slice();
+ let worst=-1,worstCost=-999;
+ cards.forEach((c,i)=>{const v=botCardCost(c);if(c&&v>worstCost){worstCost=v;worst=i}});
+ const chosenIndex=botCardCost(picks[1])<botCardCost(picks[0])?1:0;
+ const chosen=picks[chosenIndex],other=picks[chosenIndex?0:1];
+ if(worst>=0&&botCardCost(chosen)<worstCost){
+  const old=cards[worst];cards[worst]=chosen;
+  await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);
+  await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});
+  if(other)await returnCardToDeckTop(other);
+  await botPutDiscard(old,`${botName} أكمل قوة K`);
+ }else{
+  // إذا ما استفاد من الورقتين، يرميهما بدون إعلان قيمهما في الرسائل.
+  await botPutDiscard(picks[1],`${botName} أكمل قوة K`);
+  await botPutDiscard(picks[0],`${botName} أكمل قوة K`);
+ }
+ return true;
+}
+async function botUseDrawnPower(botId,drawn,g){
+ if(!drawn||!["J","Q","K"].includes(drawn.r)||!botPowerEnabled(drawn,drawn.r,g))return false;
+ const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
+ const botName=r.players?.[botId]?.name||"الكمبيوتر";
+ await botPutDiscard(drawn,`${botName} استخدم قوة ${drawn.r}`);
+ if(drawn.r==="J")return botUseJack(botId,g);
+ if(drawn.r==="Q")return botUseQueen(botId);
+ if(drawn.r==="K")return botUseKing(botId,g);
+ return false;
+}
+
 async function runComputerBotWork(){
  const snap=await get(ref(db,`rooms/${roomCode}/public`));if(!snap.exists())return;const r=snap.val()||{};if(!r.computerMatch||uid!==r.hostId)return;const g=r.game||{};
  if(g.phase==="memorize"){
@@ -2202,16 +2298,44 @@ async function runComputerBotWork(){
  }
  if(g.phase==="reveal"){await botRevealAll(g);return}
  if(g.phase!=="playing")return;
- const order=g.turnOrder||[],botId=order[Number(g.turnIndex||0)]||"";if(!isComputerBot(botId))return;if(g.ending&&!g.finalRemaining?.[botId]){await botAdvanceTurn(botId);return;}
+ const order=g.turnOrder||[],botId=order[Number(g.turnIndex||0)]||"";if(!isComputerBot(botId))return;
+ if(g.ending&&!g.finalRemaining?.[botId]){await botAdvanceTurn(botId);return}
  if(g.decisionUid===botId){await botAdvanceTurn(botId);return}
+
  const href=ref(db,`rooms/${roomCode}/privateHands/${botId}`),hsnap=await get(href),hand=hsnap.val()||{},cards=(hand.cards||[]).slice(),discard=g.discard;
- // أولاً: إذا عنده نفس رتبة الميدان يرمي كل الأوراق المطابقة مباشرة.
- if(discard){const idx=[];cards.forEach((c,i)=>{if(c&&sameRank(c,discard))idx.push(i)});if(idx.length){const thrown=idx.map(i=>cards[i]);idx.forEach(i=>cards[i]=null);await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});const pile=Array.isArray(g.discardPile)?g.discardPile.slice():[];pile.push(...thrown);if(countCards(cards)===0){await update(ref(db,`rooms/${roomCode}/public/game`),{discard:thrown.at(-1),discardPile:pile,discardSeq:Number(g.discardSeq||0)+thrown.length,phase:"reveal",emptyWinner:botId,ending:true,hasDrawn:null,actionLockUid:null,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} خلص أوراقه — انتهت الجولة`});return}await update(ref(db,`rooms/${roomCode}/public/game`),{discard:thrown.at(-1),discardPile:pile,discardSeq:Number(g.discardSeq||0)+thrown.length,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ${thrown.length} ${thrown.length===1?"ورقة":"أوراق"}`,hasDrawn:null,actionLockUid:null});await botAdvanceTurn(botId);return}}
- // وإلا يسحب ورقة. يحتفظ بها إذا كانت أفضل من أعلى ورقة عنده، وإلا يرميها.
- const take=await takeDeckCards(1);if(!take.ok){await botAdvanceTurn(botId);return}const drawn=take.cards[0];let worst=-1,worstCost=-999;cards.forEach((c,i)=>{const v=botCardCost(c);if(c&&v>worstCost){worstCost=v;worst=i}});
+
+ // أولاً: نفس رتبة الميدان — يرمي المطابقات. القوة لا تتفعل من اليد.
+ if(discard){
+  const idx=[];cards.forEach((c,i)=>{if(c&&sameRank(c,discard))idx.push(i)});
+  if(idx.length){
+   const thrown=idx.map(i=>cards[i]);idx.forEach(i=>cards[i]=null);
+   await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);
+   await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});
+   const pile=Array.isArray(g.discardPile)?g.discardPile.slice():[];pile.push(...thrown);
+   if(countCards(cards)===0){
+    await update(ref(db,`rooms/${roomCode}/public/game`),{discard:thrown.at(-1),discardPile:pile,discardSeq:Number(g.discardSeq||0)+thrown.length,phase:"reveal",emptyWinner:botId,ending:true,hasDrawn:null,actionLockUid:null,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} خلص أوراقه — انتهت الجولة`});return
+   }
+   await update(ref(db,`rooms/${roomCode}/public/game`),{discard:thrown.at(-1),discardPile:pile,discardSeq:Number(g.discardSeq||0)+thrown.length,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ${thrown.length} ${thrown.length===1?"ورقة":"أوراق"}`,hasDrawn:null,actionLockUid:null});
+   await botAdvanceTurn(botId);return
+  }
+ }
+
+ // يسحب من الرزمة. J/Q/K تتفعل فقط من السحب وبحسب القانون المختار.
+ const take=await takeDeckCards(1);if(!take.ok){await botAdvanceTurn(botId);return}
+ const drawn=take.cards[0];
+ if(await botUseDrawnPower(botId,drawn,g)){await botAdvanceTurn(botId);return}
+
+ // الأوراق العادية/الجوكر: يحتفظ بالأفضل ويستبدل أعلى كلفة، أو يرمي المسحوبة.
+ let worst=-1,worstCost=-999;cards.forEach((c,i)=>{const v=botCardCost(c);if(c&&v>worstCost){worstCost=v;worst=i}});
  const keep=drawn?.r==="JOKER"||botCardCost(drawn)<worstCost;
- if(keep&&worst>=0){const old=cards[worst];cards[worst]=drawn;await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});const pile=Array.isArray((await get(ref(db,`rooms/${roomCode}/public/game/discardPile`))).val())?((await get(ref(db,`rooms/${roomCode}/public/game/discardPile`))).val()):[];pile.push(old);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:old,discardPile:pile,discardSeq:Number((await get(ref(db,`rooms/${roomCode}/public/game/discardSeq`))).val()||0)+1,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} بدّل ورقة`});}
- else{const gs=(await get(ref(db,`rooms/${roomCode}/public/game`))).val()||{};const pile=Array.isArray(gs.discardPile)?gs.discardPile.slice():[];pile.push(drawn);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:drawn,discardPile:pile,discardSeq:Number(gs.discardSeq||0)+1,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ورقة`});}
+ if(keep&&worst>=0){
+  const old=cards[worst];cards[worst]=drawn;
+  await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);
+  await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});
+  await botPutDiscard(old,`${r.players?.[botId]?.name||"الكمبيوتر"} بدّل ورقة`);
+ }else{
+  await botPutDiscard(drawn,`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ورقة`);
+ }
  await botAdvanceTurn(botId);
 }
 async function joinRandomOnline(){
