@@ -1393,28 +1393,79 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 #rndDiag{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
 </style>
 
-<style id="random-stable-ui-patch">
-#randomModal .modal-card, #randomModal .modalContent, #randomModal .sheet,
-#rndModal .modal-card, #rndModal .modalContent, #rndModal .sheet{
-  color:#2b211b !important;
+
+<style id="random-style2-final">
+#sheet:has(#randomMenuV2){
+  width:min(calc(100% - 28px),580px)!important;
+  max-height:88dvh!important;
+  padding:18px 18px 20px!important;
+  background:#fffaf0!important;
+  border:1.5px solid #d7b66c!important;
+  border-radius:24px!important;
+  box-shadow:0 18px 45px #0008!important;
+  color:#241813!important;
 }
-#randomModal label,#rndModal label,
-#randomModal h1,#randomModal h2,#randomModal h3,
-#rndModal h1,#rndModal h2,#rndModal h3{
-  color:#6f2732 !important;
-  opacity:1 !important;
-  text-shadow:none !important;
+#randomMenuV2{direction:rtl;text-align:right}
+#randomMenuV2 h3{
+  margin:0 0 14px!important;text-align:center!important;
+  color:#7c2738!important;font-size:29px!important;font-weight:950!important;
+  text-shadow:none!important;
 }
-#randomModal select,#rndModal select{
-  color:#17120f !important;
-  background:#fff !important;
-  opacity:1 !important;
+#randomMenuV2 .notice{
+  margin:0 0 14px!important;padding:13px 14px!important;
+  background:#fff4d8!important;border:1.5px solid #d3a641!important;
+  border-radius:15px!important;color:#211712!important;
+  font-size:14px!important;line-height:1.8!important;font-weight:800!important;
 }
-#rndBackHome{
-  width:100%;margin-top:10px;padding:14px 16px;border-radius:16px;
-  border:1.5px solid #8b6a35;background:#fff;color:#3a2b20;
-  font-weight:800;font-size:17px;cursor:pointer;
+#randomMenuV2 label{
+  display:block!important;margin:0 0 4px!important;
+  color:#7c2738!important;font-size:15px!important;font-weight:950!important;
+  opacity:1!important;text-shadow:none!important;
 }
+#randomMenuV2 select{
+  width:100%!important;margin-top:5px!important;padding:14px 15px!important;
+  min-height:57px!important;background:#fff!important;color:#17110e!important;
+  border:2px solid #c9a55c!important;border-radius:15px!important;
+  font-size:17px!important;font-weight:900!important;opacity:1!important;
+}
+#randomMenuV2 .gap{height:9px!important}
+#randomMenuV2 #rndStart{
+  width:100%!important;min-height:58px!important;margin-top:7px!important;
+  border-radius:15px!important;border:1px solid #205f50!important;
+  background:#2f7464!important;color:#fff!important;
+  font-size:19px!important;font-weight:950!important;
+}
+#randomMenuV2 #rndCancel{
+  width:100%!important;min-height:55px!important;margin-top:9px!important;
+  border-radius:15px!important;background:#ad332d!important;color:#fff!important;
+  border:0!important;font-size:18px!important;font-weight:950!important;
+}
+#randomMenuV2 #rndMsg{
+  margin:8px 0 0!important;color:#30241d!important;
+  text-align:center!important;font-size:14px!important;font-weight:850!important;
+}
+#randomMenuV2 #rndBackHome{
+  width:100%!important;min-height:55px!important;margin-top:11px!important;
+  padding:12px 14px!important;border-radius:15px!important;
+  border:2px solid #9b742d!important;background:#fff!important;
+  color:#39291f!important;font-size:18px!important;font-weight:950!important;
+}
+@media(max-width:480px){
+  #sheet:has(#randomMenuV2){padding:16px 15px 18px!important}
+  #randomMenuV2 h3{font-size:26px!important}
+  #randomMenuV2 select{font-size:16px!important;min-height:55px!important}
+}
+</style>
+
+
+<style id="computer-ready-ui-v1">
+/* نافذة العشوائي: عنوان واضح ونفس نمط المرجع الثاني */
+#randomMenuV2 h3{color:#7b2637!important;opacity:1!important;text-shadow:none!important;font-size:30px!important;margin:0 0 12px!important}
+#randomMenuV2 .notice{color:#241812!important;background:#fff3d6!important}
+/* الانسحاب خارج أزرار اللعب */
+.refRightTop #withdrawRound{display:block!important;position:static!important;width:100%!important;margin-top:8px!important;min-height:38px!important;padding:7px 8px!important;font-size:12px!important;border-radius:10px!important;background:#a93732!important;color:#fff!important}
+.refWithdrawBottom,#withdrawRoundBottom{display:none!important}
+@media(max-width:699px){.refRightTop #withdrawRound{position:fixed!important;top:86px!important;right:14px!important;width:auto!important;min-width:88px!important;z-index:120!important;margin:0!important;padding:7px 10px!important;font-size:11px!important;box-shadow:0 4px 14px #0007!important}}
 </style>
 
 </head>
@@ -1987,13 +2038,118 @@ function removeSavedRoom(code){setSavedRooms(getSavedRooms().filter(x=>x.code!==
 function savedRoomsHtml(){const a=getSavedRooms();return `<div class="panel homeRoomCard"><h3>⭐ الغرف المحفوظة <small style="opacity:.65">${a.length}/5</small></h3>${a.length?`<div style="display:grid;gap:8px">${a.map(x=>`<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px"><button class="btn alt" data-savedjoin="${esc(x.code)}" style="flex:1">🚪 ${esc(x.code)}</button><button class="btn danger" data-savedremove="${esc(x.code)}" title="حذف من المحفوظة">✕</button></div>`).join("")}</div>`:`<div class="small">ما عندك غرف محفوظة للحين.</div>`}</div>`}
 let randomQueueCancelToken=0;
 function randomPlaySetup(){
- openModal(`<h3>🎲 اللعب العشوائي</h3><div class="notice">غرف النظام فقط — بدون متفرجين • حد الخروج 120 • الأقل مجموع يفوز.</div><label>نوع اللعب<select id="rndMode"><option value="online">👥 أونلاين</option><option value="computer">🤖 الكمبيوتر</option></select></label><div class="gap"></div><label>عدد اللاعبين<select id="rndCount"><option value="2">2 لاعبين</option><option value="3">3 لاعبين</option><option value="4">4 لاعبين</option></select></label><div class="gap"></div><label>القانون<select id="rndRule"><option value="1">القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><div class="gap"></div><button id="rndStart" class="btn green">👥 ابدأ أونلاين</button>
-<button id="rndBackHome" type="button">↩️ الرجوع إلى الصفحة الرئيسية</button><button id="rndCancel" class="btn danger" style="display:none;margin-top:8px">✕ إلغاء البحث</button><div id="rndMsg" class="small" style="margin-top:8px"></div>`);
- const mode=document.getElementById("rndMode"),start=document.getElementById("rndStart"),cancel=document.getElementById("rndCancel"),msg=document.getElementById("rndMsg");
- const sync=()=>{const bot=mode.value==="computer";start.textContent=bot?"🤖 ابدأ ضد الكمبيوتر":"👥 ابدأ أونلاين";start.className=bot?"btn alt":"btn green";if(msg)msg.textContent=bot?"وضع الكمبيوتر قيد التجهيز داخل نفس محرك اللعب — لن يبدأ قبل اكتمال منطق اللاعب الآلي.":""};
+ openModal(`<div id="randomMenuV2">
+   <h3>🎲 اللعب العشوائي</h3>
+   <div class="notice">غرف النظام فقط — بدون متفرجين • حد الخروج <b>120</b> • الأقل مجموع يفوز.</div>
+   <label>نوع اللعب
+     <select id="rndMode"><option value="online">👥 أونلاين</option><option value="computer">🤖 الكمبيوتر</option></select>
+   </label>
+   <div class="gap"></div>
+   <label>عدد اللاعبين
+     <select id="rndCount"><option value="2">2 لاعبين</option><option value="3">3 لاعبين</option><option value="4">4 لاعبين</option></select>
+   </label>
+   <div class="gap"></div>
+   <label>القانون
+     <select id="rndRule"><option value="1">القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select>
+   </label>
+   <div class="gap"></div>
+   <button id="rndStart" class="btn green">👥 ابدأ أونلاين</button>
+   <button id="rndCancel" class="btn danger" style="display:none">✕ إلغاء البحث</button>
+   <div id="rndMsg" class="small"></div>
+   <button id="rndBackHome" type="button">↩️ الرجوع إلى الصفحة الرئيسية</button>
+ </div>`);
+ const mode=document.getElementById("rndMode"),start=document.getElementById("rndStart"),cancel=document.getElementById("rndCancel"),msg=document.getElementById("rndMsg"),back=document.getElementById("rndBackHome");
+ const sync=()=>{
+   const bot=mode.value==="computer";
+   start.textContent=bot?"🤖 ابدأ ضد الكمبيوتر":"👥 ابدأ أونلاين";
+   start.className=bot?"btn alt":"btn green";
+   if(msg)msg.textContent=bot?"🤖 اختر العدد والقانون ثم ابدأ المباراة مباشرة.":"";
+ };
  mode.onchange=sync;sync();
- start.onclick=()=>{if(mode.value==="online")joinRandomOnline();else{if(msg)msg.textContent="🤖 تم اختيار الكمبيوتر. المحرك الآلي غير مفعّل في هذه النسخة حتى لا نكسر قوانين اللعب الحالية.";toast("وضع الكمبيوتر يحتاج محرك لاعب آلي قبل تشغيله")}};
- cancel.onclick=()=>{randomQueueCancelToken++;cancel.disabled=true;if(msg)msg.textContent="جاري إلغاء البحث..."};
+ start.onclick=async()=>{
+   if(mode.value==="online")return joinRandomOnline();
+   start.disabled=true;
+   try{await startRandomComputer();}
+   catch(e){console.warn("computer start",e);if(msg)msg.textContent="تعذر بدء مباراة الكمبيوتر: "+(e?.message||e);start.disabled=false}
+ };
+ cancel.onclick=()=>{
+   randomQueueCancelToken++;
+   cancel.disabled=true;
+   if(msg)msg.textContent="جاري إلغاء البحث...";
+ };
+ back.onclick=()=>{
+   randomQueueCancelToken++;
+   closeModal();
+   window.scrollTo({top:0,behavior:"smooth"});
+ };
+}
+
+function isComputerBot(id){return String(id||"").startsWith("BOT_")}
+function computerBotName(i){return ["الكمبيوتر 1","الكمبيوتر 2","الكمبيوتر 3"][i]||`الكمبيوتر ${i+1}`}
+function botCardCost(c){
+ if(!c)return 99;
+ if(c.r==="JOKER")return c.color==="color"?-3:-1;
+ return scoreCard(c);
+}
+async function startRandomComputer(){
+ if(!uid){toast("سجّل الدخول أولاً");return}
+ const count=Math.max(2,Math.min(4,Number(document.getElementById("rndCount")?.value||2)));
+ const rule=Number(document.getElementById("rndRule")?.value||1)===2?2:1;
+ const msg=document.getElementById("rndMsg");if(msg)msg.textContent="🤖 جاري تجهيز لاعبين الكمبيوتر...";
+ let code=randomCode();for(let i=0;i<6;i++){const x=await get(ref(db,`rooms/${code}/public`));if(!x.exists())break;code=randomCode()}
+ const profSnap=await get(ref(db,`users/${uid}`)).catch(()=>null),prof=profSnap?.val?.()||{};
+ const players={
+  [uid]:{name:myName||"لاعب",order:0,cardCount:0,ready:true,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}
+ };
+ for(let i=1;i<count;i++)players[`BOT_${i}`]={name:computerBotName(i-1),order:i,cardCount:0,ready:true,bot:true,avatarUrl:"icon-512.png",joinedAt:Date.now()+i};
+ const createdAt=Date.now();
+ await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,computerMatch:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt,players});
+ await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,computerMatch:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt,playerCount:count,updatedAt:createdAt});
+ closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code).catch(()=>{});subscribe(code);
+}
+let botWorkTimer=0,botWorkKey="";
+function scheduleComputerBotWork(r=currentRoom){
+ if(!r?.computerMatch||uid!==r.hostId||r.status!=="game")return;
+ const g=r.game||{},turn=(g.turnOrder||[])[Number(g.turnIndex||0)]||"";
+ const key=`${g.roundToken||""}:${g.phase||""}:${g.turnSeq||0}:${turn}:${g.decisionUid||""}`;
+ if(key===botWorkKey)return;botWorkKey=key;clearTimeout(botWorkTimer);
+ botWorkTimer=setTimeout(()=>runComputerBotWork().catch(e=>console.warn("bot work",e)),700+Math.floor(Math.random()*650));
+}
+async function botAdvanceTurn(botId){
+ await runTransaction(ref(db,`rooms/${roomCode}/public/game`),g=>{
+  if(!g||g.phase!=="playing")return g;const o=Array.isArray(g.turnOrder)?g.turnOrder:[],cur=o[Number(g.turnIndex||0)]||"";if(cur!==botId)return g;
+  let idx=Number(g.turnIndex||0),tries=0;do{idx=(idx+1)%o.length;tries++}while(tries<o.length&&Number(currentRoom?.players?.[o[idx]]?.cardCount||0)<=0);
+  g.turnIndex=idx;g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;g.timeoutClaim=null;g.lastAction=`انتقل الدور إلى ${currentRoom?.players?.[o[idx]]?.name||"اللاعب التالي"}`;return g;
+ });
+}
+async function botRevealAll(g){
+ for(const id of (g.turnOrder||[]).filter(isComputerBot)){
+  if(currentRoom?.reveals?.[id])continue;const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};const cards=hs.cards||[];
+  await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),{name:currentRoom?.players?.[id]?.name||"الكمبيوتر",cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)});
+ }
+}
+async function runComputerBotWork(){
+ const snap=await get(ref(db,`rooms/${roomCode}/public`));if(!snap.exists())return;const r=snap.val()||{};if(!r.computerMatch||uid!==r.hostId)return;const g=r.game||{};
+ if(g.phase==="memorize"){
+  for(const id of (g.turnOrder||[]).filter(isComputerBot)){
+   await update(ref(db,`rooms/${roomCode}/privateHands/${id}`),{introDone:true,introRevealUntil:0}).catch(()=>{});
+   await update(ref(db,`rooms/${roomCode}/public/players/${id}`),{introDone:true,introStarted:true}).catch(()=>{});
+  }
+  return;
+ }
+ if(g.phase==="reveal"){await botRevealAll(g);return}
+ if(g.phase!=="playing")return;
+ const order=g.turnOrder||[],botId=order[Number(g.turnIndex||0)]||"";if(!isComputerBot(botId))return;
+ if(g.decisionUid===botId){await botAdvanceTurn(botId);return}
+ const href=ref(db,`rooms/${roomCode}/privateHands/${botId}`),hsnap=await get(href),hand=hsnap.val()||{},cards=(hand.cards||[]).slice(),discard=g.discard;
+ // أولاً: إذا عنده نفس رتبة الميدان يرمي كل الأوراق المطابقة مباشرة.
+ if(discard){const idx=[];cards.forEach((c,i)=>{if(c&&sameRank(c,discard))idx.push(i)});if(idx.length){const thrown=idx.map(i=>cards[i]);idx.forEach(i=>cards[i]=null);await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});const pile=Array.isArray(g.discardPile)?g.discardPile.slice():[];pile.push(...thrown);if(countCards(cards)===0){await update(ref(db,`rooms/${roomCode}/public/game`),{discard:thrown.at(-1),discardPile:pile,discardSeq:Number(g.discardSeq||0)+thrown.length,phase:"reveal",emptyWinner:botId,ending:true,hasDrawn:null,actionLockUid:null,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} خلص أوراقه — انتهت الجولة`});return}await update(ref(db,`rooms/${roomCode}/public/game`),{discard:thrown.at(-1),discardPile:pile,discardSeq:Number(g.discardSeq||0)+thrown.length,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ${thrown.length} ${thrown.length===1?"ورقة":"أوراق"}`,hasDrawn:null,actionLockUid:null});await botAdvanceTurn(botId);return}}
+ // وإلا يسحب ورقة. يحتفظ بها إذا كانت أفضل من أعلى ورقة عنده، وإلا يرميها.
+ const take=await takeDeckCards(1);if(!take.ok){await botAdvanceTurn(botId);return}const drawn=take.cards[0];let worst=-1,worstCost=-999;cards.forEach((c,i)=>{const v=botCardCost(c);if(c&&v>worstCost){worstCost=v;worst=i}});
+ const keep=drawn?.r==="JOKER"||botCardCost(drawn)<worstCost;
+ if(keep&&worst>=0){const old=cards[worst];cards[worst]=drawn;await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);const pile=Array.isArray((await get(ref(db,`rooms/${roomCode}/public/game/discardPile`))).val())?((await get(ref(db,`rooms/${roomCode}/public/game/discardPile`))).val()):[];pile.push(old);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:old,discardPile:pile,discardSeq:Number((await get(ref(db,`rooms/${roomCode}/public/game/discardSeq`))).val()||0)+1,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} بدّل ورقة`});}
+ else{const gs=(await get(ref(db,`rooms/${roomCode}/public/game`))).val()||{};const pile=Array.isArray(gs.discardPile)?gs.discardPile.slice():[];pile.push(drawn);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:drawn,discardPile:pile,discardSeq:Number(gs.discardSeq||0)+1,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ورقة`});}
+ await botAdvanceTurn(botId);
 }
 async function joinRandomOnline(){
  const diagLines=[];
@@ -2320,6 +2476,7 @@ function subscribe(c){
     }
     if(await maybeAutoStartRandomRoom(nextRoom))return;
     await autoGameWork();
+    scheduleComputerBotWork(nextRoom);
     render();updateAdminVoiceIndicator();if(voiceActive)syncVoicePeers();
    }catch(e){console.warn("room post-work",e)}
   })();
@@ -2335,6 +2492,7 @@ function subscribe(c){
   }
   render();
   Promise.resolve(autoGameWork()).then(()=>{
+    scheduleComputerBotWork(currentRoom);
     if(currentRoom?.game?.phase==="memorize"&&myHand)roundDiag("MEMORIZE UI ✓","تمت مزامنة واجهة اللاعب");
     render();
   }).catch(e=>console.warn("hand work",e));
@@ -3198,12 +3356,14 @@ async function performRoundWithdrawal({automatic=false,reason="",kicked=false,vo
 }
 async function withdrawFromRound(){
  if(!isActivePlayer()||!["memorize","playing"].includes(game().phase)){toast("أنت مو داخل الجولة حالياً");return false}
- openModal(`<h3 style="text-align:center;margin-top:0">🚪 الانسحاب</h3><div class="notice center">اختر وش تبي تسوي بعد الانسحاب من الجولة</div><div class="gap"></div><button id="withdrawStaySpectator" class="btn alt">👀 انسحب وخلك متفرج في الغرفة</button><div class="gap"></div><button id="withdrawLeaveRoom" class="btn danger">🚪 انسحب واطلع من الغرفة</button><div class="gap"></div><button id="withdrawCancel" class="btn">إلغاء</button>`);
+ if(currentRoom?.systemRandom){
+  openModal(`<h3 style="text-align:center;margin-top:0">🚪 الانسحاب من المباراة</h3><div class="notice center">إذا انسحبت من اللعب العشوائي بتطلع من المباراة وترجع للصفحة الرئيسية.</div><div class="gap"></div><button id="withdrawRandomConfirm" class="btn danger">🚪 تأكيد الانسحاب</button><div class="gap"></div><button id="withdrawCancel" class="btn">إلغاء</button>`);
+  document.getElementById("withdrawCancel").onclick=closeModal;
+  document.getElementById("withdrawRandomConfirm").onclick=async()=>{closeModal();const ok=await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الانسحاب من المباراة"});if(ok)await leaveRoomCleanly()};return true;
+ }
+ openModal(`<h3 style="text-align:center;margin-top:0">🚪 الانسحاب</h3><div class="notice center">اختر وش تبي تسوي بعد الانسحاب من الجولة</div><div class="gap"></div><button id="withdrawStaySpectator" class="btn alt">↩️ انسحب وارجع للغرفة كمتفرج</button><div class="gap"></div><button id="withdrawLeaveRoom" class="btn danger">🚪 انسحب واطلع من الغرفة</button><div class="gap"></div><button id="withdrawCancel" class="btn">إلغاء</button>`);
  const stay=document.getElementById("withdrawStaySpectator"),leave=document.getElementById("withdrawLeaveRoom"),cancel=document.getElementById("withdrawCancel");
- if(cancel)cancel.onclick=closeModal;
- if(stay)stay.onclick=async()=>{closeModal();await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الانسحاب — أنت الآن متفرج"})};
- if(leave)leave.onclick=async()=>{closeModal();const ok=await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الانسحاب من الجولة"});if(ok)await leaveRoomCleanly()};
- return true;
+ if(cancel)cancel.onclick=closeModal;if(stay)stay.onclick=async()=>{closeModal();await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الانسحاب — أنت الآن متفرج"})};if(leave)leave.onclick=async()=>{closeModal();const ok=await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الانسحاب من الجولة"});if(ok)await leaveRoomCleanly()};return true;
 }
 async function autoWithdrawForInactivity(){return performRoundWithdrawal({automatic:true,reason:"🚫 انتهى وقتك للمرة الرابعة — تم إخراجك من الجولة وأوراقك رجعت لرزمة السحب"})}
 
@@ -3273,7 +3433,7 @@ function renderGame(){
  const pendingPreview=pending?`<div class="refPendingPreview"><div class="refPendingLabel">${myHand?.pendingSource==="deck"?"الورقة المسحوبة":"ورقة الميدان"}</div><div class="cardFace ${cardClass(pending)}">${cardFaceHtml(pending)}</div></div>`:"";
  const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div>${pendingPreview}<div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
  const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
- app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${roundsLabel(g)}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="small center" style="margin:4px 0 6px">الجولات المكتملة: <b>${completedRounds}</b> • الكلي</div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([id,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span>${canKick&&id!==uid?`<button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button>`:""}</div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRoundBottom" class="btn danger refWithdrawBottom">🚪 انسحاب</button>`:""}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
+ app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${roundsLabel(g)}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="small center" style="margin:4px 0 6px">الجولات المكتملة: <b>${completedRounds}</b> • الكلي</div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([id,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span>${canKick&&id!==uid?`<button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button>`:""}</div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside></div>`;
  wireCommon();
  try{
    if(g.phase==="playing"){
@@ -3511,28 +3671,6 @@ let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress
   #app>.panel:has(#chatBox){right:5px!important;top:134px!important;bottom:5px!important;width:194px!important;padding:6px!important}#app>.panel:has(#chatBox)>b{font-size:12px!important}.voiceBar{gap:3px!important}.voiceBar button{font-size:8px!important;padding:4px 2px!important}.chat{min-height:55px!important;padding:4px!important}.chat p,.chat b{font-size:10px!important;line-height:1.3!important}.row #chatInput{font-size:9px!important;padding:5px!important}.row #send{flex-basis:44px!important;font-size:8px!important;padding:5px 2px!important}
 }
 </style>
-
-<script id="random-back-home-patch">
-document.addEventListener("click", async function(ev){
-  const btn=ev.target && ev.target.closest ? ev.target.closest("#rndBackHome") : null;
-  if(!btn) return;
-  ev.preventDefault();
-  try{
-    if(typeof window.cancelRandomSearch==="function") await window.cancelRandomSearch();
-  }catch(e){}
-  try{
-    const cancel=document.getElementById("rndCancel");
-    if(cancel && cancel.offsetParent!==null) cancel.click();
-  }catch(e){}
-  const candidates=["randomModal","rndModal","randomSheet","randomPanel"];
-  for(const id of candidates){
-    const el=document.getElementById(id);
-    if(el){ el.classList.remove("show","open","active"); el.style.display="none"; }
-  }
-  document.body.classList.remove("modal-open");
-  window.scrollTo({top:0,behavior:"smooth"});
-});
-</script>
 
 </body>
 </html>
