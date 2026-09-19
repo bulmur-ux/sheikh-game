@@ -2057,7 +2057,7 @@ const AVATAR_GALLERY_CATEGORIES=[
 ];
 let selectedReadyAvatar="";
 function avatarItemsFromJson(data){
- const list=Array.isArray(data)?data:(Array.isArray(data?.avatars)?data.avatars:(Array.isArray(data?.items)?data.items:[]));
+ const list=Array.isArray(data)?data:(Array.isArray(data?.files)?data.files:(Array.isArray(data?.avatars)?data.avatars:(Array.isArray(data?.items)?data.items:[])));
  return list.map((x,i)=>{
    if(typeof x==="string")return {file:x,name:x};
    const file=x?.file||x?.filename||x?.src||x?.url||x?.path||"";
