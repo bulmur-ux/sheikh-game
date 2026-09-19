@@ -1,6 +1,6 @@
 // ============================================================
-// شيك شيك - Voice System v5
-// Auto listen + push-to-talk mic + resilient WebRTC/Firebase
+// شيك شيك - نظام الصوت المستقل
+// Stable Voice + Firebase Signaling + Diagnostics
 // ============================================================
 
 (function () {
@@ -15,6 +15,7 @@
       get,
       set,
       update,
+      push,
       remove,
       getRoomCode,
       getUid,
@@ -29,61 +30,239 @@
     } = o;
 
 
+    // ========================================================
+    // STATE
+    // ========================================================
+
     let voiceActive = false;
     let voiceStarting = false;
-    let voiceMuted = true;
+    let voiceMuted = false;
 
     let localVoiceStream = null;
-    let voiceSessionId = "";
 
     let voiceSyncBusy = false;
+    let voiceSessionId = "";
+
     let voiceSyncTimer = null;
-    let audioUnlockInstalled = false;
 
     const voicePeers = new Map();
-    const retryTimers = new Map();
+    const reconnectTimers = new Map();
+
+    let audioUnlockInstalled = false;
 
 
     // ========================================================
-    // ICE / STUN / TURN
+    // DIAGNOSTICS
     // ========================================================
 
-    const ICE_SERVERS = [
+    const VOICE_DEBUG = true;
 
-      {
-        urls: [
-          "stun:stun.l.google.com:19302",
-          "stun:stun1.l.google.com:19302",
-          "stun:stun.cloudflare.com:3478"
-        ]
-      },
-
-      {
-        urls: [
-          "turn:openrelay.metered.ca:80",
-          "turn:openrelay.metered.ca:443",
-          "turn:openrelay.metered.ca:443?transport=tcp"
-        ],
-
-        username: "openrelayproject",
-        credential: "openrelayproject"
-      }
-
-    ];
-
-
-    // ========================================================
-    // HELPERS
-    // ========================================================
-
-    const wait = ms => {
-
-      return sleep
-        ? sleep(ms)
-        : new Promise(resolve => setTimeout(resolve, ms));
-
+    const voiceDebug = {
+      users: 0,
+      expected: 0,
+      connected: 0,
+      lastAction: "جاهز",
+      lastError: "",
+      peers: {}
     };
 
+
+    function debugLog(message, data) {
+
+      if (!VOICE_DEBUG) return;
+
+      try {
+        console.log(
+          "%c[VOICE]",
+          "color:#00d084;font-weight:bold",
+          message,
+          data || ""
+        );
+      } catch {}
+
+      voiceDebug.lastAction = String(message || "");
+
+      updateDebugBox();
+    }
+
+
+    function debugError(message, error) {
+
+      const raw =
+        String(
+          error?.message ||
+          error ||
+          ""
+        );
+
+      console.warn(
+        "[VOICE ERROR]",
+        message,
+        error
+      );
+
+      voiceDebug.lastError =
+        `${message}: ${raw}`;
+
+      updateDebugBox();
+    }
+
+
+    function setPeerDebug(uid, patch) {
+
+      if (!VOICE_DEBUG) return;
+
+      if (!voiceDebug.peers[uid]) {
+
+        voiceDebug.peers[uid] = {
+          connection: "-",
+          ice: "-",
+          signaling: "-",
+          stage: "انتظار"
+        };
+
+      }
+
+      Object.assign(
+        voiceDebug.peers[uid],
+        patch || {}
+      );
+
+      updateDebugBox();
+    }
+
+
+    function getDebugBox() {
+
+      if (!VOICE_DEBUG) return null;
+
+      let box =
+        document.getElementById(
+          "voiceDebugBox"
+        );
+
+      if (box) return box;
+
+
+      box =
+        document.createElement("div");
+
+      box.id = "voiceDebugBox";
+
+      box.dir = "rtl";
+
+      box.style.cssText = `
+        position:fixed;
+        left:8px;
+        bottom:8px;
+        z-index:999999;
+        width:min(92vw,360px);
+        max-height:42vh;
+        overflow:auto;
+        padding:10px;
+        border-radius:12px;
+        background:rgba(0,0,0,.88);
+        color:#fff;
+        border:1px solid rgba(255,255,255,.25);
+        font-family:Arial,sans-serif;
+        font-size:12px;
+        line-height:1.65;
+        text-align:right;
+        direction:rtl;
+      `;
+
+      document.body.appendChild(box);
+
+      return box;
+    }
+
+
+    function updateDebugBox() {
+
+      if (!VOICE_DEBUG) return;
+
+      const box = getDebugBox();
+
+      if (!box) return;
+
+
+      const peerLines =
+        Object.entries(
+          voiceDebug.peers
+        )
+        .map(([uid, p]) => {
+
+          const shortUid =
+            String(uid).slice(0, 8);
+
+          return `
+            <div style="
+              margin-top:6px;
+              padding-top:6px;
+              border-top:1px solid #444;
+            ">
+              👤 ${shortUid}<br>
+              المرحلة: ${p.stage || "-"}<br>
+              WebRTC: ${p.connection || "-"}<br>
+              ICE: ${p.ice || "-"}<br>
+              Signal: ${p.signaling || "-"}
+            </div>
+          `;
+
+        })
+        .join("");
+
+
+      box.innerHTML = `
+        <div style="
+          font-weight:bold;
+          color:#ffd54a;
+          margin-bottom:4px;
+        ">
+          🛠 تشخيص الصوت المؤقت
+        </div>
+
+        الصوت:
+        ${voiceActive ? "شغال" : "متوقف"}
+        ${voiceMuted ? "🔇" : "🎙️"}
+        <br>
+
+        الموجودون بالصوت:
+        ${voiceDebug.users}
+        <br>
+
+        المطلوب الاتصال بهم:
+        ${voiceDebug.expected}
+        <br>
+
+        المتصل فعلياً:
+        ${voiceRemoteCount()}
+        /
+        ${voiceDebug.expected}
+        <br>
+
+        آخر خطوة:
+        ${voiceDebug.lastAction || "-"}
+        <br>
+
+        ${
+          voiceDebug.lastError
+            ? `<span style="color:#ff8080">
+                 آخر خطأ:
+                 ${voiceDebug.lastError}
+               </span><br>`
+            : ""
+        }
+
+        ${peerLines}
+      `;
+
+    }
+
+
+    // ========================================================
+    // BASIC HELPERS
+    // ========================================================
 
     function safeToast(message) {
 
@@ -94,50 +273,17 @@
     }
 
 
-    function pairIdFor(a, b) {
+    function wait(ms) {
 
-      return [String(a), String(b)]
-        .sort()
-        .join("__");
-
-    }
-
-
-    function newSession() {
-
-      return (
-        (getUid?.() || "u") +
-        "_" +
-        Date.now() +
-        "_" +
-        Math.random()
-          .toString(36)
-          .slice(2, 8)
-      );
-
-    }
-
-
-    function remoteCount() {
-
-      let count = 0;
-
-      for (const pc of voicePeers.values()) {
-
-        if (
-          pc &&
-          (
-            pc.connectionState === "connected" ||
-            pc.iceConnectionState === "connected" ||
-            pc.iceConnectionState === "completed"
-          )
-        ) {
-          count++;
-        }
-
+      if (sleep) {
+        return sleep(ms);
       }
 
-      return count;
+      return new Promise(
+        resolve =>
+          setTimeout(resolve, ms)
+      );
+
     }
 
 
@@ -146,17 +292,10 @@
       try {
 
         onStateChange?.({
-
           active: voiceActive,
           starting: voiceStarting,
           muted: voiceMuted,
-
-          remoteCount: remoteCount(),
-
-          listening:
-            voiceActive &&
-            !localVoiceStream
-
+          remoteCount: voiceRemoteCount()
         });
 
       } catch {}
@@ -165,6 +304,58 @@
       try {
         onUiRefresh?.();
       } catch {}
+
+
+      voiceDebug.connected =
+        voiceRemoteCount();
+
+      updateDebugBox();
+
+    }
+
+
+    function pairIdFor(a, b) {
+
+      return [
+        String(a),
+        String(b)
+      ]
+        .sort()
+        .join("__");
+
+    }
+
+
+    function voiceRemoteCount() {
+
+      let n = 0;
+
+      for (
+        const pc
+        of voicePeers.values()
+      ) {
+
+        if (
+          pc &&
+          (
+            pc.connectionState ===
+              "connected" ||
+
+            pc.iceConnectionState ===
+              "connected" ||
+
+            pc.iceConnectionState ===
+              "completed"
+          )
+        ) {
+
+          n++;
+
+        }
+
+      }
+
+      return n;
 
     }
 
@@ -185,13 +376,15 @@
 
 
     // ========================================================
-    // AUDIO BOX
+    // AUDIO CONTAINER
     // ========================================================
 
     function getAudioBox() {
 
       let box =
-        document.getElementById("voiceAudios");
+        document.getElementById(
+          "voiceAudios"
+        );
 
 
       if (!box) {
@@ -215,17 +408,26 @@
 
 
       return box;
+
     }
 
 
     // ========================================================
-    // IPHONE / SAFARI AUDIO UNLOCK
+    // IOS / SAFARI AUDIO UNLOCK
     // ========================================================
 
     function unlockRemoteAudios() {
 
-      document
-        .querySelectorAll("#voiceAudios audio")
+      const box =
+        document.getElementById(
+          "voiceAudios"
+        );
+
+      if (!box) return;
+
+
+      box
+        .querySelectorAll("audio")
         .forEach(audio => {
 
           try {
@@ -233,13 +435,11 @@
             audio.muted = false;
             audio.volume = 1;
 
-            const playPromise =
+            const p =
               audio.play();
 
-            if (playPromise?.catch) {
-
-              playPromise.catch(() => {});
-
+            if (p?.catch) {
+              p.catch(() => {});
             }
 
           } catch {}
@@ -293,195 +493,7 @@
 
 
     // ========================================================
-    // LOCAL TRACKS
-    // ========================================================
-
-    function stopLocalTracks() {
-
-      if (localVoiceStream) {
-
-        try {
-
-          localVoiceStream
-            .getTracks()
-            .forEach(track => {
-
-              try {
-                track.stop();
-              } catch {}
-
-            });
-
-        } catch {}
-
-      }
-
-
-      localVoiceStream = null;
-
-    }
-
-
-    // ========================================================
-    // PEER CLEANUP
-    // ========================================================
-
-    function closePeer(otherUid) {
-
-      const pc =
-        voicePeers.get(otherUid);
-
-
-      if (pc) {
-
-        try {
-
-          pc.ontrack = null;
-
-          pc.onconnectionstatechange = null;
-
-          pc.oniceconnectionstatechange = null;
-
-          pc.close();
-
-        } catch {}
-
-      }
-
-
-      voicePeers.delete(otherUid);
-
-
-      const retry =
-        retryTimers.get(otherUid);
-
-
-      if (retry) {
-
-        clearTimeout(retry);
-
-      }
-
-
-      retryTimers.delete(otherUid);
-
-
-      const audio =
-        document.getElementById(
-          "voice_" + otherUid
-        );
-
-
-      if (audio) {
-
-        try {
-
-          audio.pause();
-
-          audio.srcObject = null;
-
-          audio.remove();
-
-        } catch {}
-
-      }
-
-    }
-
-
-    function closeAllPeers() {
-
-      Array
-        .from(voicePeers.keys())
-        .forEach(closePeer);
-
-    }
-
-
-    // ========================================================
-    // REMOTE AUDIO
-    // ========================================================
-
-    function attachRemoteAudio(
-      otherUid,
-      stream
-    ) {
-
-      const box =
-        getAudioBox();
-
-
-      let audio =
-        document.getElementById(
-          "voice_" + otherUid
-        );
-
-
-      if (!audio) {
-
-        audio =
-          document.createElement("audio");
-
-
-        audio.id =
-          "voice_" + otherUid;
-
-
-        audio.autoplay = true;
-
-        audio.playsInline = true;
-
-
-        audio.setAttribute(
-          "playsinline",
-          ""
-        );
-
-
-        audio.setAttribute(
-          "webkit-playsinline",
-          ""
-        );
-
-
-        box.appendChild(audio);
-
-      }
-
-
-      if (
-        audio.srcObject !== stream
-      ) {
-
-        audio.srcObject =
-          stream;
-
-      }
-
-
-      audio.muted = false;
-      audio.volume = 1;
-
-
-      try {
-
-        const playPromise =
-          audio.play();
-
-
-        if (playPromise?.catch) {
-
-          playPromise.catch(() => {});
-
-        }
-
-      } catch {}
-
-    }
-
-
-    // ========================================================
-    // FIREBASE VOICE USERS
+    // READ FIREBASE DIRECTLY
     // ========================================================
 
     async function readVoiceUsers() {
@@ -490,7 +502,6 @@
 
         const roomCode =
           getRoomCode?.();
-
 
         if (!roomCode) {
           return {};
@@ -508,15 +519,21 @@
           );
 
 
-        return (
-          snap.val() || {}
+        const users =
+          snap.val() || {};
+
+
+        debugLog(
+          "تم تحديث مستخدمي الصوت"
         );
 
 
+        return users;
+
       } catch (e) {
 
-        console.warn(
-          "voice users",
+        debugError(
+          "قراءة voiceUsers",
           e
         );
 
@@ -558,8 +575,12 @@
           snap.val() || {}
         );
 
+      } catch (e) {
 
-      } catch {
+        debugError(
+          "قراءة Signal",
+          e
+        );
 
         return {};
 
@@ -569,137 +590,212 @@
 
 
     // ========================================================
-    // REGISTER SELF
+    // CLEAN OLD SIGNALS
     // ========================================================
 
-    async function registerSelf(extra = {}) {
+    async function clearMyVoiceSignals() {
 
-      const roomCode =
-        getRoomCode?.();
+      try {
 
+        const uid =
+          getUid?.();
 
-      const uid =
-        getUid?.();
-
-
-      if (
-        !roomCode ||
-        !uid
-      ) {
-        return;
-      }
+        const roomCode =
+          getRoomCode?.();
 
 
-      await update(
+        if (
+          !uid ||
+          !roomCode
+        ) {
+          return;
+        }
 
-        ref(
-          db,
-          `rooms/${roomCode}/public/voiceUsers/${uid}`
-        ),
 
-        {
+        const voiceUsers =
+          await readVoiceUsers();
 
-          name:
-            getName?.() ||
-            "مستخدم",
 
-          active: true,
+        const users =
+          Object
+            .keys(voiceUsers)
+            .filter(
+              id => id !== uid
+            );
 
-          muted:
-            voiceMuted,
 
-          session:
-            voiceSessionId,
+        for (
+          const otherUid
+          of users
+        ) {
 
-          mode:
-            localVoiceStream
-              ? "talk"
-              : "listen",
+          /*
+            مهم:
+            المستخدم الأصغر UID هو initiator.
 
-          ts:
-            Date.now(),
+            ما نحذف Signal للطرف الآخر
+            إلا إذا نحن الـ initiator.
+          */
 
-          ...extra
+          if (
+            String(uid) <
+            String(otherUid)
+          ) {
+
+            try {
+
+              await remove(
+
+                ref(
+                  db,
+                  `rooms/${roomCode}/public/voiceSignals/${pairIdFor(uid, otherUid)}`
+                )
+
+              );
+
+            } catch {}
+
+          }
 
         }
 
-      );
+
+        debugLog(
+          "تم تنظيف الإشارات القديمة"
+        );
+
+
+      } catch (e) {
+
+        debugError(
+          "تنظيف الإشارات",
+          e
+        );
+
+      }
 
     }
 
 
     // ========================================================
-    // WAIT FOR ICE
+    // LOCAL MICROPHONE
     // ========================================================
 
-    function waitIceComplete(
-      pc,
-      timeout = 5500
-    ) {
+    function stopLocalTracks() {
 
-      if (
-        pc.iceGatheringState ===
-        "complete"
-      ) {
+      if (!localVoiceStream) {
+        return;
+      }
 
-        return Promise.resolve();
+
+      try {
+
+        localVoiceStream
+          .getTracks()
+          .forEach(track => {
+
+            try {
+              track.stop();
+            } catch {}
+
+          });
+
+      } catch {}
+
+
+      localVoiceStream = null;
+
+    }
+
+
+    // ========================================================
+    // PEER CLEANUP
+    // ========================================================
+
+    function closePeer(otherUid) {
+
+      const timer =
+        reconnectTimers.get(otherUid);
+
+      if (timer) {
+
+        clearTimeout(timer);
+
+        reconnectTimers.delete(
+          otherUid
+        );
 
       }
 
 
-      return new Promise(resolve => {
-
-        let done = false;
-
-
-        const finish = () => {
-
-          if (done) {
-            return;
-          }
+      const pc =
+        voicePeers.get(otherUid);
 
 
-          done = true;
+      if (pc) {
+
+        try {
+
+          pc.ontrack = null;
+          pc.onicecandidate = null;
+          pc.onconnectionstatechange = null;
+          pc.oniceconnectionstatechange = null;
+
+          pc.close();
+
+        } catch {}
+
+      }
 
 
-          pc.removeEventListener(
-            "icegatheringstatechange",
-            check
-          );
+      voicePeers.delete(
+        otherUid
+      );
 
 
-          clearTimeout(timer);
-
-          resolve();
-
-        };
-
-
-        const check = () => {
-
-          if (
-            pc.iceGatheringState ===
-            "complete"
-          ) {
-
-            finish();
-
-          }
-
-        };
-
-
-        const timer =
-          setTimeout(
-            finish,
-            timeout
-          );
-
-
-        pc.addEventListener(
-          "icegatheringstatechange",
-          check
+      const audio =
+        document.getElementById(
+          "voice_" + otherUid
         );
+
+
+      if (audio) {
+
+        try {
+
+          audio.pause();
+
+          audio.srcObject = null;
+
+          audio.remove();
+
+        } catch {}
+
+      }
+
+
+      setPeerDebug(
+        otherUid,
+        {
+          stage: "مغلق",
+          connection: "closed"
+        }
+      );
+
+    }
+
+
+    function closeAllPeers() {
+
+      const ids =
+        Array.from(
+          voicePeers.keys()
+        );
+
+
+      ids.forEach(id => {
+
+        closePeer(id);
 
       });
 
@@ -707,29 +803,35 @@
 
 
     // ========================================================
-    // RETRY
+    // RECONNECT
     // ========================================================
 
-    function scheduleRetry(
+    function scheduleReconnect(
       otherUid,
-      delay = 1800
+      delay = 2500
     ) {
 
       if (
         !voiceActive ||
-        retryTimers.has(otherUid)
+        reconnectTimers.has(otherUid)
       ) {
         return;
       }
 
 
-      retryTimers.set(
-
+      setPeerDebug(
         otherUid,
+        {
+          stage:
+            "إعادة الاتصال..."
+        }
+      );
 
+
+      const timer =
         setTimeout(() => {
 
-          retryTimers.delete(
+          reconnectTimers.delete(
             otherUid
           );
 
@@ -739,560 +841,255 @@
           }
 
 
-          closePeer(otherUid);
+          closePeer(
+            otherUid
+          );
 
-          sync();
 
-        }, delay)
+          setTimeout(() => {
 
+            if (voiceActive) {
+              sync();
+            }
+
+          }, 150);
+
+        }, delay);
+
+
+      reconnectTimers.set(
+        otherUid,
+        timer
       );
 
     }
 
 
     // ========================================================
-    // CREATE PEER
+    // START
     // ========================================================
 
-    async function makePeer(
-      otherUid
-    ) {
+    async function start() {
 
       if (
-        !otherUid ||
-        otherUid === getUid()
-      ) {
-        return null;
-      }
-
-
-      let old =
-        voicePeers.get(otherUid);
-
-
-      if (
-        old &&
-        old.connectionState !== "closed" &&
-        old.connectionState !== "failed"
+        voiceActive ||
+        voiceStarting
       ) {
 
-        return old;
-
-      }
-
-
-      if (old) {
-
-        closePeer(otherUid);
-
-      }
-
-
-      const pc =
-        new RTCPeerConnection({
-
-          iceServers:
-            ICE_SERVERS,
-
-          iceCandidatePoolSize:
-            4,
-
-          bundlePolicy:
-            "max-bundle",
-
-          rtcpMuxPolicy:
-            "require"
-
-        });
-
-
-      pc._remoteUid =
-        otherUid;
-
-
-      pc._createdAt =
-        Date.now();
-
-
-      pc._signalKey = "";
-
-
-      voicePeers.set(
-        otherUid,
-        pc
-      );
-
-
-      // ======================================================
-      // TALK MODE
-      // ======================================================
-
-      if (
-        localVoiceStream
-          ?.getAudioTracks
-          ?.()
-          .length
-      ) {
-
-        for (
-          const track
-          of localVoiceStream.getAudioTracks()
-        ) {
-
-          try {
-
-            pc.addTrack(
-              track,
-              localVoiceStream
-            );
-
-          } catch (e) {
-
-            console.warn(
-              "voice addTrack",
-              e
-            );
-
-          }
-
-        }
-
-
-      // ======================================================
-      // LISTEN ONLY MODE
-      // ======================================================
-
-      } else {
-
-        try {
-
-          pc.addTransceiver(
-            "audio",
-            {
-              direction:
-                "recvonly"
-            }
-          );
-
-        } catch (e) {
-
-          console.warn(
-            "voice recvonly",
-            e
-          );
-
-        }
-
-      }
-
-
-      // ======================================================
-      // RECEIVE REMOTE AUDIO
-      // ======================================================
-
-      pc.ontrack = event => {
-
-        let stream =
-          event.streams?.[0];
-
-
-        if (!stream) {
-
-          stream =
-            new MediaStream();
-
-
-          try {
-
-            stream.addTrack(
-              event.track
-            );
-
-          } catch {}
-
-        }
-
-
-        attachRemoteAudio(
-          otherUid,
-          stream
+        safeToast(
+          voiceActive
+            ? "المايك شغال بالفعل"
+            : "جاري فتح المايك..."
         );
 
-      };
-
-
-      // ======================================================
-      // CONNECTION STATE
-      // ======================================================
-
-      const stateChanged = () => {
-
-        publishState();
-
-
-        if (
-          pc.connectionState === "connected" ||
-          pc.iceConnectionState === "connected" ||
-          pc.iceConnectionState === "completed"
-        ) {
-
-          pc._connectedAt =
-            Date.now();
-
-
-          unlockRemoteAudios();
-
-          return;
-
-        }
-
-
-        if (
-          pc.connectionState === "failed" ||
-          pc.iceConnectionState === "failed"
-        ) {
-
-          scheduleRetry(
-            otherUid,
-            700
-          );
-
-        } else if (
-          pc.connectionState === "disconnected" ||
-          pc.iceConnectionState === "disconnected"
-        ) {
-
-          scheduleRetry(
-            otherUid,
-            4500
-          );
-
-        }
-
-      };
-
-
-      pc.onconnectionstatechange =
-        stateChanged;
-
-
-      pc.oniceconnectionstatechange =
-        stateChanged;
-
-
-      return pc;
-
-    }
-
-
-    // ========================================================
-    // LISTEN MODE
-    // ========================================================
-
-    /*
-      هذه أهم نقطة في النظام الجديد.
-
-      المستخدم يدخل قناة الصوت بدون طلب المايك.
-      يقدر يسمع الموجودين مباشرة.
-
-      لا يظهر طلب صلاحية المايك إلا إذا ضغط
-      المستخدم على فتح المايك.
-    */
-
-    async function listen() {
-
-      if (voiceActive) {
         return;
+
       }
-
-
-      const roomCode =
-        getRoomCode?.();
 
 
       const uid =
         getUid?.();
 
+      const roomCode =
+        getRoomCode?.();
+
 
       if (
-        !roomCode ||
-        !uid
+        !uid ||
+        !roomCode
       ) {
+
+        safeToast(
+          "تعذر تحديد الغرفة"
+        );
+
         return;
+
       }
 
 
       voiceStarting = true;
 
-      voiceMuted = true;
-
       publishState();
+
+
+      debugLog(
+        "بدء تشغيل المايك"
+      );
 
 
       try {
 
+        if (!window.isSecureContext) {
+
+          throw new Error(
+            "المايك يحتاج HTTPS"
+          );
+
+        }
+
+
+        if (
+          !navigator.mediaDevices
+            ?.getUserMedia
+        ) {
+
+          throw new Error(
+            "المتصفح لا يدعم المايك"
+          );
+
+        }
+
+
+        try {
+
+          stopRadio?.(false);
+
+        } catch {}
+
+
+        try {
+
+          await releaseWebAudio?.();
+
+        } catch {}
+
+
+        await wait(200);
+
+
+        debugLog(
+          "طلب صلاحية المايك"
+        );
+
+
+        localVoiceStream =
+          await navigator.mediaDevices
+            .getUserMedia({
+
+              audio: {
+
+                echoCancellation:
+                  true,
+
+                noiseSuppression:
+                  true,
+
+                autoGainControl:
+                  true
+
+              },
+
+              video:
+                false
+
+            });
+
+
+        const tracks =
+          localVoiceStream
+            .getAudioTracks();
+
+
+        if (!tracks.length) {
+
+          throw new Error(
+            "لم يتم العثور على مايك"
+          );
+
+        }
+
+
+        tracks.forEach(
+          track =>
+            track.enabled = true
+        );
+
+
+        debugLog(
+          "تم تشغيل المايك"
+        );
+
+
         voiceSessionId =
-          newSession();
+          String(uid) +
+          "_" +
+          Date.now() +
+          "_" +
+          Math.random()
+            .toString(36)
+            .slice(2, 7);
 
 
         voiceActive = true;
 
         voiceStarting = false;
 
-
-        await registerSelf();
-
-
-        startSyncLoop();
-
-
-        publishState();
-
-
-        setTimeout(
-          sync,
-          80
-        );
-
-
-        setTimeout(
-          sync,
-          500
-        );
-
-
-        setTimeout(
-          sync,
-          1400
-        );
-
-
-      } catch (e) {
-
-        console.warn(
-          "voice listen",
-          e
-        );
-
-
-        voiceActive = false;
-
-        voiceStarting = false;
-
-
-        publishState();
-
-      }
-
-    }
-
-
-    // ========================================================
-    // GET MICROPHONE
-    // ========================================================
-
-    async function acquireMic() {
-
-      if (localVoiceStream) {
-
-        return true;
-
-      }
-
-
-      if (!window.isSecureContext) {
-
-        throw new Error("HTTPS");
-
-      }
-
-
-      if (
-        !navigator.mediaDevices
-          ?.getUserMedia
-      ) {
-
-        throw new Error(
-          "UNSUPPORTED"
-        );
-
-      }
-
-
-      try {
-
-        stopRadio?.(false);
-
-      } catch {}
-
-
-      try {
-
-        await releaseWebAudio?.();
-
-      } catch {}
-
-
-      await wait(100);
-
-
-      localVoiceStream =
-        await navigator.mediaDevices
-          .getUserMedia({
-
-            audio: {
-
-              echoCancellation:
-                true,
-
-              noiseSuppression:
-                true,
-
-              autoGainControl:
-                true
-
-            },
-
-            video:
-              false
-
-          });
-
-
-      if (
-        !localVoiceStream
-          .getAudioTracks()
-          .length
-      ) {
-
-        throw new Error(
-          "NO_MIC"
-        );
-
-      }
-
-
-      return true;
-
-    }
-
-
-    // ========================================================
-    // START / OPEN MICROPHONE
-    // ========================================================
-
-    async function start(
-      options = {}
-    ) {
-
-      /*
-        للاستماع فقط:
-
-        start({ muted:true })
-
-        أو:
-
-        listen()
-      */
-
-      if (
-        options?.muted === true
-      ) {
-
-        await listen();
-
-        return;
-
-      }
-
-
-      if (voiceStarting) {
-        return;
-      }
-
-
-      /*
-        إذا لم يكن داخل الصوت،
-        ندخله أولاً بوضع الاستماع.
-      */
-
-      if (!voiceActive) {
-
-        await listen();
-
-      }
-
-
-      /*
-        إذا المايك مفتوح بالفعل
-      */
-
-      if (
-        localVoiceStream &&
-        !voiceMuted
-      ) {
-
-        safeToast(
-          "🎙️ المايك شغال بالفعل"
-        );
-
-        return;
-
-      }
-
-
-      voiceStarting = true;
-
-      publishState();
-
-
-      try {
-
-        await acquireMic();
-
-
         voiceMuted = false;
 
-
-        localVoiceStream
-          .getAudioTracks()
-          .forEach(track => {
-
-            track.enabled =
-              true;
-
-          });
-
-
-        /*
-          جلسة جديدة لأن وضع المستخدم
-          تغير من استماع إلى تحدث.
-        */
-
-        voiceSessionId =
-          newSession();
-
-
-        await registerSelf();
-
-
-        /*
-          نعيد بناء الاتصالات حتى تنتقل
-          من recvonly إلى إرسال واستقبال.
-        */
 
         closeAllPeers();
 
 
-        voiceStarting = false;
+        await clearMyVoiceSignals();
+
+
+        await update(
+
+          ref(
+            db,
+            `rooms/${roomCode}/public/voiceUsers/${uid}`
+          ),
+
+          {
+
+            name:
+              getName?.() ||
+              "مستخدم",
+
+            active:
+              true,
+
+            muted:
+              false,
+
+            session:
+              voiceSessionId,
+
+            ts:
+              Date.now()
+
+          }
+
+        );
+
+
+        debugLog(
+          "تم تسجيل المستخدم في قناة الصوت"
+        );
 
 
         publishState();
 
 
+        clearInterval(
+          voiceSyncTimer
+        );
+
+
+        voiceSyncTimer =
+          setInterval(() => {
+
+            if (voiceActive) {
+              sync();
+            }
+
+          }, 1200);
+
+
         setTimeout(
           sync,
-          80
+          100
         );
 
 
@@ -1302,25 +1099,49 @@
         );
 
 
+        setTimeout(
+          sync,
+          1500
+        );
+
+
+        setTimeout(
+          sync,
+          3000
+        );
+
+
         safeToast(
-          "🎙️ تم فتح المايك"
+          "🎙️ المايك مفتوح — جاري الربط..."
         );
 
 
       } catch (e) {
 
-        console.warn(
-          "voice mic",
+        debugError(
+          "تشغيل المايك",
           e
         );
 
 
         voiceStarting = false;
 
-        voiceMuted = true;
+        voiceActive = false;
 
+        voiceMuted = false;
+
+        voiceSessionId = "";
+
+
+        stopLocalTracks();
+
+        closeAllPeers();
 
         publishState();
+
+
+        let msg =
+          "تعذر تشغيل المايك";
 
 
         if (
@@ -1330,17 +1151,13 @@
             "PermissionDeniedError"
         ) {
 
-          safeToast(
-            "اسمح للمايك من إعدادات Safari ثم حاول مرة ثانية"
-          );
-
-        } else {
-
-          safeToast(
-            "تعذر تشغيل المايك"
-          );
+          msg =
+            "اسمح للمايك من إعدادات Safari";
 
         }
+
+
+        safeToast(msg);
 
       }
 
@@ -1348,33 +1165,21 @@
 
 
     // ========================================================
-    // MUTE / UNMUTE
+    // MUTE
     // ========================================================
 
     async function toggleMute() {
 
-      /*
-        إذا لم يدخل قناة الصوت بعد:
-        ندخله ثم نفتح المايك.
-      */
+      if (
+        !voiceActive ||
+        !localVoiceStream
+      ) {
 
-      if (!voiceActive) {
+        safeToast(
+          "شغل الصوت أولاً"
+        );
 
-        await listen();
-
-        return start();
-
-      }
-
-
-      /*
-        إذا داخل للاستماع فقط وما طلب
-        صلاحية المايك من قبل.
-      */
-
-      if (!localVoiceStream) {
-
-        return start();
+        return;
 
       }
 
@@ -1395,52 +1200,720 @@
 
       try {
 
-        await registerSelf();
+        await update(
 
-      } catch {}
+          ref(
+            db,
+            `rooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
+          ),
+
+          {
+
+            muted:
+              voiceMuted,
+
+            active:
+              true,
+
+            ts:
+              Date.now()
+
+          }
+
+        );
+
+      } catch (e) {
+
+        debugError(
+          "تحديث الكتم",
+          e
+        );
+
+      }
 
 
       publishState();
 
 
-      if (voiceMuted) {
+      safeToast(
 
-        safeToast(
-          "🔇 تم كتم المايك — ما زلت تسمع الموجودين"
-        );
+        voiceMuted
+          ? "🔇 تم كتم مايكك — ما زلت تسمع الآخرين"
+          : "🎙️ تم فتح مايكك"
 
-      } else {
-
-        safeToast(
-          "🎙️ تم فتح المايك"
-        );
-
-      }
+      );
 
     }
 
 
     // ========================================================
-    // SYNC LOOP
+    // REMOTE AUDIO
     // ========================================================
 
-    function startSyncLoop() {
+    function attachRemoteAudio(
+      otherUid,
+      stream
+    ) {
 
-      clearInterval(
-        voiceSyncTimer
+      const box =
+        getAudioBox();
+
+
+      let audio =
+        document.getElementById(
+          "voice_" + otherUid
+        );
+
+
+      if (!audio) {
+
+        audio =
+          document.createElement(
+            "audio"
+          );
+
+
+        audio.id =
+          "voice_" + otherUid;
+
+
+        audio.autoplay = true;
+
+        audio.playsInline = true;
+
+
+        audio.setAttribute(
+          "playsinline",
+          ""
+        );
+
+
+        audio.setAttribute(
+          "webkit-playsinline",
+          ""
+        );
+
+
+        box.appendChild(
+          audio
+        );
+
+      }
+
+
+      audio.srcObject =
+        stream;
+
+      audio.muted =
+        false;
+
+      audio.volume =
+        1;
+
+
+      debugLog(
+        "وصل صوت الطرف الآخر"
       );
 
 
-      voiceSyncTimer =
-        setInterval(() => {
+      setPeerDebug(
+        otherUid,
+        {
+          stage:
+            "تم استقبال الصوت"
+        }
+      );
 
-          if (voiceActive) {
 
-            sync();
+      try {
+
+        const p =
+          audio.play();
+
+
+        if (p?.catch) {
+
+          p.catch(e => {
+
+            debugError(
+              "Safari منع تشغيل الصوت",
+              e
+            );
+
+
+            safeToast(
+              "🔊 اضغط على الشاشة مرة لتفعيل الصوت"
+            );
+
+          });
+
+        }
+
+      } catch {}
+
+    }
+
+
+    // ========================================================
+    // MAKE PEER
+    // ========================================================
+
+    async function makePeer(
+      otherUid
+    ) {
+
+      if (
+        !otherUid ||
+        otherUid === getUid() ||
+        !localVoiceStream
+      ) {
+
+        return null;
+
+      }
+
+
+      const old =
+        voicePeers.get(
+          otherUid
+        );
+
+
+      if (
+        old &&
+        old.connectionState !==
+          "closed" &&
+        old.connectionState !==
+          "failed"
+      ) {
+
+        return old;
+
+      }
+
+
+      if (old) {
+
+        closePeer(
+          otherUid
+        );
+
+      }
+
+
+      const uid =
+        getUid();
+
+
+      const roomCode =
+        getRoomCode();
+
+
+      debugLog(
+        "إنشاء WebRTC Peer"
+      );
+
+
+      setPeerDebug(
+        otherUid,
+        {
+          stage:
+            "إنشاء Peer"
+        }
+      );
+
+
+      const pc =
+        new RTCPeerConnection({
+
+          iceServers: [
+
+            {
+              urls: [
+
+                "stun:stun.l.google.com:19302",
+
+                "stun:stun1.l.google.com:19302",
+
+                "stun:stun.cloudflare.com:3478"
+
+              ]
+            },
+
+            {
+              urls: [
+                "turn:openrelay.metered.ca:80",
+                "turn:openrelay.metered.ca:443",
+                "turn:openrelay.metered.ca:443?transport=tcp"
+              ],
+
+              username:
+                "openrelayproject",
+
+              credential:
+                "openrelayproject"
+            }
+
+          ],
+
+          iceCandidatePoolSize:
+            6,
+
+          bundlePolicy:
+            "max-bundle",
+
+          rtcpMuxPolicy:
+            "require"
+
+        });
+
+
+      pc._addedRemoteIce =
+        new Set();
+
+
+      pc._remoteUid =
+        otherUid;
+
+
+      pc._createdAt =
+        Date.now();
+
+
+      voicePeers.set(
+        otherUid,
+        pc
+      );
+
+
+      // ======================================================
+      // LOCAL AUDIO
+      // ======================================================
+
+      for (
+        const track
+        of localVoiceStream
+          .getAudioTracks()
+      ) {
+
+        try {
+
+          pc.addTrack(
+            track,
+            localVoiceStream
+          );
+
+        } catch (e) {
+
+          debugError(
+            "إضافة المايك إلى Peer",
+            e
+          );
+
+        }
+
+      }
+
+
+      // ======================================================
+      // REMOTE AUDIO
+      // ======================================================
+
+      pc.ontrack =
+        event => {
+
+          let stream =
+            event.streams?.[0];
+
+
+          if (!stream) {
+
+            stream =
+              new MediaStream();
+
+
+            try {
+
+              stream.addTrack(
+                event.track
+              );
+
+            } catch {}
 
           }
 
-        }, 1100);
+
+          attachRemoteAudio(
+            otherUid,
+            stream
+          );
+
+        };
+
+
+      // ======================================================
+      // ICE CANDIDATES
+      // ======================================================
+
+      pc.onicecandidate =
+        async event => {
+
+          if (!event.candidate) {
+
+            setPeerDebug(
+              otherUid,
+              {
+                stage:
+                  "اكتمل جمع ICE"
+              }
+            );
+
+            return;
+
+          }
+
+
+          try {
+
+            const candidate =
+              event.candidate;
+
+
+            let type =
+              candidate.type ||
+              "";
+
+
+            if (
+              !type &&
+              candidate.candidate
+            ) {
+
+              const m =
+                candidate.candidate
+                  .match(
+                    / typ ([a-z]+)/i
+                  );
+
+              type =
+                m?.[1] ||
+                "";
+
+            }
+
+
+            setPeerDebug(
+              otherUid,
+              {
+                stage:
+                  type === "relay"
+                    ? "TURN relay جاهز"
+                    : `ICE ${type || "candidate"}`
+              }
+            );
+
+
+            const pair =
+              pairIdFor(
+                uid,
+                otherUid
+              );
+
+
+            await set(
+
+              push(
+
+                ref(
+                  db,
+                  `rooms/${roomCode}/public/voiceSignals/${pair}/candidates/${uid}`
+                )
+
+              ),
+
+              candidate.toJSON()
+
+            );
+
+
+          } catch (e) {
+
+            debugError(
+              "إرسال ICE",
+              e
+            );
+
+          }
+
+        };
+
+
+      // ======================================================
+      // CONNECTION STATE
+      // ======================================================
+
+      pc.onconnectionstatechange =
+        () => {
+
+          setPeerDebug(
+            otherUid,
+            {
+              connection:
+                pc.connectionState,
+
+              signaling:
+                pc.signalingState
+            }
+          );
+
+
+          publishState();
+
+
+          if (
+            pc.connectionState ===
+              "connected"
+          ) {
+
+            debugLog(
+              "WebRTC متصل"
+            );
+
+
+            setPeerDebug(
+              otherUid,
+              {
+                stage:
+                  "✅ متصل"
+              }
+            );
+
+
+            unlockRemoteAudios();
+
+            return;
+
+          }
+
+
+          if (
+            pc.connectionState ===
+              "failed"
+          ) {
+
+            debugLog(
+              "WebRTC فشل — إعادة محاولة"
+            );
+
+
+            scheduleReconnect(
+              otherUid,
+              1000
+            );
+
+            return;
+
+          }
+
+
+          /*
+            disconnected قد تكون لحظية
+            خصوصاً عند iPhone أو تبديل الشبكة.
+
+            لذلك لا نغلق Peer مباشرة.
+          */
+
+          if (
+            pc.connectionState ===
+              "disconnected"
+          ) {
+
+            debugLog(
+              "انقطاع مؤقت — انتظار قبل إعادة الربط"
+            );
+
+
+            scheduleReconnect(
+              otherUid,
+              5000
+            );
+
+          }
+
+        };
+
+
+      pc.oniceconnectionstatechange =
+        () => {
+
+          setPeerDebug(
+            otherUid,
+            {
+              ice:
+                pc.iceConnectionState,
+
+              signaling:
+                pc.signalingState
+            }
+          );
+
+
+          publishState();
+
+
+          if (
+            pc.iceConnectionState ===
+              "connected" ||
+            pc.iceConnectionState ===
+              "completed"
+          ) {
+
+            setPeerDebug(
+              otherUid,
+              {
+                stage:
+                  "✅ ICE متصل"
+              }
+            );
+
+
+            unlockRemoteAudios();
+
+          }
+
+
+          if (
+            pc.iceConnectionState ===
+              "failed"
+          ) {
+
+            debugLog(
+              "ICE failed"
+            );
+
+
+            scheduleReconnect(
+              otherUid,
+              1000
+            );
+
+          }
+
+
+          if (
+            pc.iceConnectionState ===
+              "disconnected"
+          ) {
+
+            scheduleReconnect(
+              otherUid,
+              5000
+            );
+
+          }
+
+        };
+
+
+      return pc;
+
+    }
+
+
+    // ========================================================
+    // REMOTE ICE
+    // ========================================================
+
+    async function addRemoteIce(
+      pc,
+      pair,
+      otherUid
+    ) {
+
+      if (!pc) return;
+
+
+      /*
+        لا نحاول إضافة ICE قبل وصول
+        Remote Description.
+      */
+
+      if (
+        !pc.remoteDescription
+      ) {
+
+        return;
+
+      }
+
+
+      try {
+
+        const snap =
+          await get(
+
+            ref(
+              db,
+              `rooms/${getRoomCode()}/public/voiceSignals/${pair}/candidates/${otherUid}`
+            )
+
+          );
+
+
+        const all =
+          snap.val() || {};
+
+
+        for (
+          const [key, candidate]
+          of Object.entries(all)
+        ) {
+
+          if (
+            pc._addedRemoteIce
+              ?.has(key)
+          ) {
+
+            continue;
+
+          }
+
+
+          try {
+
+            await pc.addIceCandidate(
+
+              new RTCIceCandidate(
+                candidate
+              )
+
+            );
+
+
+            pc._addedRemoteIce
+              ?.add(key);
+
+
+          } catch (e) {
+
+            debugError(
+              "إضافة Remote ICE",
+              e
+            );
+
+          }
+
+        }
+
+
+      } catch (e) {
+
+        debugError(
+          "قراءة Remote ICE",
+          e
+        );
+
+      }
 
     }
 
@@ -1453,9 +1926,12 @@
 
       if (
         !voiceActive ||
+        !localVoiceStream ||
         voiceSyncBusy
       ) {
+
         return;
+
       }
 
 
@@ -1471,14 +1947,24 @@
         !uid ||
         !roomCode
       ) {
+
         return;
+
       }
 
 
-      voiceSyncBusy = true;
+      voiceSyncBusy =
+        true;
 
 
       try {
+
+        /*
+          لا نعتمد على currentRoom هنا.
+
+          نقرأ voiceUsers مباشرة من Firebase
+          حتى نرى اللاعب فور دخوله للصوت.
+        */
 
         const voiceUsers =
           await readVoiceUsers();
@@ -1498,8 +1984,25 @@
             });
 
 
+        voiceDebug.users =
+          Object
+            .keys(voiceUsers)
+            .filter(id =>
+              voiceUsers[id]
+                ?.active === true
+            )
+            .length;
+
+
+        voiceDebug.expected =
+          users.length;
+
+
+        updateDebugBox();
+
+
         // ====================================================
-        // REMOVE USERS WHO LEFT
+        // REMOVE LEFT USERS
         // ====================================================
 
         for (
@@ -1519,13 +2022,17 @@
               otherUid
             );
 
+
+            delete voiceDebug
+              .peers[otherUid];
+
           }
 
         }
 
 
         // ====================================================
-        // CONNECT USERS
+        // EACH REMOTE USER
         // ====================================================
 
         for (
@@ -1558,32 +2065,6 @@
               String(otherUid);
 
 
-            /*
-              Session للطرفين.
-
-              إذا أحد الطرفين فتح المايك
-              أو أعاد الاتصال، تتغير الجلسة
-              ويعاد بناء الاتصال.
-            */
-
-            const mine =
-              voiceUsers[uid]
-                ?.session ||
-              voiceSessionId;
-
-
-            const theirs =
-              voiceUsers[otherUid]
-                ?.session ||
-              "";
-
-
-            const key =
-              initiator
-                ? `${mine}|${theirs}`
-                : `${theirs}|${mine}`;
-
-
             let signal =
               await readSignal(
                 pair
@@ -1591,46 +2072,83 @@
 
 
             // =================================================
-            // CALLER
+            // INITIATOR
             // =================================================
 
             if (initiator) {
 
-              const stale =
-                !signal.offer?.sdp ||
-                signal.key !== key;
+              const liveOffer =
+                signal.offer;
 
 
               if (
-                stale &&
+                (
+                  !liveOffer?.sdp ||
+                  liveOffer.session !==
+                    voiceSessionId
+                ) &&
                 pc.signalingState ===
                   "stable"
               ) {
 
-                /*
-                  نعيد إنشاء Peer نظيف.
-                */
-
-                closePeer(
-                  otherUid
+                debugLog(
+                  "إنشاء Offer"
                 );
 
 
-                pc =
-                  await makePeer(
-                    otherUid
+                setPeerDebug(
+                  otherUid,
+                  {
+                    stage:
+                      "إنشاء Offer"
+                  }
+                );
+
+
+                /*
+                  تنظيف Answer و ICE القديم
+                  قبل جلسة جديدة.
+                */
+
+                try {
+
+                  await remove(
+
+                    ref(
+                      db,
+                      `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                    )
+
                   );
 
+                } catch {}
 
-                if (!pc) {
-                  continue;
-                }
+
+                try {
+
+                  await remove(
+
+                    ref(
+                      db,
+                      `rooms/${roomCode}/public/voiceSignals/${pair}/candidates`
+                    )
+
+                  );
+
+                } catch {}
+
+
+                pc._addedRemoteIce =
+                  new Set();
 
 
                 const offer =
                   await pc.createOffer({
 
                     offerToReceiveAudio:
+                      true,
+
+                    iceRestart:
                       true
 
                   });
@@ -1641,44 +2159,26 @@
                 );
 
 
-                /*
-                  ننتظر ICE حتى تدخل الـ candidates
-                  داخل SDP نفسه.
-
-                  هذا يقلل مشاكل السباق في Firebase.
-                */
-
-                await waitIceComplete(
-                  pc
-                );
-
-
                 await set(
 
                   ref(
                     db,
-                    `rooms/${roomCode}/public/voiceSignals/${pair}`
+                    `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
                   ),
 
                   {
 
-                    key,
+                    type:
+                      pc.localDescription.type,
 
-                    caller:
+                    sdp:
+                      pc.localDescription.sdp,
+
+                    from:
                       uid,
 
-                    callee:
-                      otherUid,
-
-                    offer: {
-
-                      type:
-                        pc.localDescription.type,
-
-                      sdp:
-                        pc.localDescription.sdp
-
-                    },
+                    session:
+                      voiceSessionId,
 
                     ts:
                       Date.now()
@@ -1688,12 +2188,22 @@
                 );
 
 
-                pc._signalKey =
-                  key;
-
-
                 pc._offerAt =
                   Date.now();
+
+
+                setPeerDebug(
+                  otherUid,
+                  {
+                    stage:
+                      "📤 Offer مرسل"
+                  }
+                );
+
+
+                debugLog(
+                  "Offer مرسل"
+                );
 
 
                 signal =
@@ -1708,17 +2218,53 @@
               // ANSWER
               // =================================================
 
+              const answer =
+                signal.answer ||
+                (
+                  await get(
+
+                    ref(
+                      db,
+                      `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                    )
+
+                  )
+
+                ).val();
+
+
               if (
-                signal.key === key &&
-                signal.answer?.sdp &&
+                answer?.sdp &&
+                answer.session ===
+                  voiceSessionId &&
                 !pc.currentRemoteDescription
               ) {
 
+                debugLog(
+                  "Answer وصل"
+                );
+
+
+                setPeerDebug(
+                  otherUid,
+                  {
+                    stage:
+                      "📥 Answer وصل"
+                  }
+                );
+
+
                 await pc.setRemoteDescription(
 
-                  new RTCSessionDescription(
-                    signal.answer
-                  )
+                  new RTCSessionDescription({
+
+                    type:
+                      answer.type,
+
+                    sdp:
+                      answer.sdp
+
+                  })
 
                 );
 
@@ -1729,9 +2275,16 @@
               }
 
 
+              await addRemoteIce(
+                pc,
+                pair,
+                otherUid
+              );
+
+
               /*
-                إذا ظل أكثر من 14 ثانية
-                بدون Answer نعيد المحاولة.
+                إذا الـ Offer ظل بدون Answer
+                فترة طويلة، نعيد بناء الاتصال.
               */
 
               if (
@@ -1739,12 +2292,21 @@
                 !pc.currentRemoteDescription &&
                 Date.now() -
                   pc._offerAt >
-                  14000
+                  12000
               ) {
 
-                scheduleRetry(
+                setPeerDebug(
                   otherUid,
-                  100
+                  {
+                    stage:
+                      "⚠️ لا يوجد Answer"
+                  }
+                );
+
+
+                scheduleReconnect(
+                  otherUid,
+                  500
                 );
 
               }
@@ -1756,10 +2318,30 @@
 
             } else {
 
-              if (
-                !signal.offer?.sdp ||
-                signal.key !== key
-              ) {
+              const offer =
+                signal.offer ||
+                (
+                  await get(
+
+                    ref(
+                      db,
+                      `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
+                    )
+
+                  )
+
+                ).val();
+
+
+              if (!offer?.sdp) {
+
+                setPeerDebug(
+                  otherUid,
+                  {
+                    stage:
+                      "بانتظار Offer"
+                  }
+                );
 
                 continue;
 
@@ -1767,14 +2349,21 @@
 
 
               /*
-                إذا الجلسة تغيرت،
-                نعيد Peer من الصفر.
+                إذا وصل Offer لجلسة جديدة،
+                نعيد Peer حتى ما نبقى مربوطين
+                بالجلسة القديمة.
               */
 
               if (
-                pc._signalKey &&
-                pc._signalKey !== key
+                pc._offerSession &&
+                pc._offerSession !==
+                  offer.session
               ) {
+
+                debugLog(
+                  "Offer جديد — إعادة Peer"
+                );
+
 
                 closePeer(
                   otherUid
@@ -1800,17 +2389,50 @@
                   "stable"
               ) {
 
+                setPeerDebug(
+                  otherUid,
+                  {
+                    stage:
+                      "📥 Offer وصل"
+                  }
+                );
+
+
+                debugLog(
+                  "Offer وصل"
+                );
+
+
                 await pc.setRemoteDescription(
 
-                  new RTCSessionDescription(
-                    signal.offer
-                  )
+                  new RTCSessionDescription({
+
+                    type:
+                      offer.type,
+
+                    sdp:
+                      offer.sdp
+
+                  })
 
                 );
 
 
-                pc._signalKey =
-                  key;
+                pc._offerSession =
+                  offer.session ||
+                  "";
+
+
+                /*
+                  الآن بعد remoteDescription
+                  نقدر نضيف ICE الموجود.
+                */
+
+                await addRemoteIce(
+                  pc,
+                  pair,
+                  otherUid
+                );
 
 
                 const answer =
@@ -1822,52 +2444,79 @@
                 );
 
 
-                await waitIceComplete(
-                  pc
-                );
-
-
-                await update(
+                await set(
 
                   ref(
                     db,
-                    `rooms/${roomCode}/public/voiceSignals/${pair}`
+                    `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
                   ),
 
                   {
 
-                    answer: {
+                    type:
+                      pc.localDescription.type,
 
-                      type:
-                        pc.localDescription.type,
+                    sdp:
+                      pc.localDescription.sdp,
 
-                      sdp:
-                        pc.localDescription.sdp
+                    from:
+                      uid,
 
-                    },
+                    session:
+                      offer.session ||
+                      "",
 
-                    answerTs:
+                    ts:
                       Date.now()
 
                   }
 
                 );
 
+
+                setPeerDebug(
+                  otherUid,
+                  {
+                    stage:
+                      "📤 Answer مرسل"
+                  }
+                );
+
+
+                debugLog(
+                  "Answer مرسل"
+                );
+
               }
+
+
+              await addRemoteIce(
+                pc,
+                pair,
+                otherUid
+              );
 
             }
 
 
           } catch (peerError) {
 
-            console.warn(
-              "voice peer sync",
-              otherUid,
+            debugError(
+              `Peer ${otherUid}`,
               peerError
             );
 
 
-            scheduleRetry(
+            setPeerDebug(
+              otherUid,
+              {
+                stage:
+                  "❌ خطأ اتصال"
+              }
+            );
+
+
+            scheduleReconnect(
               otherUid,
               1800
             );
@@ -1879,15 +2528,17 @@
 
       } catch (e) {
 
-        console.warn(
-          "voice sync",
+        debugError(
+          "Voice Sync",
           e
         );
 
 
       } finally {
 
-        voiceSyncBusy = false;
+        voiceSyncBusy =
+          false;
+
 
         publishState();
 
@@ -1897,7 +2548,7 @@
 
 
     // ========================================================
-    // RECONNECT
+    // FORCE RECONNECT
     // ========================================================
 
     async function reconnect() {
@@ -1907,13 +2558,47 @@
       }
 
 
+      debugLog(
+        "إعادة ربط يدوي"
+      );
+
+
       voiceSessionId =
-        newSession();
+        String(getUid()) +
+        "_" +
+        Date.now() +
+        "_" +
+        Math.random()
+          .toString(36)
+          .slice(2, 7);
 
 
       try {
 
-        await registerSelf();
+        await update(
+
+          ref(
+            db,
+            `rooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
+          ),
+
+          {
+
+            session:
+              voiceSessionId,
+
+            active:
+              true,
+
+            muted:
+              voiceMuted,
+
+            ts:
+              Date.now()
+
+          }
+
+        );
 
       } catch {}
 
@@ -1921,22 +2606,19 @@
       closeAllPeers();
 
 
-      setTimeout(
-        sync,
-        100
-      );
+      setTimeout(() => {
 
+        if (voiceActive) {
+          sync();
+        }
 
-      setTimeout(
-        sync,
-        900
-      );
+      }, 200);
 
     }
 
 
     // ========================================================
-    // STOP / LEAVE VOICE
+    // STOP
     // ========================================================
 
     async function stop(
@@ -1948,11 +2630,14 @@
         voiceStarting;
 
 
-      voiceActive = false;
+      voiceActive =
+        false;
 
-      voiceStarting = false;
+      voiceStarting =
+        false;
 
-      voiceMuted = true;
+      voiceMuted =
+        false;
 
 
       clearInterval(
@@ -1960,12 +2645,13 @@
       );
 
 
-      voiceSyncTimer = null;
+      voiceSyncTimer =
+        null;
 
 
       for (
         const timer
-        of retryTimers.values()
+        of reconnectTimers.values()
       ) {
 
         clearTimeout(timer);
@@ -1973,7 +2659,7 @@
       }
 
 
-      retryTimers.clear();
+      reconnectTimers.clear();
 
 
       stopLocalTracks();
@@ -1989,7 +2675,9 @@
 
       if (box) {
 
-        box.innerHTML = "";
+        try {
+          box.innerHTML = "";
+        } catch {}
 
       }
 
@@ -2022,50 +2710,33 @@
         } catch {}
 
 
-        /*
-          نحذف فقط الإشارات التي يكون
-          هذا المستخدم هو الـ initiator لها.
-
-          هذا يقلل احتمال حذف اتصال
-          الطرف الآخر في نفس اللحظة.
-        */
-
         try {
 
-          const users =
-            await readVoiceUsers();
-
-
-          for (
-            const otherUid
-            of Object.keys(users)
-          ) {
-
-            if (
-              otherUid !== uid &&
-              String(uid) <
-                String(otherUid)
-            ) {
-
-              await remove(
-
-                ref(
-                  db,
-                  `rooms/${roomCode}/public/voiceSignals/${pairIdFor(uid, otherUid)}`
-                )
-
-              ).catch(() => {});
-
-            }
-
-          }
+          await clearMyVoiceSignals();
 
         } catch {}
 
       }
 
 
-      voiceSessionId = "";
+      voiceSessionId =
+        "";
+
+
+      voiceDebug.users =
+        0;
+
+      voiceDebug.expected =
+        0;
+
+      voiceDebug.connected =
+        0;
+
+      voiceDebug.peers =
+        {};
+
+      voiceDebug.lastAction =
+        "الصوت متوقف";
 
 
       publishState();
@@ -2077,7 +2748,7 @@
       ) {
 
         safeToast(
-          "تم الخروج من الصوت"
+          "تم إيقاف الصوت المباشر"
         );
 
       }
@@ -2109,14 +2780,12 @@
 
 
     // ========================================================
-    // CONTROLLER
+    // RETURN
     // ========================================================
 
     return {
 
       start,
-
-      listen,
 
       stop,
 
@@ -2126,7 +2795,8 @@
 
       reconnect,
 
-      remoteCount,
+      remoteCount:
+        voiceRemoteCount,
 
       isActive,
 
@@ -2139,13 +2809,8 @@
   }
 
 
-  // ==========================================================
-  // GLOBAL
-  // ==========================================================
-
   window.SheikhVoice = {
     createVoiceController
   };
-
 
 })();
