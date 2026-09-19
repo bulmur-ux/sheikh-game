@@ -1,0 +1,104 @@
+{
+  "category": "uae-clubs",
+  "count": 14,
+  "avatars": [
+    {
+      "id": "uae-club-001",
+      "nameAr": "عجمان",
+      "nameEn": "Ajman",
+      "file": "uae-club-001-ajman.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-002",
+      "nameAr": "العين",
+      "nameEn": "Al Ain",
+      "file": "uae-club-002-alain.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-003",
+      "nameAr": "الظفرة",
+      "nameEn": "Al Dhafra",
+      "file": "uae-club-003-aldhafra.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-004",
+      "nameAr": "الجزيرة",
+      "nameEn": "Al Jazira",
+      "file": "uae-club-004-aljazira.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-005",
+      "nameAr": "النصر",
+      "nameEn": "Al Nasr",
+      "file": "uae-club-005-alnasr.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-006",
+      "nameAr": "الوحدة",
+      "nameEn": "Al Wahda",
+      "file": "uae-club-006-alwahda.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-007",
+      "nameAr": "الوصل",
+      "nameEn": "Al Wasl",
+      "file": "uae-club-007-alwasl.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-008",
+      "nameAr": "بني ياس",
+      "nameEn": "Baniyas",
+      "file": "uae-club-008-baniyas.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-009",
+      "nameAr": "حتا",
+      "nameEn": "Hatta",
+      "file": "uae-club-009-hatta.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-010",
+      "nameAr": "كلباء",
+      "nameEn": "Kalba",
+      "file": "uae-club-010-kalba.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-011",
+      "nameAr": "خورفكان",
+      "nameEn": "Khorfakkan",
+      "file": "uae-club-011-khorfakkan.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-012",
+      "nameAr": "شباب الأهلي",
+      "nameEn": "Shabab Al Ahli",
+      "file": "uae-club-012-shabab-alahli.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-013",
+      "nameAr": "الشارقة",
+      "nameEn": "Sharjah",
+      "file": "uae-club-013-sharjah.webp",
+      "category": "uae-clubs"
+    },
+    {
+      "id": "uae-club-014",
+      "nameAr": "يونايتد",
+      "nameEn": "United",
+      "file": "uae-club-014-united.webp",
+      "category": "uae-clubs"
+    }
+  ]
+}
