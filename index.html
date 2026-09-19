@@ -1827,39 +1827,52 @@ async function primeRoomAudio(){
   a.src=silent;a.volume=.001;await a.play();a.pause();a.currentTime=0;a.removeAttribute("src");a.load();a.volume=.9;roomAudioPrimed=true;return true
  }catch{return false}
 }
+let funnyStopTimer=null;
+const FUNNY_MAX_MS=2800;
 async function playFunnySound(key,who=""){
  const item=FUN_SOUNDS[key];if(!item||sfxMuted)return false;
  try{
-  const a=getFunnyAudio();try{a.pause()}catch{}
-  a.src=item.url;a.currentTime=0;a.volume=.9;
-  const ok=await a.play().then(()=>true).catch(()=>false);
-  if(!ok){console.warn("room sound autoplay blocked",key);return false}
+  const a=getFunnyAudio();
+  clearTimeout(funnyStopTimer);
+  try{a.pause();a.currentTime=0}catch{}
+  a.src=item.url;a.volume=.9;
+  const ok=await Promise.race([
+   a.play().then(()=>true).catch(()=>false),
+   new Promise(r=>setTimeout(()=>r(false),1800))
+  ]);
+  if(!ok){try{a.pause()}catch{}console.warn("room sound autoplay blocked/timeout",key);return false}
+  funnyStopTimer=setTimeout(()=>{
+   try{a.pause();a.currentTime=0}catch{}
+   const el=document.getElementById("soundNow");if(el)el.textContent="";
+  },FUNNY_MAX_MS);
   const el=document.getElementById("soundNow");if(el)el.textContent=(who?who+": ":"")+item.label;return true
  }catch(e){console.warn("funny sound",e);return false}
 }
 function releaseFunnyAudio(){
+ clearTimeout(funnyStopTimer);funnyStopTimer=null;
  const a=funnyAudio||document.getElementById("roomFunnyAudio");if(!a)return;
- try{a.pause();a.removeAttribute("src");a.load();a.volume=.9}catch{}
+ try{a.pause();a.currentTime=0;a.removeAttribute("src");a.load();a.volume=.9}catch{}
  funnyAudio=a
 }
 async function sendFunnySound(key,btn=null){
  const item=FUN_SOUNDS[key];if(!item||!roomCode||!uid)return;
- const now=Date.now();if(now-lastFunnySendAt<2500){toast("انتظر شوي قبل الصوت الثاني 😄");return}
+ const now=Date.now();if(now-lastFunnySendAt<900){toast("انتظر لحظة قبل الصوت الثاني 😄");return}
  lastFunnySendAt=now;
  if(btn){btn.disabled=true;btn.textContent="📢 تم الإرسال"}
  // Keep the user gesture hot on iPhone/Safari before the Firebase write.
- await primeRoomAudio();
+ primeRoomAudio().catch(()=>{});
  const eventId=uid+"_"+now;
  // Play immediately for the sender; the Firebase echo is ignored locally below.
  lastFunnyEventId=eventId;
  playFunnySound(key,myName).catch(()=>{});
+ // لا نخلي واجهة المؤثرات معلقة بانتظار الشبكة.
+ closeModal();
  try{
-  await set(ref(db,`rooms/${roomCode}/public/funnySound`),{id:eventId,key,name:myName,ts:now});
-  setTimeout(()=>closeModal(),120);
+  const write=set(ref(db,`rooms/${roomCode}/public/funnySound`),{id:eventId,key,name:myName,ts:now});
+  await Promise.race([write,new Promise((_,rej)=>setTimeout(()=>rej(new Error("sound send timeout")),2500))]);
  }catch(e){
   lastFunnySendAt=0;
-  if(btn){btn.disabled=false;btn.textContent="📢 إرسال"}
-  toast("تعذر إرسال الصوت");
+  toast("تعذر إرسال الصوت — جرّب مرة ثانية");
  }
 }
 function previewFunnySound(key){primeRoomAudio();playFunnySound(key,"");}
