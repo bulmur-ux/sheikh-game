@@ -1188,7 +1188,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 .homeMember{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;background:rgba(20,11,8,.90);border:1px solid #9d742d;border-radius:18px;box-shadow:0 12px 30px #0006;color:#fff}
 .homeIdentity{display:flex;align-items:center;gap:12px;min-width:0}.homeAvatar{width:62px;height:62px;flex:0 0 62px;border-radius:50%;background:#2b1710 url("icon-512.png") center/cover no-repeat;border:2px solid #d9aa3d;box-shadow:0 5px 16px #0008}.homeWho{min-width:0}.homeHello{font-size:12px;color:#d8c6ad}.homeName{font-size:22px;font-weight:900;color:#f2c54a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.homeMemberNo{font-size:12px;color:#fff;margin-top:2px}.homeMemberActions{display:flex;gap:8px;flex-wrap:wrap}.homeMemberActions button{width:auto!important;min-width:112px;margin:0!important;padding:10px 13px!important;background:#f3ead8!important;color:#2a170d!important;border:1px solid #b68a43!important}.homeMemberActions .logout{background:#8d1730!important;color:#fff!important;border-color:#a92743!important}
 .homeRooms{display:grid;grid-template-columns:1fr 1fr;gap:12px}.homeRoomCard{margin:0!important;background:rgba(20,11,8,.90)!important;border-color:#9d742d!important;box-shadow:0 12px 30px #0005!important}.homeRoomCard h3{margin:0 0 10px;color:#fff}.homeRoomCard .btn{margin:0}.homeJoinRow{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:10px;align-items:center}.homeJoinRow input{margin:0!important}.homeStatsBox{padding:14px!important;background:rgba(20,11,8,.88)!important;border:1px solid rgba(214,162,50,.55)!important}.homeStatsHead{text-align:center;margin-bottom:10px}.homeStatsHead h3{margin:0;color:#f2c54a;font-size:18px}.homeStatsHead p{margin:4px 0 0;color:#d7c5ac;font-size:11px}.homeStats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.homeStat{background:rgba(20,11,8,.88);border:1px solid rgba(214,162,50,.55);border-radius:16px;padding:12px;text-align:center;color:#fff}.homeStat b{display:block;font-size:23px;color:#f2c54a;line-height:1.15}.homeStat span{font-size:12px;color:#e2d2bc}.homeStatsNote{text-align:center;color:#d7c5ac;font-size:10px;margin-top:-4px}
-.memberCareer{margin-top:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.careerStat{background:rgba(255,255,255,.06);border:1px solid rgba(214,162,50,.38);border-radius:13px;padding:9px 5px;text-align:center}.careerStat b{display:block;color:#f2c54a;font-size:18px}.careerStat span{font-size:10px;color:#e2d2bc}@media(max-width:640px){.memberCareer{grid-template-columns:repeat(5,1fr);gap:4px}.careerStat{padding:7px 2px}.careerStat b{font-size:15px}.careerStat span{font-size:8px}}
+.memberCareer{margin-top:10px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.careerStat{background:rgba(255,255,255,.06);border:1px solid rgba(214,162,50,.38);border-radius:13px;padding:9px 5px;text-align:center}.careerStat b{display:block;color:#f2c54a;font-size:18px}.careerStat span{font-size:10px;color:#e2d2bc}@media(max-width:640px){.memberCareer{grid-template-columns:repeat(3,1fr);gap:6px}.careerStat{padding:7px 2px}.careerStat b{font-size:15px}.careerStat span{font-size:8px}}
 @media(max-width:640px){.homePage{gap:10px;margin-top:4px}.homeMember{align-items:flex-start;padding:12px}.homeAvatar{width:52px;height:52px;flex-basis:52px}.homeName{font-size:19px}.homeMember{flex-direction:column}.homeMemberActions{width:100%}.homeMemberActions button{flex:1;min-width:0}.homeRooms{grid-template-columns:1fr}.homeJoinRow{grid-template-columns:1fr}.homeStats{grid-template-columns:repeat(3,1fr)}.homeStat{padding:9px 5px}.homeStat b{font-size:19px}.homeStat span{font-size:10px}}
 @media(orientation:landscape) and (min-width:650px) and (max-height:600px){
  body:has(.homePage){overflow:auto!important;background:#120b07 url("bg-wide.PNG") center center/cover fixed no-repeat!important}
@@ -1750,8 +1750,8 @@ const PLAYER_RANKS=[
 function rankForXp(xp=0){xp=Math.max(0,Number(xp)||0);return PLAYER_RANKS.find(r=>xp>=r.min&&(r.max===null||xp<=r.max))||PLAYER_RANKS[0]}
 function rankInline(xp=0,withText=true){const r=rankForXp(xp);return `<span class="rankInline" title="${r.name}"><img class="rankIcon" src="${r.icon}" alt="${r.name}">${withText?`<span class="rankText">${r.name}</span>`:""}</span>`}
 function rankProgress(xp=0){const r=rankForXp(xp);if(r.max===null)return 100;return Math.max(0,Math.min(100,((Number(xp)-r.min)/(r.max-r.min+1))*100))}
-function careerStats(p={}){const x=p.stats||{};return {gamesPlayed:Number(x.gamesPlayed||0),wins:Number(x.wins||0),losses:Number(x.losses||0),roundsPlayed:Number(x.roundsPlayed||0),totalPoints:Number(x.totalPoints||0)}}
-function careerStatsHtml(p={}){const x=careerStats(p);return `<div class="memberCareer"><div class="careerStat"><b>${x.gamesPlayed}</b><span>مباراة</span></div><div class="careerStat"><b>${x.wins}</b><span>فوز</span></div><div class="careerStat"><b>${x.losses}</b><span>خسارة</span></div><div class="careerStat"><b>${x.roundsPlayed}</b><span>جولة</span></div><div class="careerStat"><b>${x.totalPoints}</b><span>نقطة</span></div></div>`}
+function careerStats(p={}){const x=p.stats||{};return {gamesPlayed:Number(x.gamesPlayed||0),wins:Number(x.wins||0),losses:Number(x.losses||0),withdrawals:Number(x.withdrawals||0),roundsPlayed:Number(x.roundsPlayed||0),totalPoints:Number(x.totalPoints||0)}}
+function careerStatsHtml(p={}){const x=careerStats(p);return `<div class="memberCareer"><div class="careerStat"><b>${x.gamesPlayed}</b><span>مباراة</span></div><div class="careerStat"><b>${x.wins}</b><span>فوز</span></div><div class="careerStat"><b>${x.losses}</b><span>خسارة</span></div><div class="careerStat"><b>${x.withdrawals}</b><span>انسحاب</span></div><div class="careerStat"><b>${x.roundsPlayed}</b><span>جولة</span></div><div class="careerStat"><b>${x.totalPoints}</b><span>نقطة</span></div></div>`}
 async function commitRoundCareerStats(g){
  if(uid!==currentRoom?.hostId||!g||g.phase!=="finished")return false;
  const roundNo=Number(g.roundNo||1),roundToken=String(g.roundToken||"");if(!roundToken)return false;
@@ -3521,6 +3521,23 @@ async function maybeFinishReveal(){
  }catch(e){console.warn("finish reveal",e)}finally{revealFinalizing=false}
 }
 
+async function commitVoluntaryWithdrawalStat(g){
+ const token=String(g?.roundToken||`${roomCode||"room"}_${Number(g?.roundNo||1)}`);
+ if(!uid||!token)return false;
+ try{
+  const tx=await runTransaction(ref(db,`users/${uid}`),profile=>{
+   if(!profile)return profile;
+   profile.stats=profile.stats||{};
+   profile.stats.withdrawalRounds=profile.stats.withdrawalRounds||{};
+   if(profile.stats.withdrawalRounds[token])return profile;
+   profile.stats.withdrawals=Number(profile.stats.withdrawals||0)+1;
+   profile.stats.withdrawalRounds[token]={at:Date.now(),roomCode:String(roomCode||""),roundNo:Number(g?.roundNo||1)};
+   return profile;
+  });
+  return !!tx.committed;
+ }catch(e){console.warn("withdrawal stat",e);return false}
+}
+
 async function performRoundWithdrawal({automatic=false,reason="",kicked=false,voluntary=false}={}){
  const g=game();
  if(!isActivePlayer()||!["memorize","playing"].includes(g.phase))return false;
@@ -3561,6 +3578,7 @@ async function performRoundWithdrawal({automatic=false,reason="",kicked=false,vo
   if(nextOrder.length<=1){state.phase="reveal";state.ending=true;state.decisionUid=null;state.decisionUntil=null}
   return state;
  });
+ if(voluntary&&!kicked)await commitVoluntaryWithdrawalStat(g);
  await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{role:"spectator",cardCount:0,ready:true,introDone:true,introStarted:false});
  try{await remove(ref(db,`rooms/${roomCode}/privateHands/${uid}`));myHand=null}catch{}
  if(kicked){
