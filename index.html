@@ -1988,9 +1988,20 @@ async function joinRandomOnline(){
    box.scrollTop=box.scrollHeight;
  };
  diag("تم الضغط على ابدأ أونلاين");
+ const diagError=(label,e)=>diag("❌ "+label,String(e?.stack||e?.message||e||"خطأ غير معروف"));
+ window.addEventListener("unhandledrejection",ev=>diagError("Unhandled Promise",ev.reason),{once:true});
+ try{
+  diag("فحص uid",typeof uid==="undefined"?"uid غير معرّف":(uid?`موجود: ${String(uid).slice(0,8)}…`:"فارغ"));
+  diag("فحص عناصر النافذة",`mode=${!!document.getElementById("rndMode")} | count=${!!document.getElementById("rndCount")} | rule=${!!document.getElementById("rndRule")}`);
+ }catch(e){diagError("فحص البداية",e);}
 
  if(!uid){diag("توقف","UID غير موجود — المستخدم غير مسجل");toast("سجّل الدخول أولاً");return}
- const mode=$("rndMode")?.value||"online",count=Number($("rndCount")?.value||2),rule=Number($("rndRule")?.value||1);
+ let mode="online",count=2,rule=1;
+ try{
+  diag("قراءة نوع اللعب");mode=document.getElementById("rndMode")?.value||"online";diag("نوع اللعب",mode);
+  diag("قراءة عدد اللاعبين");count=Number(document.getElementById("rndCount")?.value||2);diag("عدد اللاعبين",String(count));
+  diag("قراءة القانون");rule=Number(document.getElementById("rndRule")?.value||1);diag("القانون",String(rule));
+ }catch(e){diagError("قراءة إعدادات العشوائي",e);return;}
  if(mode!=="online"){diag("توقف","الوضع المختار ليس أونلاين");toast("وضع الكمبيوتر بنفعّله بعد تثبيت الأونلاين");return}
  if(![2,3,4].includes(count)||![1,2].includes(rule)){toast("اختيار غير صالح");return}
 
@@ -2002,8 +2013,12 @@ async function joinRandomOnline(){
    for(const id of ["rndMode","rndCount","rndRule"]){const el=$(id);if(el)el.disabled=on}
  };
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
- const key=`${count}_${rule}`,qref=ref(db,`randomQueue/${key}`);
- const token=++randomQueueCancelToken;let joinedQueue=false;
+ const key=`${count}_${rule}`;let qref,token;
+ try{diag("فحص Firebase",`db=${typeof db!=="undefined"&&!!db} | ref=${typeof ref}`);qref=ref(db,`randomQueue/${key}`);diag("تم إنشاء مرجع الطابور",`randomQueue/${key}`);}
+ catch(e){diagError("إنشاء مرجع Firebase",e);return;}
+ try{token=++randomQueueCancelToken;diag("رمز جلسة البحث",String(token));}
+ catch(e){diagError("randomQueueCancelToken",e);return;}
+ let joinedQueue=false;
 
  async function leaveQueue(){
   if(!joinedQueue)return;
@@ -2016,7 +2031,11 @@ async function joinRandomOnline(){
   joinedQueue=false;
  }
 
- diag("الإعدادات",`UID=${uid.slice(0,8)}… | لاعبين=${count} | قانون=${rule}`);searching(true);setMsg(`🔎 جاري البحث... 1 / ${count} • القانون ${rule}`);diag("بدء الاتصال بالطابور",`randomQueue/${key}`);
+ try{diag("فحص ملف العضو",typeof myProfile==="undefined"?"myProfile غير معرّف":(myProfile?"موجود":"فارغ"));}catch(e){diagError("فحص myProfile",e);}
+ diag("الإعدادات",`UID=${String(uid).slice(0,8)}… | لاعبين=${count} | قانون=${rule}`);
+ try{searching(true);diag("تم تحديث زر البحث");setMsg(`🔎 جاري البحث... 1 / ${count} • القانون ${rule}`);diag("تم تحديث رسالة البحث");}
+ catch(e){diagError("تحديث واجهة البحث",e);return;}
+ diag("بدء الاتصال بالطابور",`randomQueue/${key}`);
 
  try{
   await runTransaction(qref,cur=>{
@@ -2028,7 +2047,7 @@ async function joinRandomOnline(){
     players={};
    }
    if(!players[uid] && Object.keys(players).length<count){
-    players[uid]={name:myName||"لاعب",memberNo:myProfile?.memberNumber||myProfile?.memberNo||null,xp:Number(myProfile?.xp||0),avatarUrl:myProfile?.avatarUrl||"icon-512.png",joinedAt:Date.now()};
+    players[uid]={name:myName||"لاعب",memberNo:(typeof myProfile!=="undefined"&&myProfile?(myProfile.memberNumber||myProfile.memberNo||null):null),xp:Number((typeof myProfile!=="undefined"&&myProfile?myProfile.xp:0)||0),avatarUrl:(typeof myProfile!=="undefined"&&myProfile&&myProfile.avatarUrl?myProfile.avatarUrl:"icon-512.png"),joinedAt:Date.now()};
    }
    return {...cur,players,count,rule,updatedAt:Date.now()};
   });
