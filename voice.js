@@ -52,7 +52,7 @@
     // ========================================================
 
     const VOICE_VERSION = "6.4";
-    const VOICE_DEBUG = true;
+    const VOICE_DEBUG = false;
 
     const SYNC_MS = 1200;
     const HEARTBEAT_MS = 5000;
