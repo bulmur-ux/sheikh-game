@@ -1,0 +1,18 @@
+{
+  "pack": "uae",
+  "count": 10,
+  "size": "512x512",
+  "format": "webp",
+  "files": [
+    "uae-001.webp",
+    "uae-002.webp",
+    "uae-003.webp",
+    "uae-004.webp",
+    "uae-005.webp",
+    "uae-006.webp",
+    "uae-007.webp",
+    "uae-008.webp",
+    "uae-009.webp",
+    "uae-010.webp"
+  ]
+}
