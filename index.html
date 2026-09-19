@@ -2005,12 +2005,12 @@ async function joinRandomOnline(){
  if(mode!=="online"){diag("توقف","الوضع المختار ليس أونلاين");toast("وضع الكمبيوتر بنفعّله بعد تثبيت الأونلاين");return}
  if(![2,3,4].includes(count)||![1,2].includes(rule)){toast("اختيار غير صالح");return}
 
- const msg=$("rndMsg"),startBtn=$("rndStart"),cancelBtn=$("rndCancel");
+ const msg=document.getElementById("rndMsg"),startBtn=document.getElementById("rndStart"),cancelBtn=document.getElementById("rndCancel");
  const setMsg=t=>{if(msg)msg.textContent=t};
  const searching=on=>{
    if(startBtn){startBtn.disabled=on;startBtn.textContent=on?"🔎 جاري البحث عن لاعبين...":"👥 ابدأ أونلاين"}
    if(cancelBtn)cancelBtn.style.display=on?"block":"none";
-   for(const id of ["rndMode","rndCount","rndRule"]){const el=$(id);if(el)el.disabled=on}
+   for(const id of ["rndMode","rndCount","rndRule"]){const el=document.getElementById(id);if(el)el.disabled=on}
  };
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  const key=`${count}_${rule}`;let qref,token;
