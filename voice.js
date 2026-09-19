@@ -1,7 +1,7 @@
 // ============================================================
 // شيك شيك - نظام الصوت المستقل
-// Stable Voice + Firebase Signaling + Diagnostics
-// FIX: reliable Offer/Answer retry
+// Voice v6.3
+// Stable Offer/Answer + offerId + Session ICE + Diagnostics
 // ============================================================
 
 (function () {
@@ -15,21 +15,40 @@
       onStateChange, onUiRefresh
     } = o;
 
+    // ========================================================
+    // STATE
+    // ========================================================
+
     let voiceActive = false;
     let voiceStarting = false;
     let voiceMuted = false;
     let localVoiceStream = null;
+
     let voiceSyncBusy = false;
     let voiceSessionId = "";
     let voiceSyncTimer = null;
+    let lastHeartbeatAt = 0;
 
     const voicePeers = new Map();
     const reconnectTimers = new Map();
 
     let audioUnlockInstalled = false;
 
-    // التشخيص مؤقت
+    // ========================================================
+    // SETTINGS
+    // ========================================================
+
+    const VOICE_VERSION = "6.3";
     const VOICE_DEBUG = true;
+
+    const SYNC_MS = 1200;
+    const HEARTBEAT_MS = 5000;
+    const ICE_CHECK_TIMEOUT = 12000;
+    const OFFER_TIMEOUT = 12000;
+
+    // ========================================================
+    // DEBUG
+    // ========================================================
 
     const voiceDebug = {
       users: 0,
@@ -42,7 +61,6 @@
 
     function debugLog(message, data) {
       if (!VOICE_DEBUG) return;
-
       try {
         console.log(
           "%c[VOICE]",
@@ -57,23 +75,13 @@
     }
 
     function debugError(message, error) {
-      const raw = String(
-        error?.message ||
-        error ||
-        ""
-      );
+      const raw = String(error?.message || error || "");
 
       try {
-        console.warn(
-          "[VOICE ERROR]",
-          message,
-          error
-        );
+        console.warn("[VOICE ERROR]", message, error);
       } catch {}
 
-      voiceDebug.lastError =
-        `${message}: ${raw}`;
-
+      voiceDebug.lastError = `${message}: ${raw}`;
       updateDebugBox();
     }
 
@@ -89,27 +97,17 @@
         };
       }
 
-      Object.assign(
-        voiceDebug.peers[uid],
-        patch || {}
-      );
-
+      Object.assign(voiceDebug.peers[uid], patch || {});
       updateDebugBox();
     }
 
     function getDebugBox() {
       if (!VOICE_DEBUG) return null;
 
-      let box =
-        document.getElementById(
-          "voiceDebugBox"
-        );
-
+      let box = document.getElementById("voiceDebugBox");
       if (box) return box;
 
-      box =
-        document.createElement("div");
-
+      box = document.createElement("div");
       box.id = "voiceDebugBox";
       box.dir = "rtl";
 
@@ -134,7 +132,6 @@
       `;
 
       document.body.appendChild(box);
-
       return box;
     }
 
@@ -142,17 +139,11 @@
       if (!VOICE_DEBUG) return;
 
       const box = getDebugBox();
-
       if (!box) return;
 
-      const peerLines =
-        Object.entries(
-          voiceDebug.peers
-        )
+      const peerLines = Object.entries(voiceDebug.peers)
         .map(([uid, p]) => {
-
-          const shortUid =
-            String(uid).slice(0, 8);
+          const shortUid = String(uid).slice(0, 8);
 
           return `
             <div style="
@@ -167,7 +158,6 @@
               Signal: ${p.signaling || "-"}
             </div>
           `;
-
         })
         .join("");
 
@@ -177,37 +167,24 @@
           color:#ffd54a;
           margin-bottom:4px;
         ">
-          🛠 تشخيص الصوت المؤقت
+          🛠 تشخيص الصوت المؤقت — v${VOICE_VERSION}
         </div>
 
-        الصوت:
-        ${voiceActive ? "شغال" : "متوقف"}
-        ${voiceMuted ? "🔇" : "🎙️"}
-        <br>
+        الصوت: ${voiceActive ? "شغال" : "متوقف"}
+        ${voiceMuted ? "🔇" : "🎙️"}<br>
 
-        الموجودون بالصوت:
-        ${voiceDebug.users}
-        <br>
-
-        المطلوب الاتصال بهم:
-        ${voiceDebug.expected}
-        <br>
+        الموجودون بالصوت: ${voiceDebug.users}<br>
+        المطلوب الاتصال بهم: ${voiceDebug.expected}<br>
 
         المتصل فعلياً:
-        ${voiceRemoteCount()}
-        /
-        ${voiceDebug.expected}
-        <br>
+        ${voiceRemoteCount()} / ${voiceDebug.expected}<br>
 
-        آخر خطوة:
-        ${voiceDebug.lastAction || "-"}
-        <br>
+        آخر خطوة: ${voiceDebug.lastAction || "-"}<br>
 
         ${
           voiceDebug.lastError
             ? `<span style="color:#ff8080">
-                 آخر خطأ:
-                 ${voiceDebug.lastError}
+                 آخر خطأ: ${voiceDebug.lastError}
                </span><br>`
             : ""
         }
@@ -216,6 +193,10 @@
       `;
     }
 
+    // ========================================================
+    // HELPERS
+    // ========================================================
+
     function safeToast(message) {
       try {
         toast?.(message);
@@ -223,14 +204,8 @@
     }
 
     function wait(ms) {
-      if (sleep) {
-        return sleep(ms);
-      }
-
-      return new Promise(
-        resolve =>
-          setTimeout(resolve, ms)
-      );
+      if (sleep) return sleep(ms);
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     function publishState() {
@@ -247,28 +222,45 @@
         onUiRefresh?.();
       } catch {}
 
-      voiceDebug.connected =
-        voiceRemoteCount();
-
+      voiceDebug.connected = voiceRemoteCount();
       updateDebugBox();
     }
 
     function pairIdFor(a, b) {
-      return [
-        String(a),
-        String(b)
-      ]
-      .sort()
-      .join("__");
+      return [String(a), String(b)].sort().join("__");
+    }
+
+    function makePairSessionKey(uid, mySession, otherUid, otherSession) {
+      const arr = [
+        {
+          uid: String(uid),
+          session: String(mySession || "")
+        },
+        {
+          uid: String(otherUid),
+          session: String(otherSession || "")
+        }
+      ].sort((a, b) => a.uid.localeCompare(b.uid));
+
+      return arr[0].session + "__PAIR__" + arr[1].session;
+    }
+
+    function makeOfferId(uid, otherUid) {
+      return (
+        String(uid).slice(0, 8) +
+        "_" +
+        String(otherUid).slice(0, 8) +
+        "_" +
+        Date.now() +
+        "_" +
+        Math.random().toString(36).slice(2, 10)
+      );
     }
 
     function voiceRemoteCount() {
       let n = 0;
 
-      for (
-        const pc
-        of voicePeers.values()
-      ) {
+      for (const pc of voicePeers.values()) {
         if (
           pc &&
           (
@@ -297,19 +289,14 @@
     }
 
     // ========================================================
-    // AUDIO
+    // AUDIO BOX
     // ========================================================
 
     function getAudioBox() {
-      let box =
-        document.getElementById(
-          "voiceAudios"
-        );
+      let box = document.getElementById("voiceAudios");
 
       if (!box) {
-        box =
-          document.createElement("div");
-
+        box = document.createElement("div");
         box.id = "voiceAudios";
 
         box.style.cssText =
@@ -326,35 +313,27 @@
       return box;
     }
 
-    function unlockRemoteAudios() {
-      const box =
-        document.getElementById(
-          "voiceAudios"
-        );
+    // ========================================================
+    // IOS AUDIO UNLOCK
+    // ========================================================
 
+    function unlockRemoteAudios() {
+      const box = document.getElementById("voiceAudios");
       if (!box) return;
 
-      box
-        .querySelectorAll("audio")
-        .forEach(audio => {
-          try {
-            audio.muted = false;
-            audio.volume = 1;
+      box.querySelectorAll("audio").forEach(audio => {
+        try {
+          audio.muted = false;
+          audio.volume = 1;
 
-            const p =
-              audio.play();
-
-            if (p?.catch) {
-              p.catch(() => {});
-            }
-          } catch {}
-        });
+          const p = audio.play();
+          if (p?.catch) p.catch(() => {});
+        } catch {}
+      });
     }
 
     function installAudioUnlock() {
-      if (audioUnlockInstalled) {
-        return;
-      }
+      if (audioUnlockInstalled) return;
 
       audioUnlockInstalled = true;
 
@@ -362,23 +341,9 @@
         unlockRemoteAudios();
       };
 
-      document.addEventListener(
-        "touchstart",
-        unlock,
-        { passive: true }
-      );
-
-      document.addEventListener(
-        "pointerdown",
-        unlock,
-        { passive: true }
-      );
-
-      document.addEventListener(
-        "click",
-        unlock,
-        { passive: true }
-      );
+      document.addEventListener("touchstart", unlock, { passive: true });
+      document.addEventListener("pointerdown", unlock, { passive: true });
+      document.addEventListener("click", unlock, { passive: true });
     }
 
     installAudioUnlock();
@@ -389,42 +354,22 @@
 
     async function readVoiceUsers() {
       try {
-        const roomCode =
-          getRoomCode?.();
+        const roomCode = getRoomCode?.();
+        if (!roomCode) return {};
 
-        if (!roomCode) {
-          return {};
-        }
-
-        const snap =
-          await get(
-            ref(
-              db,
-              `rooms/${roomCode}/public/voiceUsers`
-            )
-          );
-
-        const users =
-          snap.val() || {};
-
-        debugLog(
-          "تم تحديث مستخدمي الصوت"
+        const snap = await get(
+          ref(db, `rooms/${roomCode}/public/voiceUsers`)
         );
+
+        const users = snap.val() || {};
+        debugLog("تم تحديث مستخدمي الصوت");
 
         return users;
-
       } catch (e) {
-
-        debugError(
-          "قراءة voiceUsers",
-          e
-        );
+        debugError("قراءة voiceUsers", e);
 
         try {
-          return (
-            getCurrentRoom?.()?.voiceUsers ||
-            {}
-          );
+          return getCurrentRoom?.()?.voiceUsers || {};
         } catch {
           return {};
         }
@@ -433,66 +378,74 @@
 
     async function readSignal(pair) {
       try {
-        const snap =
-          await get(
-            ref(
-              db,
-              `rooms/${getRoomCode()}/public/voiceSignals/${pair}`
-            )
-          );
+        const roomCode = getRoomCode?.();
+        if (!roomCode) return {};
 
-        return snap.val() || {};
-
-      } catch (e) {
-
-        debugError(
-          "قراءة Signal",
-          e
+        const snap = await get(
+          ref(
+            db,
+            `rooms/${roomCode}/public/voiceSignals/${pair}`
+          )
         );
 
+        return snap.val() || {};
+      } catch (e) {
+        debugError("قراءة Signal", e);
         return {};
       }
     }
 
     // ========================================================
-    // CLEAN SIGNALS
+    // HEARTBEAT
+    // ========================================================
+
+    async function heartbeat() {
+      if (!voiceActive) return;
+
+      const now = Date.now();
+
+      if (now - lastHeartbeatAt < HEARTBEAT_MS) {
+        return;
+      }
+
+      lastHeartbeatAt = now;
+
+      try {
+        await update(
+          ref(
+            db,
+            `rooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
+          ),
+          {
+            active: true,
+            muted: voiceMuted,
+            session: voiceSessionId,
+            ts: now
+          }
+        );
+      } catch (e) {
+        debugError("Heartbeat", e);
+      }
+    }
+
+    // ========================================================
+    // CLEAN OLD SIGNALS
     // ========================================================
 
     async function clearMyVoiceSignals() {
       try {
-        const uid =
-          getUid?.();
+        const uid = getUid?.();
+        const roomCode = getRoomCode?.();
 
-        const roomCode =
-          getRoomCode?.();
+        if (!uid || !roomCode) return;
 
-        if (
-          !uid ||
-          !roomCode
-        ) {
-          return;
-        }
+        const voiceUsers = await readVoiceUsers();
 
-        const voiceUsers =
-          await readVoiceUsers();
+        const users = Object.keys(voiceUsers)
+          .filter(id => id !== uid);
 
-        const users =
-          Object
-          .keys(voiceUsers)
-          .filter(
-            id => id !== uid
-          );
-
-        for (
-          const otherUid
-          of users
-        ) {
-
-          // فقط صاحب UID الأصغر ينظف Signal الخاص بالزوج
-          if (
-            String(uid) <
-            String(otherUid)
-          ) {
+        for (const otherUid of users) {
+          if (String(uid) < String(otherUid)) {
             try {
               await remove(
                 ref(
@@ -504,16 +457,9 @@
           }
         }
 
-        debugLog(
-          "تم تنظيف الإشارات القديمة"
-        );
-
+        debugLog("تم تنظيف الإشارات القديمة");
       } catch (e) {
-
-        debugError(
-          "تنظيف الإشارات",
-          e
-        );
+        debugError("تنظيف الإشارات", e);
       }
     }
 
@@ -522,65 +468,52 @@
     // ========================================================
 
     function stopLocalTracks() {
-      if (!localVoiceStream) {
-        return;
-      }
+      if (!localVoiceStream) return;
 
       try {
-        localVoiceStream
-          .getTracks()
-          .forEach(track => {
-            try {
-              track.stop();
-            } catch {}
-          });
+        localVoiceStream.getTracks().forEach(track => {
+          try {
+            track.stop();
+          } catch {}
+        });
       } catch {}
 
       localVoiceStream = null;
     }
 
     // ========================================================
-    // PEERS
+    // PEER CLEANUP
     // ========================================================
 
     function closePeer(otherUid) {
-      const timer =
-        reconnectTimers.get(
-          otherUid
-        );
+      const timer = reconnectTimers.get(otherUid);
 
       if (timer) {
         clearTimeout(timer);
-
-        reconnectTimers.delete(
-          otherUid
-        );
+        reconnectTimers.delete(otherUid);
       }
 
-      const pc =
-        voicePeers.get(
-          otherUid
-        );
+      const pc = voicePeers.get(otherUid);
 
       if (pc) {
+        try {
+          if (pc._iceWatchTimer) {
+            clearTimeout(pc._iceWatchTimer);
+          }
+        } catch {}
+
         try {
           pc.ontrack = null;
           pc.onicecandidate = null;
           pc.onconnectionstatechange = null;
           pc.oniceconnectionstatechange = null;
-
           pc.close();
         } catch {}
       }
 
-      voicePeers.delete(
-        otherUid
-      );
+      voicePeers.delete(otherUid);
 
-      const audio =
-        document.getElementById(
-          "voice_" + otherUid
-        );
+      const audio = document.getElementById("voice_" + otherUid);
 
       if (audio) {
         try {
@@ -590,74 +523,83 @@
         } catch {}
       }
 
-      setPeerDebug(
-        otherUid,
-        {
-          stage: "مغلق",
-          connection: "closed"
-        }
-      );
-    }
-
-    function closeAllPeers() {
-      const ids =
-        Array.from(
-          voicePeers.keys()
-        );
-
-      ids.forEach(id => {
-        closePeer(id);
+      setPeerDebug(otherUid, {
+        stage: "مغلق",
+        connection: "closed"
       });
     }
 
-    function scheduleReconnect(
-      otherUid,
-      delay = 2500
-    ) {
+    function closeAllPeers() {
+      const ids = Array.from(voicePeers.keys());
+      ids.forEach(id => closePeer(id));
+    }
+
+    // ========================================================
+    // RECONNECT
+    // ========================================================
+
+    function scheduleReconnect(otherUid, delay = 1800) {
       if (
         !voiceActive ||
-        reconnectTimers.has(
-          otherUid
-        )
+        reconnectTimers.has(otherUid)
       ) {
         return;
       }
 
-      setPeerDebug(
-        otherUid,
-        {
-          stage:
-            "إعادة الاتصال..."
-        }
-      );
+      setPeerDebug(otherUid, {
+        stage: "إعادة الاتصال..."
+      });
 
-      const timer =
+      const timer = setTimeout(() => {
+        reconnectTimers.delete(otherUid);
+
+        if (!voiceActive) return;
+
+        closePeer(otherUid);
+
         setTimeout(() => {
+          if (voiceActive) sync();
+        }, 200);
+      }, delay);
 
-          reconnectTimers.delete(
-            otherUid
+      reconnectTimers.set(otherUid, timer);
+    }
+
+    function watchIce(pc, otherUid) {
+      if (!pc) return;
+
+      try {
+        if (pc._iceWatchTimer) {
+          clearTimeout(pc._iceWatchTimer);
+        }
+      } catch {}
+
+      pc._iceWatchTimer = setTimeout(() => {
+        if (!voiceActive || !pc) return;
+
+        const good =
+          pc.connectionState === "connected" ||
+          pc.iceConnectionState === "connected" ||
+          pc.iceConnectionState === "completed";
+
+        if (good) return;
+
+        if (
+          pc.iceConnectionState === "checking" ||
+          pc.connectionState === "connecting" ||
+          pc.connectionState === "new"
+        ) {
+          debugLog(
+            `ICE عالق — إعادة ربط ${String(otherUid).slice(0, 8)}`
           );
 
-          if (!voiceActive) {
-            return;
-          }
+          setPeerDebug(otherUid, {
+            stage: "♻️ ICE عالق — إعادة الاتصال"
+          });
 
-          closePeer(
-            otherUid
-          );
-
-          setTimeout(() => {
-            if (voiceActive) {
-              sync();
-            }
-          }, 150);
-
-        }, delay);
-
-      reconnectTimers.set(
-        otherUid,
-        timer
-      );
+          scheduleReconnect(otherUid, 300);
+        }
+      }, ICE_CHECK_TIMEOUT);
     }
 
     // ========================================================
@@ -665,58 +607,35 @@
     // ========================================================
 
     async function start() {
-      if (
-        voiceActive ||
-        voiceStarting
-      ) {
+      if (voiceActive || voiceStarting) {
         safeToast(
           voiceActive
             ? "المايك شغال بالفعل"
             : "جاري فتح المايك..."
         );
-
         return;
       }
 
-      const uid =
-        getUid?.();
+      const uid = getUid?.();
+      const roomCode = getRoomCode?.();
 
-      const roomCode =
-        getRoomCode?.();
-
-      if (
-        !uid ||
-        !roomCode
-      ) {
-        safeToast(
-          "تعذر تحديد الغرفة"
-        );
-
+      if (!uid || !roomCode) {
+        safeToast("تعذر تحديد الغرفة");
         return;
       }
 
       voiceStarting = true;
-
       publishState();
 
-      debugLog(
-        "بدء تشغيل المايك"
-      );
+      debugLog("بدء تشغيل المايك");
 
       try {
         if (!window.isSecureContext) {
-          throw new Error(
-            "المايك يحتاج HTTPS"
-          );
+          throw new Error("المايك يحتاج HTTPS");
         }
 
-        if (
-          !navigator.mediaDevices
-            ?.getUserMedia
-        ) {
-          throw new Error(
-            "المتصفح لا يدعم المايك"
-          );
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("المتصفح لا يدعم المايك");
         }
 
         try {
@@ -729,52 +648,40 @@
 
         await wait(200);
 
-        debugLog(
-          "طلب صلاحية المايك"
-        );
+        debugLog("طلب صلاحية المايك");
 
         localVoiceStream =
-          await navigator.mediaDevices
-            .getUserMedia({
-              audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-              },
-              video: false
-            });
+          await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            },
+            video: false
+          });
 
-        const tracks =
-          localVoiceStream
-            .getAudioTracks();
+        const tracks = localVoiceStream.getAudioTracks();
 
         if (!tracks.length) {
-          throw new Error(
-            "لم يتم العثور على مايك"
-          );
+          throw new Error("لم يتم العثور على مايك");
         }
 
-        tracks.forEach(
-          track =>
-            track.enabled = true
-        );
-
-        debugLog(
-          "تم تشغيل المايك"
-        );
+        tracks.forEach(track => {
+          track.enabled = true;
+        });
 
         voiceSessionId =
           String(uid) +
           "_" +
           Date.now() +
           "_" +
-          Math.random()
-            .toString(36)
-            .slice(2, 7);
+          Math.random().toString(36).slice(2, 8);
 
         voiceActive = true;
         voiceStarting = false;
         voiceMuted = false;
+
+        lastHeartbeatAt = 0;
 
         closeAllPeers();
 
@@ -786,67 +693,32 @@
             `rooms/${roomCode}/public/voiceUsers/${uid}`
           ),
           {
-            name:
-              getName?.() ||
-              "مستخدم",
-
+            name: getName?.() || "مستخدم",
             active: true,
             muted: false,
-            session:
-              voiceSessionId,
-
-            ts:
-              Date.now()
+            session: voiceSessionId,
+            ts: Date.now()
           }
         );
 
-        debugLog(
-          "تم تسجيل المستخدم في قناة الصوت"
-        );
+        debugLog("تم تسجيل المستخدم في قناة الصوت");
 
         publishState();
 
-        clearInterval(
-          voiceSyncTimer
-        );
+        clearInterval(voiceSyncTimer);
 
-        voiceSyncTimer =
-          setInterval(() => {
-            if (voiceActive) {
-              sync();
-            }
-          }, 1200);
+        voiceSyncTimer = setInterval(() => {
+          if (voiceActive) sync();
+        }, SYNC_MS);
 
-        setTimeout(
-          sync,
-          100
-        );
+        setTimeout(sync, 100);
+        setTimeout(sync, 600);
+        setTimeout(sync, 1500);
+        setTimeout(sync, 3000);
 
-        setTimeout(
-          sync,
-          600
-        );
-
-        setTimeout(
-          sync,
-          1500
-        );
-
-        setTimeout(
-          sync,
-          3000
-        );
-
-        safeToast(
-          "🎙️ المايك مفتوح — جاري الربط..."
-        );
-
+        safeToast("🎙️ المايك مفتوح — جاري الربط...");
       } catch (e) {
-
-        debugError(
-          "تشغيل المايك",
-          e
-        );
+        debugError("تشغيل المايك", e);
 
         voiceStarting = false;
         voiceActive = false;
@@ -854,22 +726,17 @@
         voiceSessionId = "";
 
         stopLocalTracks();
-
         closeAllPeers();
 
         publishState();
 
-        let msg =
-          "تعذر تشغيل المايك";
+        let msg = "تعذر تشغيل المايك";
 
         if (
-          e?.name ===
-            "NotAllowedError" ||
-          e?.name ===
-            "PermissionDeniedError"
+          e?.name === "NotAllowedError" ||
+          e?.name === "PermissionDeniedError"
         ) {
-          msg =
-            "اسمح للمايك من إعدادات Safari";
+          msg = "اسمح للمايك من إعدادات Safari";
         }
 
         safeToast(msg);
@@ -881,26 +748,16 @@
     // ========================================================
 
     async function toggleMute() {
-      if (
-        !voiceActive ||
-        !localVoiceStream
-      ) {
-        safeToast(
-          "شغل الصوت أولاً"
-        );
-
+      if (!voiceActive || !localVoiceStream) {
+        safeToast("شغل الصوت أولاً");
         return;
       }
 
-      voiceMuted =
-        !voiceMuted;
+      voiceMuted = !voiceMuted;
 
-      localVoiceStream
-        .getAudioTracks()
-        .forEach(track => {
-          track.enabled =
-            !voiceMuted;
-        });
+      localVoiceStream.getAudioTracks().forEach(track => {
+        track.enabled = !voiceMuted;
+      });
 
       try {
         await update(
@@ -909,22 +766,14 @@
             `rooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
           ),
           {
-            muted:
-              voiceMuted,
-
-            active:
-              true,
-
-            ts:
-              Date.now()
+            muted: voiceMuted,
+            active: true,
+            session: voiceSessionId,
+            ts: Date.now()
           }
         );
       } catch (e) {
-
-        debugError(
-          "تحديث الكتم",
-          e
-        );
+        debugError("تحديث الكتم", e);
       }
 
       publishState();
@@ -940,73 +789,40 @@
     // REMOTE AUDIO
     // ========================================================
 
-    function attachRemoteAudio(
-      otherUid,
-      stream
-    ) {
-      const box =
-        getAudioBox();
+    function attachRemoteAudio(otherUid, stream) {
+      const box = getAudioBox();
 
       let audio =
-        document.getElementById(
-          "voice_" + otherUid
-        );
+        document.getElementById("voice_" + otherUid);
 
       if (!audio) {
-        audio =
-          document.createElement(
-            "audio"
-          );
+        audio = document.createElement("audio");
 
-        audio.id =
-          "voice_" + otherUid;
-
+        audio.id = "voice_" + otherUid;
         audio.autoplay = true;
         audio.playsInline = true;
 
-        audio.setAttribute(
-          "playsinline",
-          ""
-        );
+        audio.setAttribute("playsinline", "");
+        audio.setAttribute("webkit-playsinline", "");
 
-        audio.setAttribute(
-          "webkit-playsinline",
-          ""
-        );
-
-        box.appendChild(
-          audio
-        );
+        box.appendChild(audio);
       }
 
-      audio.srcObject =
-        stream;
+      audio.srcObject = stream;
+      audio.muted = false;
+      audio.volume = 1;
 
-      audio.muted =
-        false;
+      debugLog("وصل صوت الطرف الآخر");
 
-      audio.volume =
-        1;
-
-      debugLog(
-        "وصل صوت الطرف الآخر"
-      );
-
-      setPeerDebug(
-        otherUid,
-        {
-          stage:
-            "تم استقبال الصوت"
-        }
-      );
+      setPeerDebug(otherUid, {
+        stage: "🔊 تم استقبال الصوت"
+      });
 
       try {
-        const p =
-          audio.play();
+        const p = audio.play();
 
         if (p?.catch) {
           p.catch(e => {
-
             debugError(
               "Safari منع تشغيل الصوت",
               e
@@ -1021,12 +837,10 @@
     }
 
     // ========================================================
-    // CREATE PEER
+    // MAKE PEER
     // ========================================================
 
-    async function makePeer(
-      otherUid
-    ) {
+    async function makePeer(otherUid, pairKey = "") {
       if (
         !otherUid ||
         otherUid === getUid() ||
@@ -1035,331 +849,218 @@
         return null;
       }
 
-      const old =
-        voicePeers.get(
-          otherUid
-        );
+      const old = voicePeers.get(otherUid);
 
       if (
         old &&
-        old.connectionState !==
-          "closed" &&
-        old.connectionState !==
-          "failed"
+        old.connectionState !== "closed" &&
+        old.connectionState !== "failed" &&
+        (
+          !pairKey ||
+          !old._pairKey ||
+          old._pairKey === pairKey
+        )
       ) {
         return old;
       }
 
       if (old) {
-        closePeer(
-          otherUid
-        );
+        closePeer(otherUid);
       }
 
-      const uid =
-        getUid();
+      const uid = getUid();
+      const roomCode = getRoomCode();
 
-      const roomCode =
-        getRoomCode();
+      debugLog("إنشاء WebRTC Peer");
 
-      debugLog(
-        "إنشاء WebRTC Peer"
-      );
+      setPeerDebug(otherUid, {
+        stage: "إنشاء Peer"
+      });
 
-      setPeerDebug(
-        otherUid,
-        {
-          stage:
-            "إنشاء Peer"
-        }
-      );
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          {
+            urls: [
+              "stun:stun.l.google.com:19302",
+              "stun:stun1.l.google.com:19302",
+              "stun:stun.cloudflare.com:3478"
+            ]
+          },
+          {
+            urls: [
+              "turn:openrelay.metered.ca:80",
+              "turn:openrelay.metered.ca:443",
+              "turn:openrelay.metered.ca:443?transport=tcp"
+            ],
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          }
+        ],
 
-      const pc =
-        new RTCPeerConnection({
-          iceServers: [
-            {
-              urls: [
-                "stun:stun.l.google.com:19302",
-                "stun:stun1.l.google.com:19302",
-                "stun:stun.cloudflare.com:3478"
-              ]
-            },
-            {
-              urls: [
-                "turn:openrelay.metered.ca:80",
-                "turn:openrelay.metered.ca:443",
-                "turn:openrelay.metered.ca:443?transport=tcp"
-              ],
-              username:
-                "openrelayproject",
-              credential:
-                "openrelayproject"
-            }
-          ],
+        iceCandidatePoolSize: 6,
+        bundlePolicy: "max-bundle",
+        rtcpMuxPolicy: "require"
+      });
 
-          iceCandidatePoolSize:
-            6,
+      pc._addedRemoteIce = new Set();
+      pc._remoteUid = otherUid;
+      pc._createdAt = Date.now();
+      pc._pairKey = pairKey || "";
 
-          bundlePolicy:
-            "max-bundle",
+      // v6.3
+      pc._offerAt = 0;
+      pc._answerAt = 0;
+      pc._offerId = "";
+      pc._answerOfferId = "";
+      pc._makingOffer = false;
+      pc._settingRemoteAnswer = false;
+      pc._iceWatchTimer = null;
 
-          rtcpMuxPolicy:
-            "require"
-        });
+      voicePeers.set(otherUid, pc);
 
-      pc._addedRemoteIce =
-        new Set();
-
-      pc._remoteUid =
-        otherUid;
-
-      pc._createdAt =
-        Date.now();
-
-      voicePeers.set(
-        otherUid,
-        pc
-      );
-
-      for (
-        const track
-        of localVoiceStream
-          .getAudioTracks()
-      ) {
+      for (const track of localVoiceStream.getAudioTracks()) {
         try {
-          pc.addTrack(
-            track,
-            localVoiceStream
-          );
+          pc.addTrack(track, localVoiceStream);
         } catch (e) {
-          debugError(
-            "إضافة المايك إلى Peer",
-            e
-          );
+          debugError("إضافة المايك إلى Peer", e);
         }
       }
 
-      pc.ontrack =
-        event => {
+      pc.ontrack = event => {
+        let stream = event.streams?.[0];
 
-          let stream =
-            event.streams?.[0];
-
-          if (!stream) {
-            stream =
-              new MediaStream();
-
-            try {
-              stream.addTrack(
-                event.track
-              );
-            } catch {}
-          }
-
-          attachRemoteAudio(
-            otherUid,
-            stream
-          );
-        };
-
-      pc.onicecandidate =
-        async event => {
-
-          if (!event.candidate) {
-            setPeerDebug(
-              otherUid,
-              {
-                stage:
-                  "اكتمل جمع ICE"
-              }
-            );
-
-            return;
-          }
+        if (!stream) {
+          stream = new MediaStream();
 
           try {
-            const candidate =
-              event.candidate;
+            stream.addTrack(event.track);
+          } catch {}
+        }
 
-            let type =
-              candidate.type ||
-              "";
+        attachRemoteAudio(otherUid, stream);
+      };
 
-            if (
-              !type &&
-              candidate.candidate
-            ) {
-              const m =
-                candidate.candidate
-                  .match(
-                    / typ ([a-z]+)/i
-                  );
+      pc.onicecandidate = async event => {
+        if (!event.candidate) return;
 
-              type =
-                m?.[1] ||
-                "";
-            }
+        try {
+          const candidate = event.candidate;
 
-            setPeerDebug(
-              otherUid,
-              {
-                stage:
-                  type === "relay"
-                    ? "TURN relay جاهز"
-                    : `ICE ${type || "candidate"}`
-              }
-            );
+          let type = candidate.type || "";
 
-            const pair =
-              pairIdFor(
-                uid,
-                otherUid
-              );
+          if (!type && candidate.candidate) {
+            const m =
+              candidate.candidate.match(/ typ ([a-z]+)/i);
 
-            await set(
-              push(
-                ref(
-                  db,
-                  `rooms/${roomCode}/public/voiceSignals/${pair}/candidates/${uid}`
-                )
-              ),
-              candidate.toJSON()
-            );
-
-          } catch (e) {
-
-            debugError(
-              "إرسال ICE",
-              e
-            );
+            type = m?.[1] || "";
           }
-        };
 
-      pc.onconnectionstatechange =
-        () => {
+          setPeerDebug(otherUid, {
+            stage:
+              type === "relay"
+                ? "TURN relay جاهز"
+                : `ICE ${type || "candidate"}`
+          });
 
-          setPeerDebug(
-            otherUid,
-            {
-              connection:
-                pc.connectionState,
+          const pair =
+            pairIdFor(uid, otherUid);
 
-              signaling:
-                pc.signalingState
-            }
+          const currentPairKey =
+            pc._pairKey;
+
+          if (!currentPairKey) return;
+
+          await set(
+            push(
+              ref(
+                db,
+                `rooms/${roomCode}/public/voiceSignals/${pair}/ice/${currentPairKey}/${uid}`
+              )
+            ),
+            candidate.toJSON()
           );
+        } catch (e) {
+          debugError("إرسال ICE", e);
+        }
+      };
 
-          publishState();
+      pc.onconnectionstatechange = () => {
+        setPeerDebug(otherUid, {
+          connection: pc.connectionState,
+          signaling: pc.signalingState
+        });
 
-          if (
-            pc.connectionState ===
-              "connected"
-          ) {
-            debugLog(
-              "WebRTC متصل"
-            );
+        publishState();
 
-            setPeerDebug(
-              otherUid,
-              {
-                stage:
-                  "✅ متصل"
-              }
-            );
-
-            unlockRemoteAudios();
-
-            return;
+        if (pc.connectionState === "connected") {
+          if (pc._iceWatchTimer) {
+            clearTimeout(pc._iceWatchTimer);
+            pc._iceWatchTimer = null;
           }
 
-          if (
-            pc.connectionState ===
-              "failed"
-          ) {
-            debugLog(
-              "WebRTC فشل — إعادة محاولة"
-            );
+          debugLog("WebRTC متصل");
 
-            scheduleReconnect(
-              otherUid,
-              1000
-            );
+          setPeerDebug(otherUid, {
+            stage: "✅ متصل"
+          });
 
-            return;
+          unlockRemoteAudios();
+          return;
+        }
+
+        if (pc.connectionState === "failed") {
+          debugLog("WebRTC فشل — إعادة محاولة");
+          scheduleReconnect(otherUid, 700);
+          return;
+        }
+
+        if (pc.connectionState === "disconnected") {
+          debugLog("انقطاع مؤقت");
+          scheduleReconnect(otherUid, 4000);
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        setPeerDebug(otherUid, {
+          ice: pc.iceConnectionState,
+          signaling: pc.signalingState
+        });
+
+        publishState();
+
+        if (pc.iceConnectionState === "checking") {
+          setPeerDebug(otherUid, {
+            stage: "🔄 ICE checking"
+          });
+
+          watchIce(pc, otherUid);
+        }
+
+        if (
+          pc.iceConnectionState === "connected" ||
+          pc.iceConnectionState === "completed"
+        ) {
+          if (pc._iceWatchTimer) {
+            clearTimeout(pc._iceWatchTimer);
+            pc._iceWatchTimer = null;
           }
 
-          if (
-            pc.connectionState ===
-              "disconnected"
-          ) {
-            debugLog(
-              "انقطاع مؤقت — انتظار قبل إعادة الربط"
-            );
+          setPeerDebug(otherUid, {
+            stage: "✅ ICE متصل"
+          });
 
-            scheduleReconnect(
-              otherUid,
-              5000
-            );
-          }
-        };
+          unlockRemoteAudios();
+        }
 
-      pc.oniceconnectionstatechange =
-        () => {
+        if (pc.iceConnectionState === "failed") {
+          debugLog("ICE failed");
+          scheduleReconnect(otherUid, 700);
+        }
 
-          setPeerDebug(
-            otherUid,
-            {
-              ice:
-                pc.iceConnectionState,
-
-              signaling:
-                pc.signalingState
-            }
-          );
-
-          publishState();
-
-          if (
-            pc.iceConnectionState ===
-              "connected" ||
-            pc.iceConnectionState ===
-              "completed"
-          ) {
-            setPeerDebug(
-              otherUid,
-              {
-                stage:
-                  "✅ ICE متصل"
-              }
-            );
-
-            unlockRemoteAudios();
-          }
-
-          if (
-            pc.iceConnectionState ===
-              "failed"
-          ) {
-            debugLog(
-              "ICE failed"
-            );
-
-            scheduleReconnect(
-              otherUid,
-              1000
-            );
-          }
-
-          if (
-            pc.iceConnectionState ===
-              "disconnected"
-          ) {
-            scheduleReconnect(
-              otherUid,
-              5000
-            );
-          }
-        };
+        if (pc.iceConnectionState === "disconnected") {
+          scheduleReconnect(otherUid, 4000);
+        }
+      };
 
       return pc;
     }
@@ -1371,68 +1072,49 @@
     async function addRemoteIce(
       pc,
       pair,
+      pairKey,
       otherUid
     ) {
-      if (!pc) return;
-
-      if (!pc.remoteDescription) {
+      if (
+        !pc ||
+        !pc.remoteDescription ||
+        !pairKey
+      ) {
         return;
       }
 
       try {
-        const snap =
-          await get(
-            ref(
-              db,
-              `rooms/${getRoomCode()}/public/voiceSignals/${pair}/candidates/${otherUid}`
-            )
-          );
+        const snap = await get(
+          ref(
+            db,
+            `rooms/${getRoomCode()}/public/voiceSignals/${pair}/ice/${pairKey}/${otherUid}`
+          )
+        );
 
-        const all =
-          snap.val() || {};
+        const all = snap.val() || {};
 
-        for (
-          const [key, candidate]
-          of Object.entries(all)
-        ) {
-          if (
-            pc._addedRemoteIce
-              ?.has(key)
-          ) {
+        for (const [key, candidate] of Object.entries(all)) {
+          if (pc._addedRemoteIce?.has(key)) {
             continue;
           }
 
           try {
             await pc.addIceCandidate(
-              new RTCIceCandidate(
-                candidate
-              )
+              new RTCIceCandidate(candidate)
             );
 
-            pc._addedRemoteIce
-              ?.add(key);
-
+            pc._addedRemoteIce?.add(key);
           } catch (e) {
-
-            debugError(
-              "إضافة Remote ICE",
-              e
-            );
+            debugError("إضافة Remote ICE", e);
           }
         }
-
       } catch (e) {
-
-        debugError(
-          "قراءة Remote ICE",
-          e
-        );
+        debugError("قراءة Remote ICE", e);
       }
     }
 
     // ========================================================
     // SYNC
-    // إصلاح مشكلة بانتظار Offer
     // ========================================================
 
     async function sync() {
@@ -1444,348 +1126,469 @@
         return;
       }
 
-      const uid =
-        getUid?.();
+      const uid = getUid?.();
+      const roomCode = getRoomCode?.();
 
-      const roomCode =
-        getRoomCode?.();
+      if (!uid || !roomCode) return;
 
-      if (
-        !uid ||
-        !roomCode
-      ) {
-        return;
-      }
-
-      voiceSyncBusy =
-        true;
+      voiceSyncBusy = true;
 
       try {
+        await heartbeat();
+
         const voiceUsers =
           await readVoiceUsers();
 
         const users =
-          Object
-            .keys(voiceUsers)
+          Object.keys(voiceUsers)
             .filter(otherUid => (
               otherUid !== uid &&
-              voiceUsers[otherUid]
-                ?.active === true
+              voiceUsers[otherUid]?.active === true &&
+              !!voiceUsers[otherUid]?.session
             ));
 
         voiceDebug.users =
-          Object
-            .keys(voiceUsers)
-            .filter(
-              id =>
-                voiceUsers[id]
-                  ?.active === true
-            )
-            .length;
+          Object.keys(voiceUsers)
+            .filter(id =>
+              voiceUsers[id]?.active === true
+            ).length;
 
-        voiceDebug.expected =
-          users.length;
-
+        voiceDebug.expected = users.length;
         updateDebugBox();
 
-        // حذف Peer للاعب خرج من الصوت
-        for (
-          const otherUid
-          of Array.from(
-            voicePeers.keys()
-          )
-        ) {
-          if (
-            !users.includes(
-              otherUid
-            )
-          ) {
-            closePeer(
-              otherUid
-            );
-
-            delete voiceDebug
-              .peers[otherUid];
+        // إزالة أي Peer للاعب خرج
+        for (const otherUid of Array.from(voicePeers.keys())) {
+          if (!users.includes(otherUid)) {
+            closePeer(otherUid);
+            delete voiceDebug.peers[otherUid];
           }
         }
 
-        // كل لاعب موجود بالصوت
-        for (
-          const otherUid
-          of users
-        ) {
+        for (const otherUid of users) {
           try {
-            let pc =
-              await makePeer(
-                otherUid
+            const remoteSession =
+              String(
+                voiceUsers[otherUid]?.session || ""
               );
 
-            if (!pc) {
-              continue;
-            }
+            if (!remoteSession) continue;
 
             const pair =
-              pairIdFor(
+              pairIdFor(uid, otherUid);
+
+            const pairKey =
+              makePairSessionKey(
                 uid,
-                otherUid
+                voiceSessionId,
+                otherUid,
+                remoteSession
               );
 
             const initiator =
-              String(uid) <
-              String(otherUid);
+              String(uid) < String(otherUid);
 
-            let signal =
-              await readSignal(
-                pair
+            let pc =
+              voicePeers.get(otherUid);
+
+            if (
+              pc &&
+              pc._pairKey &&
+              pc._pairKey !== pairKey
+            ) {
+              debugLog(
+                `تغيرت جلسة ${String(otherUid).slice(0, 8)}`
               );
 
-            const remoteSession =
-              voiceUsers[otherUid]
-                ?.session ||
-              "";
+              closePeer(otherUid);
+              pc = null;
+            }
 
-            const now =
-              Date.now();
+            pc =
+              pc ||
+              await makePeer(
+                otherUid,
+                pairKey
+              );
 
-            // ===============================================
+            if (!pc) continue;
+
+            pc._pairKey = pairKey;
+
+            let signal =
+              await readSignal(pair);
+
+            // =================================================
             // INITIATOR
-            // ===============================================
+            // =================================================
 
             if (initiator) {
-              let offer =
-                signal?.offer ||
-                null;
+              const offer =
+                signal?.offer || null;
 
-              const offerIsMine =
-                offer?.from === uid;
+              const offerMatches =
+                offer?.sdp &&
+                offer?.pairKey === pairKey &&
+                offer?.from === uid &&
+                offer?.to === otherUid &&
+                offer?.fromSession === voiceSessionId &&
+                offer?.toSession === remoteSession &&
+                !!offer?.offerId;
 
-              const offerForCurrentSession =
-                offer?.session ===
-                voiceSessionId;
-
-              const offerIsOld =
-                offer?.ts &&
-                (
-                  now -
-                  Number(offer.ts) >
-                  20000
-                );
-
-              const needNewOffer =
-                !offer?.sdp ||
-                !offerIsMine ||
-                !offerForCurrentSession ||
-                offerIsOld;
+              /*
+               * v6.3:
+               * لا ننشئ Offer جديد إذا:
+               * - Peer يصنع Offer الآن
+               * - عندنا Offer محلي قائم
+               * - signaling ليست stable
+               */
+              const canCreateOffer =
+                !pc._makingOffer &&
+                pc.signalingState === "stable" &&
+                !pc.localDescription;
 
               if (
-                needNewOffer &&
-                pc.signalingState ===
-                  "stable"
+                !offerMatches &&
+                canCreateOffer
               ) {
-                debugLog(
-                  `إنشاء Offer جديد للطرف ${String(otherUid).slice(0, 8)}`
-                );
+                pc._makingOffer = true;
 
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "إنشاء Offer جديد"
-                  }
-                );
-
-                // تنظيف Signal لهذا الزوج فقط
                 try {
-                  await remove(
-                    ref(
-                      db,
-                      `rooms/${roomCode}/public/voiceSignals/${pair}`
-                    )
-                  );
-                } catch {}
-
-                // Peer نظيف
-                closePeer(
-                  otherUid
-                );
-
-                pc =
-                  await makePeer(
-                    otherUid
+                  debugLog(
+                    `إنشاء Offer ${String(otherUid).slice(0, 8)}`
                   );
 
-                if (!pc) {
-                  continue;
-                }
-
-                pc._addedRemoteIce =
-                  new Set();
-
-                const newOffer =
-                  await pc.createOffer({
-                    offerToReceiveAudio:
-                      true,
-
-                    iceRestart:
-                      true
+                  setPeerDebug(otherUid, {
+                    stage: "إنشاء Offer"
                   });
 
-                await pc.setLocalDescription(
-                  newOffer
-                );
+                  // نمسح العرض/الجواب القديم فقط
+                  try {
+                    await remove(
+                      ref(
+                        db,
+                        `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
+                      )
+                    );
+                  } catch {}
 
-                await set(
-                  ref(
-                    db,
-                    `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
-                  ),
-                  {
-                    type:
-                      pc.localDescription.type,
+                  try {
+                    await remove(
+                      ref(
+                        db,
+                        `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                      )
+                    );
+                  } catch {}
 
-                    sdp:
-                      pc.localDescription.sdp,
+                  pc._addedRemoteIce = new Set();
 
-                    from:
-                      uid,
+                  const offerId =
+                    makeOfferId(uid, otherUid);
 
-                    to:
-                      otherUid,
+                  pc._offerId = offerId;
+                  pc._answerOfferId = "";
 
-                    session:
-                      voiceSessionId,
+                  const newOffer =
+                    await pc.createOffer({
+                      offerToReceiveAudio: true,
+                      iceRestart: true
+                    });
 
-                    remoteSession:
-                      remoteSession,
-
-                    ts:
-                      Date.now()
+                  /*
+                   * تأكيد أن الـPeer ما تبدل أثناء await
+                   */
+                  if (
+                    !voiceActive ||
+                    voicePeers.get(otherUid) !== pc ||
+                    pc.signalingState !== "stable"
+                  ) {
+                    debugLog(
+                      `تم إلغاء Offer قديم ${String(otherUid).slice(0, 8)}`
+                    );
+                    continue;
                   }
-                );
 
-                pc._offerAt =
-                  Date.now();
+                  await pc.setLocalDescription(newOffer);
 
-                pc._offerSession =
-                  voiceSessionId;
+                  await set(
+                    ref(
+                      db,
+                      `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
+                    ),
+                    {
+                      type: pc.localDescription.type,
+                      sdp: pc.localDescription.sdp,
 
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "📤 Offer مرسل"
-                  }
-                );
+                      from: uid,
+                      to: otherUid,
 
-                debugLog(
-                  `Offer مرسل إلى ${String(otherUid).slice(0, 8)}`
-                );
+                      fromSession: voiceSessionId,
+                      toSession: remoteSession,
 
-                signal =
-                  await readSignal(
-                    pair
+                      pairKey,
+                      offerId,
+
+                      ts: Date.now()
+                    }
                   );
+
+                  pc._offerAt = Date.now();
+
+                  setPeerDebug(otherUid, {
+                    stage: "📤 Offer مرسل"
+                  });
+
+                  debugLog(
+                    `Offer مرسل ${String(otherUid).slice(0, 8)}`
+                  );
+
+                  signal =
+                    await readSignal(pair);
+
+                } finally {
+                  pc._makingOffer = false;
+                }
               }
 
-              // =============================================
+              // -------------------------------------------------
               // ANSWER
-              // =============================================
+              // -------------------------------------------------
 
-              const answerSnap =
-                await get(
-                  ref(
-                    db,
-                    `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
-                  )
-                );
+              let answer =
+                signal?.answer || null;
 
-              const answer =
-                answerSnap.val();
+              if (!answer?.sdp) {
+                try {
+                  const answerSnap =
+                    await get(
+                      ref(
+                        db,
+                        `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                      )
+                    );
 
-              if (
+                  answer = answerSnap.val();
+                } catch {}
+              }
+
+              const answerMatches =
                 answer?.sdp &&
-                answer.session ===
-                  voiceSessionId &&
-                !pc.currentRemoteDescription
+                answer?.pairKey === pairKey &&
+                answer?.from === otherUid &&
+                answer?.to === uid &&
+                answer?.fromSession === remoteSession &&
+                answer?.toSession === voiceSessionId &&
+                !!answer?.offerId &&
+                answer.offerId === pc._offerId;
+
+              if (answerMatches) {
+                /*
+                 * أهم إصلاح في v6.3:
+                 *
+                 * Answer لا يقبل إلا إذا Peer ينتظر Answer فعلاً.
+                 * هذا يمنع:
+                 * Called in wrong state: stable
+                 */
+                if (
+                  pc.signalingState === "have-local-offer" &&
+                  !pc.currentRemoteDescription &&
+                  !pc._settingRemoteAnswer &&
+                  pc._answerOfferId !== answer.offerId
+                ) {
+                  pc._settingRemoteAnswer = true;
+
+                  try {
+                    debugLog(
+                      `Answer صحيح وصل ${String(otherUid).slice(0, 8)}`
+                    );
+
+                    setPeerDebug(otherUid, {
+                      stage: "📥 Answer صحيح"
+                    });
+
+                    /*
+                     * نتحقق مرة ثانية مباشرة قبل
+                     * setRemoteDescription
+                     */
+                    if (
+                      pc.signalingState !== "have-local-offer"
+                    ) {
+                      debugLog(
+                        `تم تجاهل Answer — الحالة ${pc.signalingState}`
+                      );
+                    } else {
+                      await pc.setRemoteDescription(
+                        new RTCSessionDescription({
+                          type: answer.type,
+                          sdp: answer.sdp
+                        })
+                      );
+
+                      pc._answerAt = Date.now();
+                      pc._answerOfferId =
+                        answer.offerId;
+
+                      debugLog(
+                        `تم تثبيت Answer ${String(otherUid).slice(0, 8)}`
+                      );
+
+                      setPeerDebug(otherUid, {
+                        stage: "✅ Answer مثبت"
+                      });
+
+                      await addRemoteIce(
+                        pc,
+                        pair,
+                        pairKey,
+                        otherUid
+                      );
+
+                      watchIce(
+                        pc,
+                        otherUid
+                      );
+                    }
+                  } catch (e) {
+                    /*
+                     * إذا تغيرت الحالة خلال await
+                     * لا نكسر النظام.
+                     */
+                    if (
+                      String(e?.message || "")
+                        .includes("wrong state")
+                    ) {
+                      debugLog(
+                        `تم تجاهل Answer مكرر/قديم ${String(otherUid).slice(0, 8)}`
+                      );
+
+                      setPeerDebug(otherUid, {
+                        stage:
+                          "↩️ تم تجاهل Answer قديم"
+                      });
+                    } else {
+                      throw e;
+                    }
+                  } finally {
+                    pc._settingRemoteAnswer = false;
+                  }
+                } else if (
+                  pc._answerOfferId === answer.offerId ||
+                  pc.signalingState === "stable"
+                ) {
+                  /*
+                   * Answer سبق تطبيقه.
+                   * لا نحاول تطبيقه مرة ثانية.
+                   */
+                  setPeerDebug(otherUid, {
+                    stage:
+                      pc.connectionState === "connected"
+                        ? "✅ متصل"
+                        : "⏳ Answer مثبت — انتظار ICE"
+                  });
+                }
+              } else if (
+                answer?.sdp &&
+                answer?.offerId &&
+                pc._offerId &&
+                answer.offerId !== pc._offerId
               ) {
                 debugLog(
-                  `Answer وصل من ${String(otherUid).slice(0, 8)}`
+                  `تجاهل Answer قديم ${String(otherUid).slice(0, 8)}`
                 );
 
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "📥 Answer وصل"
-                  }
-                );
-
-                await pc.setRemoteDescription(
-                  new RTCSessionDescription({
-                    type:
-                      answer.type,
-
-                    sdp:
-                      answer.sdp
-                  })
-                );
-
-                pc._answerAt =
-                  Date.now();
+                setPeerDebug(otherUid, {
+                  stage: "↩️ تجاهل Answer قديم"
+                });
               }
 
               await addRemoteIce(
                 pc,
                 pair,
+                pairKey,
                 otherUid
               );
 
-              // Offer بدون Answer لمدة 10 ثواني
+              /*
+               * إذا أرسلنا Offer ولم يصل Answer صالح
+               * خلال المهلة، نعيد Peer كامل.
+               */
               if (
                 pc._offerAt &&
                 !pc.currentRemoteDescription &&
-                Date.now() -
-                  pc._offerAt >
-                  10000
+                Date.now() - pc._offerAt > OFFER_TIMEOUT
               ) {
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "⚠️ لا يوجد Answer — إعادة المحاولة"
-                  }
-                );
+                setPeerDebug(otherUid, {
+                  stage:
+                    "♻️ Answer تأخر — إعادة المحاولة"
+                });
 
                 debugLog(
-                  `لا يوجد Answer من ${String(otherUid).slice(0, 8)}`
+                  `Answer تأخر ${String(otherUid).slice(0, 8)}`
                 );
 
                 try {
-                  await remove(
-                    ref(
-                      db,
-                      `rooms/${roomCode}/public/voiceSignals/${pair}`
-                    )
-                  );
+                  const currentOffer =
+                    (
+                      await get(
+                        ref(
+                          db,
+                          `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
+                        )
+                      )
+                    ).val();
+
+                  /*
+                   * لا نحذف Offer جديد أنشأته محاولة أحدث.
+                   */
+                  if (
+                    !currentOffer?.offerId ||
+                    currentOffer.offerId === pc._offerId
+                  ) {
+                    await remove(
+                      ref(
+                        db,
+                        `rooms/${roomCode}/public/voiceSignals/${pair}/offer`
+                      )
+                    );
+                  }
                 } catch {}
 
-                closePeer(
-                  otherUid
-                );
+                try {
+                  const currentAnswer =
+                    (
+                      await get(
+                        ref(
+                          db,
+                          `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                        )
+                      )
+                    ).val();
 
+                  if (
+                    !currentAnswer?.offerId ||
+                    currentAnswer.offerId === pc._offerId
+                  ) {
+                    await remove(
+                      ref(
+                        db,
+                        `rooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                      )
+                    );
+                  }
+                } catch {}
+
+                closePeer(otherUid);
                 continue;
               }
 
-            // ===============================================
+            // =================================================
             // ANSWERER
-            // ===============================================
+            // =================================================
 
             } else {
               let offer =
-                signal?.offer ||
-                null;
+                signal?.offer || null;
 
-              // قراءة مباشرة من Firebase
               if (!offer?.sdp) {
                 const offerSnap =
                   await get(
@@ -1795,105 +1598,80 @@
                     )
                   );
 
-                offer =
-                  offerSnap.val();
+                offer = offerSnap.val();
               }
 
-              if (!offer?.sdp) {
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "⏳ بانتظار Offer"
-                  }
-                );
+              const offerMatches =
+                offer?.sdp &&
+                offer?.pairKey === pairKey &&
+                offer?.from === otherUid &&
+                offer?.to === uid &&
+                offer?.fromSession === remoteSession &&
+                offer?.toSession === voiceSessionId &&
+                !!offer?.offerId;
+
+              if (!offerMatches) {
+                setPeerDebug(otherUid, {
+                  stage: "⏳ بانتظار Offer جديد"
+                });
 
                 continue;
               }
 
-              // لازم Offer يكون من الطرف الثاني
+              /*
+               * إذا سبق لنا الرد على نفس offerId
+               * لا ننشئ Answer جديد.
+               */
+              const alreadyAnswered =
+                pc._answerOfferId === offer.offerId;
+
               if (
-                offer.from &&
-                offer.from !==
-                  otherUid
-              ) {
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "⚠️ Offer غير صالح"
-                  }
-                );
-
-                continue;
-              }
-
-              const incomingSession =
-                offer.session ||
-                "";
-
-              // Session جديدة
-              if (
-                pc._offerSession &&
-                pc._offerSession !==
-                  incomingSession
-              ) {
-                debugLog(
-                  `Session جديدة من ${String(otherUid).slice(0, 8)}`
-                );
-
-                closePeer(
-                  otherUid
-                );
-
-                pc =
-                  await makePeer(
-                    otherUid
-                  );
-
-                if (!pc) {
-                  continue;
-                }
-              }
-
-              // استقبال Offer
-              if (
+                !alreadyAnswered &&
                 !pc.currentRemoteDescription &&
-                pc.signalingState ===
-                  "stable"
+                pc.signalingState === "stable"
               ) {
                 debugLog(
-                  `Offer وصل من ${String(otherUid).slice(0, 8)}`
+                  `Offer وصل ${String(otherUid).slice(0, 8)}`
                 );
 
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "📥 Offer وصل"
-                  }
-                );
+                setPeerDebug(otherUid, {
+                  stage: "📥 Offer وصل"
+                });
+
+                /*
+                 * تسجيل offerId قبل عمليات await.
+                 */
+                pc._offerId = offer.offerId;
 
                 await pc.setRemoteDescription(
                   new RTCSessionDescription({
-                    type:
-                      offer.type,
-
-                    sdp:
-                      offer.sdp
+                    type: offer.type,
+                    sdp: offer.sdp
                   })
                 );
-
-                pc._offerSession =
-                  incomingSession;
 
                 await addRemoteIce(
                   pc,
                   pair,
+                  pairKey,
                   otherUid
                 );
 
-                // إنشاء Answer
+                /*
+                 * بعد setRemoteDescription(offer)
+                 * المفروض الحالة have-remote-offer.
+                 */
+                if (
+                  pc.signalingState !==
+                  "have-remote-offer"
+                ) {
+                  debugLog(
+                    `Offer تغيرت حالته قبل Answer: ${pc.signalingState}`
+                  );
+
+                  continue;
+                }
+
                 const answer =
                   await pc.createAnswer();
 
@@ -1919,102 +1697,111 @@
                     to:
                       otherUid,
 
-                    session:
-                      incomingSession,
+                    fromSession:
+                      voiceSessionId,
+
+                    toSession:
+                      remoteSession,
+
+                    pairKey,
+
+                    /*
+                     * أهم نقطة:
+                     * Answer مربوط بنفس Offer.
+                     */
+                    offerId:
+                      offer.offerId,
 
                     ts:
                       Date.now()
                   }
                 );
 
-                setPeerDebug(
-                  otherUid,
-                  {
-                    stage:
-                      "📤 Answer مرسل"
-                  }
-                );
+                pc._answerAt =
+                  Date.now();
+
+                pc._answerOfferId =
+                  offer.offerId;
+
+                setPeerDebug(otherUid, {
+                  stage: "📤 Answer مرسل"
+                });
 
                 debugLog(
-                  `Answer مرسل إلى ${String(otherUid).slice(0, 8)}`
+                  `Answer مرسل ${String(otherUid).slice(0, 8)}`
                 );
+
+                watchIce(
+                  pc,
+                  otherUid
+                );
+              }
+
+              /*
+               * لو نفس Offer سبق الرد عليه
+               * نبقي Peer الحالي ولا نعيد Answer.
+               */
+              if (alreadyAnswered) {
+                setPeerDebug(otherUid, {
+                  stage:
+                    pc.connectionState === "connected"
+                      ? "✅ متصل"
+                      : "⏳ Answer مرسل — انتظار ICE"
+                });
               }
 
               await addRemoteIce(
                 pc,
                 pair,
+                pairKey,
                 otherUid
               );
             }
 
-            // تحديث التشخيص
-            setPeerDebug(
-              otherUid,
-              {
-                connection:
-                  pc.connectionState ||
-                  "-",
+            setPeerDebug(otherUid, {
+              connection:
+                pc.connectionState || "-",
 
-                ice:
-                  pc.iceConnectionState ||
-                  "-",
+              ice:
+                pc.iceConnectionState || "-",
 
-                signaling:
-                  pc.signalingState ||
-                  "-"
-              }
-            );
+              signaling:
+                pc.signalingState || "-"
+            });
 
           } catch (peerError) {
-
             debugError(
               `Peer ${otherUid}`,
               peerError
             );
 
-            setPeerDebug(
-              otherUid,
-              {
-                stage:
-                  "❌ خطأ — إعادة المحاولة"
-              }
-            );
+            setPeerDebug(otherUid, {
+              stage: "❌ خطأ — إعادة المحاولة"
+            });
 
             scheduleReconnect(
               otherUid,
-              1500
+              1200
             );
           }
         }
 
       } catch (e) {
-
-        debugError(
-          "Voice Sync",
-          e
-        );
-
+        debugError("Voice Sync", e);
       } finally {
-
-        voiceSyncBusy =
-          false;
-
+        voiceSyncBusy = false;
         publishState();
       }
     }
 
     // ========================================================
-    // RECONNECT
+    // MANUAL RECONNECT
     // ========================================================
 
     async function reconnect() {
-      if (!voiceActive) {
-        return;
-      }
+      if (!voiceActive) return;
 
-      debugLog(
-        "إعادة ربط يدوي"
-      );
+      debugLog("إعادة ربط يدوي");
 
       voiceSessionId =
         String(getUid()) +
@@ -2023,7 +1810,9 @@
         "_" +
         Math.random()
           .toString(36)
-          .slice(2, 7);
+          .slice(2, 8);
+
+      lastHeartbeatAt = 0;
 
       try {
         await update(
@@ -2032,17 +1821,10 @@
             `rooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
           ),
           {
-            session:
-              voiceSessionId,
-
-            active:
-              true,
-
-            muted:
-              voiceMuted,
-
-            ts:
-              Date.now()
+            session: voiceSessionId,
+            active: true,
+            muted: voiceMuted,
+            ts: Date.now()
           }
         );
       } catch {}
@@ -2050,58 +1832,37 @@
       closeAllPeers();
 
       setTimeout(() => {
-        if (voiceActive) {
-          sync();
-        }
-      }, 200);
+        if (voiceActive) sync();
+      }, 250);
     }
 
     // ========================================================
     // STOP
     // ========================================================
 
-    async function stop(
-      removeState = true
-    ) {
+    async function stop(removeState = true) {
       const was =
         voiceActive ||
         voiceStarting;
 
-      voiceActive =
-        false;
+      voiceActive = false;
+      voiceStarting = false;
+      voiceMuted = false;
 
-      voiceStarting =
-        false;
+      clearInterval(voiceSyncTimer);
+      voiceSyncTimer = null;
 
-      voiceMuted =
-        false;
-
-      clearInterval(
-        voiceSyncTimer
-      );
-
-      voiceSyncTimer =
-        null;
-
-      for (
-        const timer
-        of reconnectTimers.values()
-      ) {
-        clearTimeout(
-          timer
-        );
+      for (const timer of reconnectTimers.values()) {
+        clearTimeout(timer);
       }
 
       reconnectTimers.clear();
 
       stopLocalTracks();
-
       closeAllPeers();
 
       const box =
-        document.getElementById(
-          "voiceAudios"
-        );
+        document.getElementById("voiceAudios");
 
       if (box) {
         try {
@@ -2109,11 +1870,8 @@
         } catch {}
       }
 
-      const roomCode =
-        getRoomCode?.();
-
-      const uid =
-        getUid?.();
+      const roomCode = getRoomCode?.();
+      const uid = getUid?.();
 
       if (
         removeState &&
@@ -2134,33 +1892,19 @@
         } catch {}
       }
 
-      voiceSessionId =
-        "";
+      voiceSessionId = "";
 
-      voiceDebug.users =
-        0;
-
-      voiceDebug.expected =
-        0;
-
-      voiceDebug.connected =
-        0;
-
-      voiceDebug.peers =
-        {};
-
-      voiceDebug.lastAction =
-        "الصوت متوقف";
+      voiceDebug.users = 0;
+      voiceDebug.expected = 0;
+      voiceDebug.connected = 0;
+      voiceDebug.peers = {};
+      voiceDebug.lastAction = "الصوت متوقف";
+      voiceDebug.lastError = "";
 
       publishState();
 
-      if (
-        was &&
-        removeState
-      ) {
-        safeToast(
-          "تم إيقاف الصوت المباشر"
-        );
+      if (was && removeState) {
+        safeToast("تم إيقاف الصوت المباشر");
       }
     }
 
@@ -2179,7 +1923,8 @@
     );
 
     // ========================================================
-    // نفس واجهة الدوال السابقة
+    // PUBLIC API
+    // متوافق مع index الحالي
     // ========================================================
 
     return {
@@ -2189,8 +1934,7 @@
       sync,
       reconnect,
 
-      remoteCount:
-        voiceRemoteCount,
+      remoteCount: voiceRemoteCount,
 
       isActive,
       isStarting,
