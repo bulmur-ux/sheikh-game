@@ -249,32 +249,58 @@ function activePresenceSessions(){
       if(!session||typeof session!=='object')return;
       const state=String(session.state||'');
       if(!['home','room','game'].includes(state))return;
-      rows.push({uid,sessionId,state,room:String(session.room||''),ts:Number(session.ts||0)});
+      rows.push({
+        uid:String(uid),
+        sessionId:String(sessionId),
+        state,
+        room:String(session.room||'').trim().toUpperCase(),
+        ts:Number(session.ts||0)
+      });
     });
   });
   return rows;
 }
 function roomGame(pub){return pub?.game||{}}
 function isActuallyPlaying(pub){return String(roomGame(pub)?.phase||'')==='playing'}
-function activePlayerIds(pub){
-  if(!isActuallyPlaying(pub))return [];
-  const g=roomGame(pub),order=Array.isArray(g.turnOrder)?g.turnOrder:[];
-  return [...new Set(order.filter(Boolean).map(String))];
-}
+
 function renderStats(){
   const rooms=Object.entries(currentRooms||{});
+  const existingRoomCodes=new Set(rooms.map(([code])=>String(code).trim().toUpperCase()));
   const sessions=activePresenceSessions();
+
+  // العضو المتصل: أي جلسة Presence حالتها home/room/game.
   const onlineUids=new Set(sessions.map(x=>x.uid));
-  const inRoomUids=new Set(sessions.filter(x=>x.state==='room'||x.state==='game').map(x=>x.uid));
-  const playingUids=new Set();
+
+  // في الغرف: Presence = room أو game + كود غرفة موجود فعلياً.
+  const inRoomUids=new Set(
+    sessions
+      .filter(x=>(x.state==='room'||x.state==='game') && x.room && existingRoomCodes.has(x.room))
+      .map(x=>x.uid)
+  );
+
+  // يلعب الآن: Presence = game + كود غرفة موجود فعلياً.
+  const playingSessions=sessions.filter(
+    x=>x.state==='game' && x.room && existingRoomCodes.has(x.room)
+  );
+  const playingUids=new Set(playingSessions.map(x=>x.uid));
+
+  // المباراة الجارية: phase=playing + لاعبان متصلان فعلياً على الأقل
+  // وحالة Presence لهما game وفي نفس كود الغرفة.
   let games=0;
-  rooms.forEach(([,room])=>{
+  rooms.forEach(([code,room])=>{
+    const roomCode=String(code).trim().toUpperCase();
     const pub=room?.public||{};
-    if(isActuallyPlaying(pub)){
-      games++;
-      activePlayerIds(pub).forEach(id=>playingUids.add(id));
-    }
+    if(!isActuallyPlaying(pub))return;
+
+    const livePlayers=new Set(
+      playingSessions
+        .filter(x=>x.room===roomCode)
+        .map(x=>x.uid)
+    );
+
+    if(livePlayers.size>=2)games++;
   });
+
   $('membersCount').textContent=Object.keys(currentUsers||{}).length;
   $('onlineCount').textContent=onlineUids.size;
   $('roomsCount').textContent=rooms.length;
