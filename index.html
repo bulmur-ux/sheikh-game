@@ -2747,6 +2747,21 @@ function showHostTransfer(){
  sheet.querySelectorAll('[data-transfer-host]').forEach(b=>b.onclick=async()=>{closeModal();await transferRoomHost(b.dataset.transferHost)});
  document.getElementById('cancelTransferHost').onclick=closeModal;
 }
+async function cleanupComputerMatchAndGoHome(){
+ const code=roomCode;
+ clearTimeout(botWorkTimer);botWorkTimer=0;botWorkKey="";botLastRunAt=0;
+ clearInterval(computerBotHeartbeat);computerBotHeartbeat=0;
+ if(code){
+  await Promise.allSettled([
+   remove(ref(db,`rooms/${code}`)),
+   remove(ref(db,`roomIndex/${code}`))
+  ]);
+ }
+ localStorage.removeItem("sheikh_room");
+ roomCode="";currentRoom=null;myHand=null;
+ try{await startPresence("home","")}catch(e){}
+ home();
+}
 async function leaveRoomCleanly(){
  if(!roomCode){home();return}
  const code=roomCode,wasHost=uid===currentRoom?.hostId;
@@ -3567,15 +3582,10 @@ async function withdrawFromRound(){
   document.getElementById("withdrawCancel").onclick=closeModal;
   document.getElementById("withdrawComputerConfirm").onclick=async()=>{
    closeModal();
-   const code=roomCode;
    try{
     await performRoundWithdrawal({automatic:true,voluntary:true,reason:"تم الخروج من مباراة الكمبيوتر"});
-    if(code)await remove(ref(db,`rooms/${code}`)).catch(()=>{});
-   }finally{
-    try{await leaveRoomCleanly()}catch(e){}
-    roomCode=null;currentRoom=null;myHand=null;
-    renderHome();
-   }
+   }catch(e){console.warn("computer withdraw",e)}
+   await cleanupComputerMatchAndGoHome();
   };
   return true;
  }
@@ -3695,11 +3705,17 @@ function renderResults(){
  const resultCardHtml=c=>{if(!c)return'';if(c.r==='JOKER'){const colored=c.color==='color';return `<div class="resultMiniCard joker ${colored?'colored':''}"><div class="rmCorner">J</div><div class="rmJokerStar">${colored?'★':'★'}</div><div class="rmJokerText">JOKER</div></div>`}const sym={H:'♥',D:'♦',S:'♠',C:'♣'}[c.s]||'';const cls=(c.s==='H'||c.s==='D')?'red':'black';const court=['J','Q','K'].includes(c.r);return `<div class="resultMiniCard ${cls} ${court?'court':''}"><div class="rmCorner"><b>${c.r}</b><span>${sym}</span></div>${court?`<div class="rmCourtArt"><b>${c.r}</b><span>${sym}</span></div>`:`<div class="rmCenter"><b>${c.r}</b><span>${sym}</span></div>`}</div>`};
  const cardsHtml=cards=>(cards||[]).filter(Boolean).map(resultCardHtml).join("")||'<span class="small">بدون أوراق</span>';
  const host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers");
- const nextBlock=host&&!final?`<div class="gap"></div><div class="notice">👑 اختر من اللاعبين المستمرين للجولة التالية. من وصل ${limit} نقطة يخرج تلقائياً.</div>${playerEntries().map(([id,p])=>{const out=Number(totals[id]||0)>=limit;return `<label class="playerPick ${out?'disabled':''}"><input type="checkbox" data-nextactive="${id}" ${!out&&(g.turnOrder||[]).includes(id)?"checked":""} ${out?"disabled":""} style="width:auto;margin-left:8px">${esc(p.name)} ${out?`— 🚫 خرج (${Number(totals[id]||0)})`:""}</label>`}).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button><div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:(host&&final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`:(!host?`<div class="notice center">بانتظار المضيف ${final?'للعودة إلى الغرفة':'لبدء الجولة التالية'}</div>`:""));
- app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${roundsLabel(g)} • القانون ${ruleMode()} • حد الخروج ${limit}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — نقاط الجولة: <b>${x.score}</b> • الكلي: <b>${totals[id]||0}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="resultCards">${cardsHtml(x.cards)}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div><button id="leave" class="btn danger">خروج</button></div>${chatPanel()}`;
+ const computerMatch=!!currentRoom?.computerMatch;
+ const activePicker=`<div class="gap"></div><div class="notice">👑 اختر من اللاعبين المستمرين للجولة التالية. من وصل ${limit} نقطة يخرج تلقائياً.</div>${playerEntries().map(([id,p])=>{const out=Number(totals[id]||0)>=limit;return `<label class="playerPick ${out?'disabled':''}"><input type="checkbox" data-nextactive="${id}" ${!out&&(g.turnOrder||[]).includes(id)?"checked":""} ${out?"disabled":""} style="width:auto;margin-left:8px">${esc(p.name)} ${out?`— 🚫 خرج (${Number(totals[id]||0)})`:""}</label>`}).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button>`;
+ const nextBlock=computerMatch
+  ?(host&&!final?activePicker:"")
+  :(host&&!final?`${activePicker}<div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:(host&&final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`:(!host?`<div class="notice center">بانتظار المضيف ${final?'للعودة إلى الغرفة':'لبدء الجولة التالية'}</div>`:"")));
+ const leaveLabel=computerMatch?"خروج إلى الصفحة الرئيسية":"خروج";
+ app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${roundsLabel(g)} • القانون ${ruleMode()} • حد الخروج ${limit}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — نقاط الجولة: <b>${x.score}</b> • الكلي: <b>${totals[id]||0}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="resultCards">${cardsHtml(x.cards)}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div><button id="leave" class="btn danger">${leaveLabel}</button></div>${chatPanel()}`;
  wireCommon();
  if(uid===currentRoom.hostId)setTimeout(async()=>{try{await commitRoundCareerStats(g);if(final&&!g.careerStatsCommittedAt)await commitMatchCareerStats(g)}catch(e){console.warn("career stats",e)}},80);
  const br=document.getElementById("backRoom");if(br)br.onclick=resetToLobby;
+ const leaveResult=document.getElementById("leave");if(leaveResult&&computerMatch)leaveResult.onclick=cleanupComputerMatchAndGoHome;
  const nr=document.getElementById("nextRound");if(nr)nr.onclick=async()=>{const order=[...document.querySelectorAll("[data-nextactive]:checked")].map(x=>x.dataset.nextactive);if(order.length<2||order.length>4){toast("اختر من 2 إلى 4 لاعبين");return}nr.disabled=true;nr.textContent="جاري تجهيز الجولة...";try{const allowed=order.filter(id=>Number(g.cumulativeScores?.[id]||0)<scoreLimit(g));if(allowed.length<2){toast("باقي أقل من لاعبين — انتهت المباراة");return}await beginRound(allowed,(g.roundNo||1)+1,Number(g.totalRounds||0),g.cumulativeScores||{},{ruleMode:g.ruleMode,scoreLimit:g.scoreLimit})}catch(e){console.warn(e);nr.disabled=false;nr.textContent="ابدأ الجولة التالية";toast("تعذر بدء الجولة التالية — جرّب مرة ثانية")}}
 }
 async function resetToLobby(){
