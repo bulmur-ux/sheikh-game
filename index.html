@@ -1203,7 +1203,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 
 
 <style id="profile-avatar-v1">
-.accountAvatar{background-size:cover!important;background-position:center!important;overflow:hidden}.accountAvatar img{width:100%;height:100%;object-fit:cover;display:block}.avatarTools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:-2px 0 12px}.avatarTools button{width:auto!important;margin:0!important;padding:7px 11px!important;font-size:12px;background:#f3ead8!important;color:#2a170d!important;border:1px solid #b68a43!important}.avatarChoices{display:none;margin:8px 0 14px;padding:12px;border:1px solid #8d672d;border-radius:16px;background:rgba(20,10,7,.72)}.avatarChoices.show{display:block}.avatarCats{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}.avatarCats::-webkit-scrollbar{display:none}.avatarCat{flex:0 0 auto!important;width:auto!important;padding:8px 11px!important;border-radius:999px!important;background:#2a1710!important;color:#f4dfb1!important;border:1px solid #9f752e!important;font-size:11px!important}.avatarCat.active{background:#d2a23d!important;color:#24140d!important}.avatarGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:330px;overflow:auto;padding:3px}.avatarChoice{width:100%!important;aspect-ratio:1/1;height:auto!important;min-width:0!important;padding:3px!important;border-radius:16px!important;background:#21120d!important;border:2px solid #6f5126!important;overflow:hidden}.avatarChoice img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}.avatarChoice.selected{border-color:#f2c54a!important;box-shadow:0 0 0 2px #f2c54a55}.avatarGalleryMsg{text-align:center;color:#d9c5a1;font-size:12px;padding:12px}.avatarGalleryActions{display:flex;gap:8px;margin-top:10px}.avatarGalleryActions button{flex:1}.avatarUseBtn{background:#d2a23d!important;color:#24140d!important}.avatarUseBtn:disabled{opacity:.45}.avatarCloseBtn{background:#3a2117!important;color:#f5e6c5!important}.memberBadge{display:inline-flex;align-items:center;gap:5px;background:rgba(217,170,61,.12);border:1px solid rgba(217,170,61,.42);border-radius:999px;padding:5px 10px;color:#f2c54a;font-weight:900;margin-top:5px}.accountGrid.memberGrid .accountInfo{min-height:78px}.homeAvatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.accountAvatar{background-size:cover!important;background-position:center!important;overflow:hidden}.accountAvatar img{width:100%;height:100%;object-fit:cover;display:block}.avatarTools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:-2px 0 12px}.avatarTools button{width:auto!important;margin:0!important;padding:7px 11px!important;font-size:12px;background:#f3ead8!important;color:#2a170d!important;border:1px solid #b68a43!important}.avatarChoices{display:none;margin:8px 0 14px;padding:12px;border:1px solid #8d672d;border-radius:16px;background:rgba(20,10,7,.72)}.avatarChoices.show{display:block}.avatarCats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:2px 0 12px}.avatarCats::-webkit-scrollbar{display:none}.avatarCat{flex:0 1 auto!important;width:auto!important;padding:9px 12px!important;border-radius:999px!important;background:#2a1710!important;color:#f4dfb1!important;border:1px solid #9f752e!important;font-size:11px!important}.avatarCat.active{background:#d2a23d!important;color:#24140d!important}.avatarGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:330px;overflow:auto;padding:3px}.avatarChoice{width:100%!important;aspect-ratio:1/1;height:auto!important;min-width:0!important;padding:3px!important;border-radius:16px!important;background:#21120d!important;border:2px solid #6f5126!important;overflow:hidden}.avatarChoice img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}.avatarChoice.selected{border-color:#f2c54a!important;box-shadow:0 0 0 2px #f2c54a55}.avatarGalleryMsg{text-align:center;color:#d9c5a1;font-size:12px;padding:12px}.avatarGalleryActions{display:flex;gap:8px;margin-top:10px}.avatarGalleryActions button{flex:1}.avatarUseBtn{background:#d2a23d!important;color:#24140d!important}.avatarUseBtn:disabled{opacity:.45}.avatarCloseBtn{background:#3a2117!important;color:#f5e6c5!important}.memberBadge{display:inline-flex;align-items:center;gap:5px;background:rgba(217,170,61,.12);border:1px solid rgba(217,170,61,.42);border-radius:999px;padding:5px 10px;color:#f2c54a;font-weight:900;margin-top:5px}.accountGrid.memberGrid .accountInfo{min-height:78px}.homeAvatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
 @media(orientation:landscape) and (max-height:600px){.accountGrid.memberGrid{grid-template-columns:repeat(2,1fr)!important}.accountGrid.memberGrid .accountInfo{min-height:0}.avatarTools{margin:0 0 6px}.avatarChoice{width:46px!important;height:46px!important;min-width:46px!important}}
 </style>
 
@@ -2071,22 +2071,28 @@ async function loadReadyAvatarCategory(catId){
  document.querySelectorAll("#avatarCats .avatarCat").forEach(b=>b.classList.toggle("active",b.dataset.cat===catId));
  selectedReadyAvatar="";const use=document.getElementById("avatarUseBtn");if(use)use.disabled=true;
  grid.innerHTML='<div class="avatarGalleryMsg">جاري تحميل الصور...</div>';
+ const fallback={
+   "emirati":Array.from({length:24},(_,i)=>`emirati-${String(i+1).padStart(3,"0")}.webp`),
+   "heritage":Array.from({length:10},(_,i)=>`heritage-${String(i+1).padStart(3,"0")}.webp`),
+   "uae":Array.from({length:10},(_,i)=>`uae-${String(i+1).padStart(3,"0")}.webp`)
+ };
  try{
-   const res=await fetch(cat.base+"avatars.json?v="+Date.now(),{cache:"no-store"});
-   if(!res.ok)throw new Error("HTTP "+res.status);
-   const items=avatarItemsFromJson(await res.json());
+   let items=[];
+   try{
+     const res=await fetch(cat.base+"avatars.json?v="+Date.now(),{cache:"no-store"});
+     if(res.ok)items=avatarItemsFromJson(await res.json());
+   }catch(_){}
+   if(!items.length && fallback[catId])items=fallback[catId].map((file,i)=>({file,name:`صورة ${i+1}`}));
    if(!items.length)throw new Error("empty");
-   grid.innerHTML=items.map((it,i)=>{
+   grid.innerHTML=items.map(it=>{
      const src=/^(https?:|data:|\/)/i.test(it.file)?it.file:cat.base+it.file.replace(/^\.?\//,"");
-     return `<button class="avatarChoice" type="button" data-src="${esc(src)}" title="${esc(it.name)}"><img src="${esc(src)}" alt="${esc(it.name)}" loading="lazy"></button>`;
+     return `<button class="avatarChoice" type="button" data-src="${esc(src)}" title="${esc(it.name)}"><img src="${esc(src)}" alt="${esc(it.name)}" loading="lazy" onerror="this.closest('.avatarChoice').style.display='none'"></button>`;
    }).join("");
    grid.querySelectorAll(".avatarChoice").forEach(b=>b.onclick=()=>{
      grid.querySelectorAll(".avatarChoice").forEach(x=>x.classList.remove("selected"));
      b.classList.add("selected");selectedReadyAvatar=b.dataset.src||"";if(use)use.disabled=!selectedReadyAvatar;
    });
- }catch(e){
-   grid.innerHTML='<div class="avatarGalleryMsg">تعذر تحميل هذا القسم. تأكد من وجود avatars.json والصور داخل المجلد.</div>';
- }
+ }catch(e){grid.innerHTML='<div class="avatarGalleryMsg">ما حصلت صور هذا القسم في المسار الحالي.</div>'}
 }
 function openReadyAvatarGallery(){
  const box=document.getElementById("avatarChoices"),cats=document.getElementById("avatarCats");
