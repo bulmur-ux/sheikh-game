@@ -123,6 +123,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
       <div class="stat"><b id="bansCount">0</b><span>المحظورون</span></div>
     </div>
 
+    <button id="homeBtn" class="btn btnGold btnWide" style="margin-bottom:10px">🏠 العودة إلى الصفحة الرئيسية</button>
     <button id="returnRoomTop" class="btn btnGold returnRoomTop">🎮 العودة للغرفة</button>
     <div class="tabs">
       <button class="tab active" data-tab="rooms">الغرف</button>
@@ -237,9 +238,16 @@ async function logAction(action,details='',meta={}){
 function getPlayers(room){const p=room?.public?.players||{};return Object.entries(p).map(([uid,v])=>({uid,...(v||{})}))}
 function roomStatus(pub){const s=pub?.status||pub?.game?.phase||'lobby'; if(['playing','game','memorize','dealing'].includes(s))return '🎮 جارية';if(s==='lobby')return '⏳ انتظار';return esc(s)}
 function renderStats(){
-  const rooms=Object.entries(currentRooms||{});let players=0,games=0;
-  rooms.forEach(([,r])=>{players+=getPlayers(r).length;const s=r?.public?.status||r?.public?.game?.phase;if(['playing','game','memorize','dealing'].includes(s))games++});
-  $('roomsCount').textContent=rooms.length;$('playersCount').textContent=players;$('gamesCount').textContent=games;$('bansCount').textContent=Object.keys(currentBans||{}).length;
+  const rooms=Object.entries(currentRooms||{});
+  let games=0;
+  rooms.forEach(([,r])=>{const s=r?.public?.status||r?.public?.game?.phase;if(['playing','game','memorize','dealing'].includes(s))games++});
+  // اللاعبون = عدد الحسابات المسجلة في users، وليس مجموع اللاعبين داخل الغرف.
+  // بهذا يتحدث الرقم مباشرة عند تسجيل عضو جديد متى كانت صلاحية قراءة users متاحة.
+  const registeredPlayers=Object.keys(currentUsers||{}).length;
+  $('roomsCount').textContent=rooms.length;
+  $('playersCount').textContent=registeredPlayers;
+  $('gamesCount').textContent=games;
+  $('bansCount').textContent=Object.keys(currentBans||{}).length;
 }
 function renderRooms(){
   renderStats();const entries=Object.entries(currentRooms||{}),list=$('roomsList');
@@ -373,7 +381,16 @@ function renderAdmins(data){
     <div class="item"><div class="itemHead"><div style="display:flex;gap:9px;align-items:center"><img class="adminRoleMini" src="${role.icon}" alt=""><div><div class="itemTitle">${esc(u.username||a.label||'مشرف')} ${a.superAdmin?'👑':''}</div><div class="itemMeta">${role.name} • ${u.memberNo?'عضوية '+esc(u.memberNo):''}</div></div></div>
     <div class="actions">${!a.superAdmin?`<button class="btn btnGold" data-edit-admin="${esc(uid)}">⚙️ الصلاحيات</button><button class="btn btnRed" data-reset-pin="${esc(uid)}">🔐 إعادة PIN</button><button class="btn btnRed" data-remove-admin="${esc(uid)}">إلغاء الإشراف</button>`:''}</div></div></div>`}).join('');
 }
-function isOnlineUid(uid){return !!(currentPresence?.[uid]?.online||currentPresence?.[uid]?.state==='online'||currentPresence?.[uid]?.lastSeen&&Date.now()-Number(currentPresence[uid].lastSeen)<120000)}
+function isOnlineUid(uid){
+ const node=currentPresence?.[uid];
+ if(!node)return false;
+ // index.html stores presence as presence/{uid}/{presenceSession}
+ // A user is online while at least one session node exists.
+ return Object.values(node||{}).some(session=>{
+   if(!session||typeof session!=='object')return false;
+   return ['home','room','game'].includes(String(session.state||''));
+ });
+}
 function renderMembers(){
  const list=$('membersList');if(!list)return;const q=($('memberSearch')?.value||'').trim().toLowerCase();
  let e=Object.entries(currentUsers||{}).filter(([uid,u])=>{const text=`${u.username||''} ${u.memberNo||''} ${u.email||''}`.toLowerCase();if(q&&!text.includes(q))return false;if(memberFilter==='admins'&&!currentAdmins[uid])return false;if(memberFilter==='banned'&&!currentBans[uid])return false;if(memberFilter==='online'&&!isOnlineUid(uid))return false;return true});
@@ -456,8 +473,15 @@ function subscribeAll(){
   }else{$('roomsList').innerHTML='<div class="empty">ما عندك صلاحية إدارة الغرف.</div>'}
   stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans();if(isSuper()||hasPerm('manageMembers'))renderMembers()},()=>{}));
   if(hasPerm('viewLogs'))stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>{currentLogs=s.val()||{};renderLogs(currentLogs)},()=>{}));else $('logsList').innerHTML='<div class="empty">ما عندك صلاحية مشاهدة السجل.</div>';
+  // users يغذي عداد اللاعبين المسجلين لحظيًا.
+  stops.push(onValue(ref(db,'users'),s=>{
+    currentUsers=s.val()||{};renderStats();
+    if(isSuper()||hasPerm('manageMembers')){renderMembers();if(isSuper())renderAdmins(currentAdmins);renderLogs(currentLogs)}
+  },e=>{
+    console.warn('users stats read failed',e);
+    if(isSuper()||hasPerm('manageMembers'))$('membersList').innerHTML=`<div class="empty">تعذر قراءة الأعضاء: ${esc(e.message)}</div>`;
+  }));
   if(isSuper()||hasPerm('manageMembers')){
-    stops.push(onValue(ref(db,'users'),s=>{currentUsers=s.val()||{};renderMembers();if(isSuper())renderAdmins(currentAdmins);renderLogs(currentLogs)},e=>$('membersList').innerHTML=`<div class="empty">تعذر قراءة الأعضاء: ${esc(e.message)}</div>`));
     stops.push(onValue(ref(db,'presence'),s=>{currentPresence=s.val()||{};renderMembers()},()=>{}));
   }
   if(isSuper()){
@@ -474,7 +498,7 @@ $('roomsList').addEventListener('click',async e=>{
   if(t.dataset.toggle){$('players-'+t.dataset.toggle)?.classList.toggle('open');return}
   if(t.dataset.close){
     const code=t.dataset.close;if(!confirm(`إغلاق الغرفة ${code} وحذف بياناتها؟`))return;
-    try{await remove(ref(db,`rooms/${code}`));await logAction('إغلاق غرفة',`الغرفة ${code}`)}catch(err){alert(err.message)}return;
+    try{const ch={};ch[`rooms/${code}`]=null;ch[`roomIndex/${code}`]=null;await update(ref(db),ch);await logAction('إغلاق غرفة',`الغرفة ${code}`)}catch(err){alert(err.message)}return;
   }
   if(t.dataset.kick){
     const code=t.dataset.kick,uid=t.dataset.uid,name=t.dataset.name;if(!confirm(`إخراج ${name} من الغرفة ${code}؟`))return;
@@ -534,6 +558,7 @@ $('closeAllBtn').onclick=async()=>{
   try{const ch={};for(const code of Object.keys(currentRooms||{})){ch[`rooms/${code}`]=null;ch[`roomIndex/${code}`]=null}await update(ref(db),ch);await logAction('إغلاق جميع الغرف',`${n} غرفة`)}catch(err){alert(err.message)}
 };
 $('refreshRooms').onclick=()=>subscribeAll();$('refreshMonitor').onclick=()=>subscribeAll();$('refreshBans').onclick=()=>subscribeAll();$('refreshLogs').onclick=()=>subscribeAll();
+$('homeBtn').onclick=()=>{location.href='index.html'};
 $('backRoomsBtn').onclick=()=>{document.querySelector('[data-tab="rooms"]')?.click()};
 $('logoutBtn').onclick=async()=>{await leaveMonitorVoice().catch(()=>{});await signOut(auth)};
 
