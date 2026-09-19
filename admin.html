@@ -77,6 +77,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 .monitorLine{padding:7px 5px;border-bottom:1px solid #2e2113;font-size:12px;line-height:1.55}.monitorLine:last-child{border-bottom:0}.monitorLine time{color:#8f8067;font-size:10px;margin-inline-start:5px}
 .modActions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.modActions .btn{min-height:31px;font-size:10px;padding:0 8px}
 .monitorNotice{font-size:11px;color:#bda98a;line-height:1.6;margin:7px 1px 0}
+.monitorTools{margin:10px 0 12px}.monitorSearch{width:100%;min-height:44px;border:1px solid #5d431f;border-radius:13px;background:#0c0907;color:#fff1c6;padding:0 13px;font-size:14px;outline:none}.monitorSearch:focus{border-color:#d7a43a;box-shadow:0 0 0 3px #e8b84a22}.monitorFilters{display:flex;gap:6px;overflow-x:auto;padding:9px 0 1px;scrollbar-width:none}.monitorFilters::-webkit-scrollbar{display:none}.monitorFilter{white-space:nowrap;background:#17100d;color:#d8c49d;border:1px solid #4f381c;border-radius:999px;padding:7px 11px;font-weight:800}.monitorFilter.active{background:#5a3b12;color:#ffe29a;border-color:#a8792b}.monitorSummary{font-size:11px;color:#a99673;margin:7px 2px 0}.item.monitoringNow{border-color:#d7a43a;box-shadow:0 0 0 1px #d7a43a55}.monitoringBadge{display:inline-block;margin-top:5px;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900;background:#176b46;color:#d9ffed}
 .voiceAdminBar{display:flex;gap:7px;flex-wrap:wrap;margin:9px 0}.voiceAdminBar .btn{min-height:38px;font-size:12px}.voiceState{display:inline-block;padding:5px 9px;border-radius:999px;background:#17100d;border:1px solid #5d431f;color:#ffe29a;font-size:11px;font-weight:800}
 @media(max-width:600px){
  .wrap{padding-top:8px}.card{padding:12px;border-radius:20px}.gridStats{grid-template-columns:repeat(2,1fr)}
@@ -205,6 +206,16 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
       <div class="section">
         <div class="sectionTitle"><h2>مراقبة الغرف</h2><button id="refreshMonitor" class="btn btnDark refresh">تحديث ↻</button></div>
         <div class="note" style="margin:0 0 10px">المراقب لا يدخل كلاعب ولا تُعرض له الأوراق الخاصة. الدخول المتخفي لا يظهر ضمن قائمة اللاعبين أو المتفرجين، وتُسجل إجراءات الإدارة داخليًا.</div>
+        <div class="monitorTools">
+          <input id="monitorSearch" class="monitorSearch" inputmode="text" autocomplete="off" placeholder="🔎 ابحث برقم الغرفة">
+          <div class="monitorFilters" id="monitorFilters">
+            <button class="monitorFilter active" data-monitor-filter="all">الكل</button>
+            <button class="monitorFilter" data-monitor-filter="playing">🎮 جارية</button>
+            <button class="monitorFilter" data-monitor-filter="occupied">👥 فيها لاعبين</button>
+            <button class="monitorFilter" data-monitor-filter="waiting">⏳ انتظار</button>
+          </div>
+          <div id="monitorSummary" class="monitorSummary"></div>
+        </div>
         <div id="monitorRooms"><div class="empty">جاري تحميل الغرف...</div></div>
       </div>
     </div>
@@ -257,6 +268,7 @@ const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb);
 const $=id=>document.getElementById(id);
 let currentAdmin=null,currentRooms={},currentBans={},currentUsers={},currentAdmins={},currentPresence={},currentLogs={},memberFilter="all",editingAdminUid="",stops=[];
 let monitorVoice=null,monitorVoiceCode="",monitorVoiceStealth=true,monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};
+let monitorFilter="all",activeMonitorCode="";
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]))}
 function msg(text,type='err'){const el=$('loginMsg');el.className='msg '+type;el.textContent=text}
@@ -508,19 +520,27 @@ function roomMessages(room){
   return all.sort((a,b)=>(a.createdAt||a.ts||0)-(b.createdAt||b.ts||0)).slice(-80);
 }
 function renderMonitor(){
-  const list=$('monitorRooms'),entries=Object.entries(currentRooms||{});
-  const openRooms=new Set([...list.querySelectorAll('.players.open')].map(el=>String(el.id||'').replace(/^monitor-/,'')).filter(Boolean));
-  if(monitorVoiceCode) openRooms.add(monitorVoiceCode);
-  if(!entries.length){list.innerHTML='<div class="empty">لا توجد غرف مفتوحة حاليًا ✅</div>';return}
-  list.innerHTML=entries.map(([code,room])=>{
-    const pub=room?.public||{},players=getPlayers(room),msgs=roomMessages(room);
+  const list=$('monitorRooms');
+  const search=String($('monitorSearch')?.value||'').trim().toUpperCase();
+  let entries=Object.entries(currentRooms||{}).map(([code,room])=>({code,room,info:roomLiveInfo(code,room)}));
+  entries.sort((a,b)=>{const d=roomSortWeight(a.info)-roomSortWeight(b.info);return d||String(a.code).localeCompare(String(b.code))});
+  entries=entries.filter(x=>{
+    if(search&&!String(x.code).toUpperCase().includes(search))return false;
+    if(monitorFilter==='playing')return x.info.playing;
+    if(monitorFilter==='occupied')return x.info.occupied;
+    if(monitorFilter==='waiting')return x.info.waiting;
+    return true;
+  });
+  if($('monitorSummary'))$('monitorSummary').textContent=`عرض ${entries.length} من ${Object.keys(currentRooms||{}).length} غرفة`;
+  if(!entries.length){list.innerHTML='<div class="empty">لا توجد غرف مطابقة حاليًا.</div>';return}
+  list.innerHTML=entries.map(({code,room,info})=>{
+    const pub=room?.public||{},players=getPlayers(room),msgs=roomMessages(room),isOpen=activeMonitorCode===code||monitorVoiceCode===code;
     const feed=msgs.length?msgs.map(m=>`<div class="monitorLine"><b>${esc(m.name||m.senderName||m.userName||'لاعب')}:</b> ${esc(m.text||m.message||m.body||'')} ${m.createdAt||m.ts?`<time>${new Date(m.createdAt||m.ts).toLocaleTimeString('ar-AE',{hour:'2-digit',minute:'2-digit'})}</time>`:''}</div>`).join(''):'<div class="empty" style="padding:12px">لا توجد رسائل ظاهرة</div>';
     const phtml=players.map(p=>`<div class="player"><div><div class="pname">${esc(p.name||'بدون اسم')}</div><div class="prole">${esc(p.role||'player')}</div></div><div class="modActions">${canRooms()?`<button class="btn btnDark" data-warn="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">⚠️ تحذير</button><button class="btn btnDark" data-mute-chat="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">💬 كتم</button><button class="btn btnDark" data-mute-voice="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">🎙️ تعطيل</button><button class="btn btnBlue" data-kick="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">إخراج</button>`:''}${canBan()?`<button class="btn btnRed" data-ban="${esc(code)}" data-uid="${esc(p.uid)}" data-name="${esc(p.name||'اللاعب')}">حظر</button>`:''}</div></div>`).join('');
     const voiceHere=monitorVoiceCode===code;
     const voiceLabel=voiceHere?(monitorVoiceState.starting?'جاري الربط...':monitorVoiceState.active?`متصل • ${monitorVoiceState.remoteCount||0} صوت`:'غير متصل'):'غير متصل';
-    return `<div class="item"><div class="itemHead"><div><div class="itemTitle">#${esc(code)}</div><div class="itemMeta">${roomStatus(pub)} • ${players.length} لاعب</div></div><div class="actions"><button class="btn btnBlue" data-watch="${esc(code)}">👁️ مراقبة</button><button class="btn btnDark" data-stealth="${esc(code)}">🥷 متخفي</button></div></div><div id="monitor-${esc(code)}" class="players"><div class="monitorBox"><div class="monitorHead"><b>الشات والأحداث الظاهرة</b><span class="pill gold">بدون أوراق خاصة</span></div><div class="voiceAdminBar"><button class="btn btnGreen" data-voice-listen="${esc(code)}">🔊 دخول الصوت</button><button class="btn btnGold" data-admin-talk="${esc(code)}">${voiceHere&&monitorVoiceState.active&&!monitorVoiceState.muted?'🔇 إيقاف حديث الإدارة':'🎙️ تحدث كإدارة'}</button>${voiceHere?`<button class="btn btnRed" data-voice-leave="${esc(code)}">⏹️ خروج من الصوت</button>`:''}<span class="voiceState">${esc(voiceLabel)}</span></div><div class="monitorFeed">${feed}</div><div style="margin-top:9px">${phtml||'<div class="empty">لا يوجد لاعبون</div>'}</div></div></div></div>`;
+    return `<div class="item ${isOpen?'monitoringNow':''}"><div class="itemHead"><div><div class="itemTitle">#${esc(code)}</div><div class="itemMeta">${roomStatus(pub)} • ${players.length} لاعب</div>${isOpen?'<span class="monitoringBadge">🟢 تتم مراقبة هذه الغرفة</span>':''}</div><div class="actions"><button class="btn btnBlue" data-watch="${esc(code)}">👁️ مراقبة</button><button class="btn btnDark" data-stealth="${esc(code)}">🥷 متخفي</button></div></div><div id="monitor-${esc(code)}" class="players ${isOpen?'open':''}"><div class="monitorBox"><div class="monitorHead"><b>الشات والأحداث الظاهرة</b><span class="pill gold">بدون أوراق خاصة</span></div><div class="voiceAdminBar"><button class="btn btnGreen" data-voice-listen="${esc(code)}">🔊 دخول الصوت</button><button class="btn btnGold" data-admin-talk="${esc(code)}">${voiceHere&&monitorVoiceState.active&&!monitorVoiceState.muted?'🔇 إيقاف حديث الإدارة':'🎙️ تحدث كإدارة'}</button>${voiceHere?`<button class="btn btnRed" data-voice-leave="${esc(code)}">⏹️ خروج من الصوت</button>`:''}<span class="voiceState">${esc(voiceLabel)}</span></div><div class="monitorFeed">${feed}</div><div style="margin-top:9px">${phtml||'<div class="empty" style="padding:10px">لا يوجد لاعبون حاليًا</div>'}</div></div></div></div>`;
   }).join('');
-  openRooms.forEach(code=>{const box=$(`monitor-${code}`);if(box)box.classList.add('open');});
 }
 async function setAdminMonitor(code,stealth){
   if(!auth.currentUser||!canRooms())return;
@@ -528,7 +548,8 @@ async function setAdminMonitor(code,stealth){
   const data={adminUid:uid,adminEmail:auth.currentUser.email||'',stealth:!!stealth,enteredAt:Date.now()};
   await set(ref(db,`adminMonitoring/${code}/${uid}`),data);
   await logAction(stealth?'دخول مراقبة متخفية':'دخول مراقبة',`الغرفة ${code}`);
-  const box=$(`monitor-${code}`);if(box)box.classList.add('open');
+  activeMonitorCode=code;
+  renderMonitor();
 }
 async function moderationAction(kind,code,uid,name){
   if(!canRooms())return;
@@ -713,8 +734,8 @@ $('roomsList').addEventListener('click',async e=>{
 $('monitorRooms').addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   try{
-    if(t.dataset.voiceListen){if(!hasPerm('listenVoice'))return alert('ما عندك صلاحية الاستماع للصوت');await joinMonitorVoice(t.dataset.voiceListen,true);const box=$(`monitor-${t.dataset.voiceListen}`);if(box)box.classList.add('open');return}
-    if(t.dataset.adminTalk){if(!hasPerm('adminTalk'))return alert('ما عندك صلاحية التحدث كإدارة');await toggleAdminTalk(t.dataset.adminTalk);const box=$(`monitor-${t.dataset.adminTalk}`);if(box)box.classList.add('open');return}
+    if(t.dataset.voiceListen){if(!hasPerm('listenVoice'))return alert('ما عندك صلاحية الاستماع للصوت');activeMonitorCode=t.dataset.voiceListen;await joinMonitorVoice(t.dataset.voiceListen,true);renderMonitor();return}
+    if(t.dataset.adminTalk){if(!hasPerm('adminTalk'))return alert('ما عندك صلاحية التحدث كإدارة');activeMonitorCode=t.dataset.adminTalk;await toggleAdminTalk(t.dataset.adminTalk);renderMonitor();return}
     if(t.dataset.voiceLeave){await leaveMonitorVoice();return}
     if(t.dataset.watch){if(!hasPerm('enterAsModerator'))return alert('ما عندك صلاحية دخول المراقبة');await setAdminMonitor(t.dataset.watch,false);return}
     if(t.dataset.stealth){if(!hasPerm('hiddenMonitor'))return alert('ما عندك صلاحية المراقبة المخفية');await setAdminMonitor(t.dataset.stealth,true);return}
@@ -724,6 +745,14 @@ $('monitorRooms').addEventListener('click',async e=>{
     if(t.dataset.kick){const code=t.dataset.kick,uid=t.dataset.uid,name=t.dataset.name;if(!confirm(`إخراج ${name} من الغرفة ${code}؟`))return;const ch={};ch[`rooms/${code}/public/players/${uid}`]=null;ch[`rooms/${code}/privateHands/${uid}`]=null;await update(ref(db),ch);await logAction('إخراج لاعب',`${name} من الغرفة ${code}`);return}
     if(t.dataset.ban){const code=t.dataset.ban,uid=t.dataset.uid,name=t.dataset.name;const reason=prompt(`سبب حظر ${name} (اختياري):`,'')??null;if(reason===null)return;if(!confirm(`حظر ${name} وإخراجه من الغرفة؟`))return;const ch={};ch[`bans/${uid}`]={name,reason,createdAt:Date.now(),by:auth.currentUser.uid};ch[`rooms/${code}/public/players/${uid}`]=null;ch[`rooms/${code}/privateHands/${uid}`]=null;await update(ref(db),ch);await logAction('حظر لاعب',`${name} (${uid})`);return}
   }catch(err){alert(err.message)}
+});
+
+$('monitorSearch')?.addEventListener('input',()=>renderMonitor());
+$('monitorFilters')?.addEventListener('click',e=>{
+  const b=e.target.closest('[data-monitor-filter]');if(!b)return;
+  monitorFilter=b.dataset.monitorFilter||'all';
+  document.querySelectorAll('[data-monitor-filter]').forEach(x=>x.classList.toggle('active',x===b));
+  renderMonitor();
 });
 
 $('bansList').addEventListener('click',async e=>{
