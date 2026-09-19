@@ -1389,6 +1389,9 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 </style>
 
 <!-- BUILD: GAMEPLAY_POWERS_JKQ_FIXED 2026-09-18 -->
+<style id="random-diagnostic-style">
+#rndDiag{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+</style>
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
@@ -1967,9 +1970,28 @@ function randomPlaySetup(){
  cancel.onclick=()=>{randomQueueCancelToken++;cancel.disabled=true;if(msg)msg.textContent="جاري إلغاء البحث..."};
 }
 async function joinRandomOnline(){
- if(!uid){toast("سجّل الدخول أولاً");return}
+ const diagLines=[];
+ const diag=(stage,detail="")=>{
+   const stamp=new Date().toLocaleTimeString("ar-AE");
+   const line=`${diagLines.length+1}. [${stamp}] ${stage}${detail?` — ${detail}`:""}`;
+   diagLines.push(line);
+   console.log("[RANDOM-DIAG]",line);
+   let box=document.getElementById("rndDiag");
+   if(!box){
+     box=document.createElement("div");
+     box.id="rndDiag";
+     box.style.cssText="margin-top:12px;padding:12px;border:2px solid #9b6b24;border-radius:14px;background:#17110d;color:#fff;font-size:13px;line-height:1.8;text-align:right;direction:rtl;white-space:pre-wrap;max-height:280px;overflow:auto";
+     const msg=document.getElementById("rndMsg");
+     (msg?.parentElement||document.body).appendChild(box);
+   }
+   box.textContent="🔧 تشخيص الأونلاين\n"+diagLines.join("\n");
+   box.scrollTop=box.scrollHeight;
+ };
+ diag("تم الضغط على ابدأ أونلاين");
+
+ if(!uid){diag("توقف","UID غير موجود — المستخدم غير مسجل");toast("سجّل الدخول أولاً");return}
  const mode=$("rndMode")?.value||"online",count=Number($("rndCount")?.value||2),rule=Number($("rndRule")?.value||1);
- if(mode!=="online"){toast("وضع الكمبيوتر بنفعّله بعد تثبيت الأونلاين");return}
+ if(mode!=="online"){diag("توقف","الوضع المختار ليس أونلاين");toast("وضع الكمبيوتر بنفعّله بعد تثبيت الأونلاين");return}
  if(![2,3,4].includes(count)||![1,2].includes(rule)){toast("اختيار غير صالح");return}
 
  const msg=$("rndMsg"),startBtn=$("rndStart"),cancelBtn=$("rndCancel");
@@ -1985,7 +2007,7 @@ async function joinRandomOnline(){
 
  async function leaveQueue(){
   if(!joinedQueue)return;
-  await runTransaction(qref,cur=>{
+  diag("إرسال طلب الانضمام للطابور");diag("نجح roomIndex");diag("كتابة roomCode في randomQueue",code);await runTransaction(qref,cur=>{
    if(!cur)return cur;
    const players={...(cur.players||{})};delete players[uid];
    if(!Object.keys(players).length)return null;
@@ -1994,7 +2016,7 @@ async function joinRandomOnline(){
   joinedQueue=false;
  }
 
- searching(true);setMsg(`🔎 جاري البحث... 1 / ${count} • القانون ${rule}`);
+ diag("الإعدادات",`UID=${uid.slice(0,8)}… | لاعبين=${count} | قانون=${rule}`);searching(true);setMsg(`🔎 جاري البحث... 1 / ${count} • القانون ${rule}`);diag("بدء الاتصال بالطابور",`randomQueue/${key}`);
 
  try{
   await runTransaction(qref,cur=>{
@@ -2010,39 +2032,39 @@ async function joinRandomOnline(){
    }
    return {...cur,players,count,rule,updatedAt:Date.now()};
   });
-  joinedQueue=true;
+  joinedQueue=true;diag("نجح الانضمام للطابور");
 
   const started=Date.now();
   while(token===randomQueueCancelToken && Date.now()-started<120000){
-   const snap=await get(qref);
+   const snap=await get(qref);diag("قراءة الطابور","تمت القراءة");
    if(!snap.exists()){await sleep(300);continue}
-   const q=snap.val()||{},ids=Object.keys(q.players||{}).sort(),pc=ids.length;
+   const q=snap.val()||{},ids=Object.keys(q.players||{}).sort(),pc=ids.length;diag("حالة الطابور",`${pc}/${count}${q.roomCode?` | roomCode=${q.roomCode}`:""}`);
 
    // أي جهاز يرى roomCode ينتقل لنفس الغرفة.
-   if(q.roomCode){
+   if(q.roomCode){diag("استلام كود المباراة",String(q.roomCode));
     const code=String(q.roomCode);
     const rs=await get(ref(db,`rooms/${code}/public`)).catch(()=>null);
-    if(rs?.exists() && rs.val()?.players?.[uid]){
+    if(rs?.exists() && rs.val()?.players?.[uid]){diag("الغرفة موجودة واللاعب مسجل فيها","سيتم الانتقال الآن");
      joinedQueue=false;
      closeModal();
      roomCode=code;
      localStorage.setItem("sheikh_room",code);
      adminEntryMode="player";
      await startPresence("room",code).catch(()=>{});
-     subscribe(code);
+     subscribe(code);diag("تم الاشتراك بالغرفة",code);
      return;
     }
    }
 
    setMsg(pc>=count?"✅ اكتمل العدد — جاري تجهيز المباراة...":`🔎 جاري البحث... ${pc} / ${count} • القانون ${rule}`);
 
-   if(pc===count && !q.roomCode){
+   if(pc===count && !q.roomCode){diag("اكتمل العدد","نبدأ مرحلة إنشاء الغرفة");
     // Claim بمهلة: لا نعتمد للأبد على أول UID. إذا جهاز الـleader تعطل، جهاز آخر يستلم الإنشاء.
     const now=Date.now(),claim=q.createClaim||null;
     const claimExpired=!claim || !Number(claim.at) || now-Number(claim.at)>3500;
     let iOwnClaim=claim?.by===uid;
 
-    if(claimExpired){
+    if(claimExpired){diag("محاولة حجز حق إنشاء الغرفة");
      const claimTx=await runTransaction(qref,cur=>{
       if(!cur||cur.roomCode)return cur;
       const curIds=Object.keys(cur.players||{}).sort();
@@ -2052,10 +2074,10 @@ async function joinRandomOnline(){
       return {...cur,createClaim:{by:uid,at:Date.now()},updatedAt:Date.now()};
      });
      const claimed=claimTx.snapshot?.val?.()||{};
-     iOwnClaim=claimed.createClaim?.by===uid && !claimed.roomCode;
+     iOwnClaim=claimed.createClaim?.by===uid && !claimed.roomCode;diag("نتيجة الحجز",iOwnClaim?"هذا الجهاز مسؤول عن الإنشاء":"جهاز آخر مسؤول عن الإنشاء");
     }
 
-    if(iOwnClaim){
+    if(iOwnClaim){diag("بدء إنشاء غرفة المباراة");
      // افحص مرة ثانية قبل الإنشاء حتى لا ننشئ غرفتين.
      const fresh=(await get(qref)).val()||{};
      if(fresh.roomCode){await sleep(150);continue}
@@ -2075,8 +2097,8 @@ async function joinRandomOnline(){
      });
 
      try{
-      await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt,players});
-      await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt,playerCount:count,updatedAt:createdAt});
+      diag("كتابة rooms/public",code);await set(ref(db,`rooms/${code}/public`),{hostId:uid,creatorId:"SYSTEM",creatorName:"النظام",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,status:"lobby",createdAt,players});
+      diag("نجح rooms/public");diag("كتابة roomIndex",code);await set(ref(db,`roomIndex/${code}`),{hostId:uid,status:"lobby",systemRandom:true,targetPlayers:count,ruleMode:rule,scoreLimit:120,createdAt,playerCount:count,updatedAt:createdAt});
       await runTransaction(qref,cur=>{
        if(!cur)return cur;
        const curIds=Object.keys(cur.players||{}).sort();
@@ -2084,7 +2106,7 @@ async function joinRandomOnline(){
        if(cur.createClaim?.by!==uid)return cur;
        return {...cur,roomCode:code,matchedAt:Date.now(),updatedAt:Date.now()};
       });
-     }catch(createErr){
+     }catch(createErr){diag("فشل إنشاء الغرفة",String(createErr?.code||createErr?.message||createErr));
       // حرر الـclaim حتى يقدر الجهاز الثاني يحاول بدل بقاء الجميع معلّقين.
       await runTransaction(qref,cur=>{
        if(!cur||cur.roomCode)return cur;
@@ -2102,6 +2124,7 @@ async function joinRandomOnline(){
   searching(false);
   setMsg(token===randomQueueCancelToken?"انتهت مهلة البحث — حاول مرة ثانية":"تم إلغاء البحث");
  }catch(e){
+  diag("خطأ عام",String(e?.code||e?.message||e));
   console.warn("random central queue",e);
   if(token===randomQueueCancelToken)await leaveQueue();
   searching(false);
