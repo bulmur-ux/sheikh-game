@@ -2156,6 +2156,72 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 </style>
 
+
+<style id="game-layout-final-v3">
+/* Final phone play layout: compact portrait + visible draw/action area in landscape. */
+@media (max-width:699px) and (orientation:portrait){
+  body:has(.refGameShell) .wrap{padding-left:0!important;padding-right:0!important}
+  .refGameShell{padding:4px 7px 18px!important}
+  .refBrand{margin-bottom:3px!important}
+  .refLeftTop{margin:2px 3px 4px!important;padding:5px!important}
+  .refRightTop{margin:3px!important;padding:5px!important}
+  .refRightTop #withdrawRound{min-height:38px!important;margin-top:4px!important}
+
+  /* Remove the oversized empty table area. */
+  .refTable{height:390px!important;min-height:390px!important;margin:3px 2px 0!important;border-radius:25px!important}
+  .refTable:before{inset:4.5%!important}
+  .refTurnTimer{top:4px!important;padding:4px 10px!important;font-size:16px!important}
+  .refSeat.top{top:7px!important}.refSeat.bottom{bottom:5px!important}
+  .refSeat .refAvatar{width:46px!important;height:46px!important}
+  .refSeatLabel{font-size:9px!important;min-width:78px!important;padding:3px 6px!important}
+  .refSeatCards .cardBack{width:22px!important;height:32px!important}
+  .refCenterPiles{top:48%!important;gap:18px!important}
+  .refCenterPiles .cardBack,.refCenterPiles .cardFace{width:70px!important;height:99px!important}
+  .refPileLabel,.pileCount{font-size:10px!important}
+  .refLastAction{bottom:2px!important;font-size:9px!important;padding:3px 8px!important}
+
+  /* Round strip directly under the table. */
+  .refBottom{margin:0 2px 6px!important;gap:4px!important}
+  .refIntro{height:38px!important;min-height:38px!important;padding:3px 8px!important;margin:0!important}
+  .refIntro b{font-size:11px!important}.refIntro strong{font-size:16px!important}.refIntro .refWaiting{font-size:9px!important}
+
+  /* Drawn card sits immediately above the four hand cards. */
+  .refHandWrap{padding:100px 0 2px!important;margin:0!important;min-height:0!important}
+  .refPendingPreview{top:2px!important;left:50%!important;bottom:auto!important;transform:translateX(-50%)!important;padding:4px 6px!important;gap:2px!important;z-index:20!important}
+  .refPendingPreview .refPendingLabel{font-size:10px!important;line-height:1.1!important}
+  .refPendingPreview .cardFace{width:61px!important;height:87px!important}
+  .refHandTitle{margin:0 4px 2px!important;font-size:11px!important}
+  .refHandWrap .hand{gap:5px!important;align-items:flex-start!important}
+  .refHandWrap .slot{width:23%!important;min-width:0!important;min-height:0!important;margin:0!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:100%!important;height:auto!important;aspect-ratio:.70!important}
+  .refHandWrap .slot button{position:relative!important;left:auto!important;bottom:auto!important;width:100%!important;margin-top:5px!important;min-height:36px!important;font-size:11px!important;padding:6px 2px!important}
+
+  /* All four gameplay buttons stay together and readable. */
+  .refActions{margin-top:2px!important;grid-template-columns:1fr 1fr!important;gap:6px!important}
+  .refActions .btn{display:block!important;visibility:visible!important;min-height:46px!important;font-size:12px!important;padding:7px 4px!important}
+  .refRightChat{margin-top:6px!important}
+}
+
+@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
+  /* Reserve a real bottom play bar so neither the drawn card nor buttons disappear. */
+  .refTable{left:158px!important;right:203px!important;top:45px!important;bottom:120px!important}
+  .refBottom{left:158px!important;right:203px!important;bottom:3px!important;height:113px!important;grid-template-columns:minmax(330px,1fr) 174px!important;gap:6px!important;overflow:visible!important}
+  .refHandWrap{position:relative!important;padding:2px 76px 2px 2px!important;overflow:visible!important}
+  .refHandWrap .hand{justify-content:center!important;gap:5px!important;overflow:visible!important}
+  .refHandWrap .slot{width:60px!important;min-width:60px!important;min-height:88px!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:58px!important;height:83px!important}
+  .refHandWrap .slot button{position:relative!important;left:auto!important;bottom:auto!important;width:58px!important;margin-top:2px!important;font-size:7px!important;padding:3px 1px!important}
+  .refPendingPreview{display:flex!important;visibility:visible!important;opacity:1!important;left:auto!important;right:2px!important;top:4px!important;bottom:auto!important;transform:none!important;padding:3px 4px!important;z-index:95!important}
+  .refPendingPreview .refPendingLabel{font-size:8px!important}
+  .refPendingPreview .cardFace{width:50px!important;height:71px!important}
+  .refActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px!important;align-self:stretch!important;padding:0!important}
+  .refActions .btn{display:block!important;visibility:visible!important;opacity:1!important;min-height:43px!important;font-size:9px!important;padding:4px 2px!important}
+  .refCenterPiles{top:48%!important;gap:18px!important}
+  .refCenterPiles .cardBack,.refCenterPiles .cardFace{width:62px!important;height:88px!important}
+  .refSeat.bottom{bottom:3px!important}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
