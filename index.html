@@ -2400,9 +2400,7 @@ async function runComputerBotWork(){
 
  const href=ref(db,`rooms/${roomCode}/privateHands/${botId}`),hsnap=await get(href),hand=hsnap.val()||{},cards=(hand.cards||[]).slice(),discard=g.discard;
 
- // إذا بقيت للكمبيوتر ورقة واحدة وكانت جوكر، يحسم الجولة بشيك بدل أن يعلق أو يدور بلا قرار.
  const liveCards=cards.filter(Boolean);
- if(!g.ending&&liveCards.length===1&&liveCards[0]?.r==="JOKER"){await botCallCheck(botId,g);return}
 
  // أولاً: نفس رتبة الميدان — يرمي المطابقات. القوة لا تتفعل من اليد.
  if(discard){
@@ -2419,6 +2417,9 @@ async function runComputerBotWork(){
    await botAdvanceTurn(botId);return
   }
  }
+
+ // إذا كانت آخر ورقة جوكر ولم يمكن رميها على الميدان، الكمبيوتر يقول شيك ويُنهي دوره نظامياً بدل التعليق.
+ if(!g.ending&&liveCards.length===1&&liveCards[0]?.r==="JOKER"){await botCallCheck(botId,g);return}
 
  // يسحب من الرزمة. J/Q/K تتفعل فقط من السحب وبحسب القانون المختار.
  const take=await takeDeckCards(1);if(!take.ok){await botAdvanceTurn(botId);return}
@@ -3396,13 +3397,20 @@ function chooseJack(){
  openModal(`<h3>قوة الولد J</h3><div class="notice good">⏱️ عندك <b id="jackCountdown">10</b> ثواني لإكمال التبديل.<br>اختر <b>الورقة الأولى</b>. تقدر تختار من أوراقك أو من أي لاعب.</div>${ps.map(([id,p])=>`<button class="playerPick btn alt" data-jp1="${id}">${esc(p.name)}${id===uid?' (أنت)':''}</button>`).join("")}`);
  sheet.querySelectorAll("[data-jp1]").forEach(b=>b.onclick=()=>chooseJackSlot1(b.dataset.jp1,ps));
 }
-function jackSlotsFor(playerUid,attr){
- const n=Math.max(1,currentRoom.players?.[playerUid]?.cardCount||4);
- return Array.from({length:n},(_,i)=>`<button class="btn alt" ${attr}="${i}">الورقة ${i+1}</button>`).join("");
+async function jackSlotsFor(playerUid,attr){
+ // اعرض الخانات التي تحتوي ورقة فعلياً فقط؛ لا تعتمد على cardCount لأن اليد قد تحتوي فراغات.
+ let cards=[];
+ if(playerUid===uid) cards=(myHand?.cards||[]);
+ else{
+   try{const hs=await get(ref(db,`rooms/${roomCode}/privateHands/${playerUid}`));cards=(hs.val()?.cards||[])}catch(e){cards=[]}
+ }
+ return cards.map((c,i)=>c?`<button class="btn alt" ${attr}="${i}">الورقة ${i+1}</button>`:"").join("");
 }
-function chooseJackSlot1(firstUid,ps){
+async function chooseJackSlot1(firstUid,ps){
  const name=currentRoom.players?.[firstUid]?.name||"اللاعب";
- openModal(`<h3>${esc(name)}</h3><div class="notice">اختر الورقة الأولى.</div><div class="choiceGrid">${jackSlotsFor(firstUid,"data-js1")}</div>`);
+ const slots=await jackSlotsFor(firstUid,"data-js1");
+ if(!slots){toast("ما عند هذا اللاعب ورقة متاحة للتبديل");return chooseJack()}
+ openModal(`<h3>${esc(name)}</h3><div class="notice">اختر الورقة الأولى.</div><div class="choiceGrid">${slots}</div>`);
  sheet.querySelectorAll("[data-js1]").forEach(b=>b.onclick=()=>chooseJackPlayer2({uid:firstUid,index:+b.dataset.js1},ps));
 }
 function chooseJackPlayer2(first,ps){
@@ -3410,10 +3418,12 @@ function chooseJackPlayer2(first,ps){
  openModal(`<h3>اختر الورقة الثانية</h3><div class="notice good">لازم تكون الورقة الثانية عند <b>لاعب مختلف</b>. تقدر تبدّل ورقة من أوراقك مع لاعب آخر، أو تبدّل بين لاعبين آخرين.</div>${choices.map(([id,p])=>`<button class="playerPick btn alt" data-jp2="${id}">${esc(p.name)}${id===uid?' (أنت)':''}</button>`).join("")}`);
  sheet.querySelectorAll("[data-jp2]").forEach(b=>b.onclick=()=>chooseJackSlot2(first,b.dataset.jp2));
 }
-function chooseJackSlot2(first,secondUid){
+async function chooseJackSlot2(first,secondUid){
  if(first.uid===secondUid){toast("قوة J تبدّل بين لاعبين مختلفين فقط");return chooseJack()}
  const name=currentRoom.players?.[secondUid]?.name||"اللاعب";
- openModal(`<h3>${esc(name)}</h3><div class="notice">اختر الورقة الثانية للتبديل.</div><div class="choiceGrid">${jackSlotsFor(secondUid,"data-js2")}</div>`);
+ const slots=await jackSlotsFor(secondUid,"data-js2");
+ if(!slots){toast("ما عند هذا اللاعب ورقة متاحة للتبديل");return chooseJack()}
+ openModal(`<h3>${esc(name)}</h3><div class="notice">اختر الورقة الثانية للتبديل.</div><div class="choiceGrid">${slots}</div>`);
  sheet.querySelectorAll("[data-js2]").forEach(b=>b.onclick=async()=>{
    const second={uid:secondUid,index:+b.dataset.js2};
    const aName=currentRoom.players?.[first.uid]?.name||"لاعب";
