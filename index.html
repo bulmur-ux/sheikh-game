@@ -4658,5 +4658,57 @@ let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress
 /* ===== Check Check Interactive Cards v1 ===== */
 </style>
 
+
+<!-- SAFARI / PWA LANDSCAPE RESPONSIVE FIX -->
+<style id="safari-landscape-responsive-fix">
+html,body{min-height:100%;} body{min-height:100dvh;overflow-x:hidden;}
+@media (orientation:landscape) and (max-height:650px){
+ html,body{height:auto!important;min-height:100dvh!important;overflow-y:auto!important;}
+ #app,.app,main,.page,.screen,.view,.game-page,.game-screen,.room-page,.room-screen{
+   min-height:100dvh!important;height:auto!important;max-height:none!important;
+ }
+ .game-layout,.gameLayout,.game-wrap,.gameWrap,.game-shell,.gameShell,.game-grid,.gameGrid{
+   min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+   height:auto!important;max-height:none!important;
+ }
+ .table,.game-table,.gameTable,.arena,.board,.game-board,.gameBoard{max-height:min(58dvh,430px)!important;}
+ .my-hand,.myHand,.hand,.player-hand,.playerHand,.hand-area,.handArea,.cards-row,.cardsRow{
+   position:relative!important;z-index:20!important;margin-bottom:8px!important;
+ }
+ .actions,.game-actions,.gameActions,.action-buttons,.actionButtons,.controls,.game-controls,.gameControls{
+   position:relative!important;z-index:15!important;
+ }
+ .chat,.room-chat,.roomChat,.chat-panel,.chatPanel,.game-chat,.gameChat{
+   min-height:0!important;max-height:calc(100dvh - 28px)!important;overflow:hidden!important;
+ }
+ .chat-messages,.chatMessages,.messages,.messages-list,.messagesList{
+   min-height:90px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;
+ }
+ .chat-input,.chatInput,.chat-compose,.chatCompose,.message-input,.messageInput,.chat-form,.chatForm{
+   position:relative!important;bottom:auto!important;z-index:30!important;flex-shrink:0!important;
+   padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
+ }
+ input,textarea,select,button{max-width:100%;}
+}
+@media (orientation:landscape) and (max-height:480px){
+ .table,.game-table,.gameTable,.arena,.board,.game-board,.gameBoard{max-height:52dvh!important;}
+ .card,.playing-card,.playingCard{max-height:29dvh!important;}
+ .chat-messages,.chatMessages,.messages,.messages-list,.messagesList{min-height:72px!important;}
+}
+@media (orientation:portrait){
+ html,body{min-height:100dvh!important;height:auto!important;overflow-y:auto!important;}
+}
+@media (display-mode:standalone){
+ body{min-height:100dvh!important;padding-bottom:env(safe-area-inset-bottom);}
+}
+</style>
+<script id="safari-visual-viewport-fix">
+(()=>{const r=document.documentElement;
+function s(){const v=window.visualViewport,h=v?v.height:innerHeight,w=v?v.width:innerWidth;
+r.style.setProperty('--vvh',h+'px');r.style.setProperty('--vvw',w+'px');r.style.setProperty('--app-dvh',(h*.01)+'px');}
+s();addEventListener('resize',s,{passive:true});addEventListener('orientationchange',()=>setTimeout(s,120),{passive:true});
+if(window.visualViewport){visualViewport.addEventListener('resize',s,{passive:true});visualViewport.addEventListener('scroll',s,{passive:true});}})();
+</script>
+
 </body>
 </html>
