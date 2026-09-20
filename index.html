@@ -3759,7 +3759,7 @@ function renderGame(){
  const introPanel=introActive?`<div class="refIntro"><b>${globalCount>0?"👁️ احفظ الورقتين 1 و2":"جارٍ بدء اللعب..."}</b><strong id="introCount">${globalCount}</strong><div class="refWaiting">${globalCount>0?"ثانية — الإغلاق تلقائي":""}</div></div>`:`<div class="refIntro"><b>${isActivePlayer()?`الجولة ${g.roundNo||1}`:"👀 متفرج"}</b><strong>${isActivePlayer()?`${g.roundNo||1}/${roundsLabel(g)}`:""}</strong></div>`;
  const pendingPreview=pending?`<div class="refPendingPreview"><div class="refPendingLabel">${myHand?.pendingSource==="deck"?"الورقة المسحوبة":"ورقة الميدان"}</div><div class="cardFace ${cardClass(pending)}">${cardFaceHtml(pending)}</div></div>`:"";
  const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div>${pendingPreview}<div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
- const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
+ const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile" id="ccDiscardDrop">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${roundsLabel(g)}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="small center" style="margin:4px 0 6px">الجولات المكتملة: <b>${completedRounds}</b> • الكلي</div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([id,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span>${canKick&&id!==uid?`<button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button>`:""}</div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside>${currentRoom?.computerMatch&&isActivePlayer()?`<button id="computerExitFixed" class="computerExitFixed">🚪 انسحاب</button><div class="computerRuleBadge">🤖 القانون ${ruleMode()}</div>`:""}</div>`;
  wireCommon();
  try{
@@ -3787,11 +3787,78 @@ function renderGame(){
  if(document.getElementById("check"))document.getElementById("check").onclick=callCheck;
  if(document.getElementById("passTurn"))document.getElementById("passTurn").onclick=passAfterPlay;
  document.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>swapPendingWithSlot(+b.dataset.swap));
+ setupInteractiveCardThrow();
  startTurnCountdownUi();
  if(globalIntroUntil>Date.now()){clearTimeout(pendingStartTimer);pendingStartTimer=setTimeout(()=>finishInitialPeek(String(g.roundToken||"")),Math.max(0,globalIntroUntil-Date.now()+80));const tick=()=>{const el=document.getElementById("introCount");if(el){const n=Math.max(0,Math.ceil((globalIntroUntil-Date.now())/1000));el.textContent=n;if(n>0)setTimeout(tick,250)}};tick()}
 }
 
-function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);const g=game()||{};const memorizeReveal=g.phase==="memorize"&&!!myHand&&Number(g.memorizeUntil||0)>Date.now();return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><span class="slotNum">${i+1}</span><div class="emptyCardSlot">✓ فارغة</div></div>`;const reveal=(memorizeReveal&&i<2)||((localRevealUntil[i]||0)>Date.now());return `<div class="slot"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
+// ===== لمس وسحب الورقة إلى الميدان =====
+// لا يغير قوانين اللعبة: عند الإفلات يستعمل نفس tryPlayHand الحالي.
+let ccDragState=null;
+function ccPointInRect(x,y,r){return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom}
+function ccRemoveDrag(){
+  document.querySelector(".ccDragGhost")?.remove();
+  document.querySelectorAll(".ccDragging").forEach(x=>x.classList.remove("ccDragging"));
+  document.getElementById("ccDiscardDrop")?.classList.remove("dragTarget");
+  ccDragState=null;
+}
+function ccImpactAt(x,y){
+  const e=document.createElement("div");e.className="ccImpact";e.style.left=x+"px";e.style.top=y+"px";
+  document.body.appendChild(e);setTimeout(()=>e.remove(),480);
+}
+function ccAnimateThrow(fromEl,targetEl,done){
+  const a=fromEl.getBoundingClientRect(),b=targetEl.getBoundingClientRect();
+  const fx=document.createElement("div");fx.className="ccThrowFx";
+  const visual=fromEl.querySelector(".cardFace,.cardBack");
+  if(visual)fx.innerHTML=visual.outerHTML;
+  fx.style.left=(a.left+a.width/2-37)+"px";fx.style.top=(a.top+a.height/2-52)+"px";
+  fx.style.transform="rotate(-7deg) scale(1.04)";
+  document.body.appendChild(fx);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    fx.style.left=(b.left+b.width/2-37)+"px";fx.style.top=(b.top+b.height/2-52)+"px";
+    fx.style.transform=`rotate(${Math.random()>.5?8:-8}deg) scale(.92)`;
+  }));
+  setTimeout(()=>{ccImpactAt(b.left+b.width/2,b.top+b.height/2);fx.style.opacity="0";setTimeout(()=>fx.remove(),180);done?.()},285);
+}
+function setupInteractiveCardThrow(){
+  const drop=document.getElementById("ccDiscardDrop");
+  if(!drop||!isMyTurn()||game()?.phase!=="playing"||myHand?.pending||turnActionLocked())return;
+  document.querySelectorAll('.hand .slot[data-cc-slot]').forEach(slot=>{
+    const visual=slot.querySelector(".cardFace,.cardBack");if(!visual)return;
+    slot.classList.add("ccDraggable");
+    visual.onpointerdown=e=>{
+      if(e.button!==undefined&&e.button!==0)return;
+      if(!isMyTurn()||myHand?.pending||turnActionLocked())return;
+      const i=Number(slot.dataset.ccSlot),card=myHand?.cards?.[i];if(!card)return;
+      e.preventDefault();
+      const ghost=document.createElement("div");ghost.className="ccDragGhost";ghost.innerHTML=visual.outerHTML;
+      ghost.style.left=e.clientX+"px";ghost.style.top=e.clientY+"px";document.body.appendChild(ghost);
+      slot.classList.add("ccDragging");visual.setPointerCapture?.(e.pointerId);
+      ccDragState={i,slot,visual,ghost,pid:e.pointerId,over:false};
+      const move=ev=>{
+        if(!ccDragState||ev.pointerId!==ccDragState.pid)return;
+        ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
+        const over=ccPointInRect(ev.clientX,ev.clientY,drop.getBoundingClientRect());
+        ccDragState.over=over;drop.classList.toggle("dragTarget",over);
+        ghost.style.transform=`translate(-50%,-58%) rotate(${Math.max(-12,Math.min(12,(ev.clientX-innerWidth/2)/35))}deg) scale(${over?1.16:1.08})`;
+      };
+      const end=ev=>{
+        if(!ccDragState||ev.pointerId!==ccDragState.pid)return;
+        visual.removeEventListener("pointermove",move);visual.removeEventListener("pointerup",end);visual.removeEventListener("pointercancel",cancel);
+        const st=ccDragState,over=st.over;ccRemoveDrag();
+        if(over){
+          ccAnimateThrow(st.slot,drop,()=>tryPlayHand(st.i));
+        }else{
+          st.slot.animate([{transform:"translateY(-8px)"},{transform:"translateY(0)"}],{duration:180,easing:"ease-out"});
+        }
+      };
+      const cancel=()=>ccRemoveDrag();
+      visual.addEventListener("pointermove",move);visual.addEventListener("pointerup",end);visual.addEventListener("pointercancel",cancel);
+    };
+  });
+}
+
+function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);const g=game()||{};const memorizeReveal=g.phase==="memorize"&&!!myHand&&Number(g.memorizeUntil||0)>Date.now();return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><span class="slotNum">${i+1}</span><div class="emptyCardSlot">✓ فارغة</div></div>`;const reveal=(memorizeReveal&&i<2)||((localRevealUntil[i]||0)>Date.now());return `<div class="slot" data-cc-slot="${i}"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
 function renderResults(){
  const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),totals=g.cumulativeScores||{},limit=scoreLimit(g),eligibleIds=Object.keys(currentRoom.players||{}).filter(id=>Number(totals[id]||0)<limit),fixedDone=Number(g.totalRounds||0)>0&&Number(g.roundNo||1)>=Number(g.totalRounds||0),final=fixedDone||eligibleIds.length<2,totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));
  const lowestTotal=totalArr.length?Number(totalArr[0][1]):null,leaders=totalArr.filter(([,v])=>Number(v)===lowestTotal).map(([id])=>id);
@@ -4003,6 +4070,42 @@ let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress
   .rulesPanel{right:5px!important;top:5px!important;width:194px!important;padding:5px 7px!important}.rulesPanel b{font-size:11px!important}.rulesPanel li{font-size:8px!important;line-height:1.25!important}
   #app>.panel:has(#chatBox){right:5px!important;top:134px!important;bottom:5px!important;width:194px!important;padding:6px!important}#app>.panel:has(#chatBox)>b{font-size:12px!important}.voiceBar{gap:3px!important}.voiceBar button{font-size:8px!important;padding:4px 2px!important}.chat{min-height:55px!important;padding:4px!important}.chat p,.chat b{font-size:10px!important;line-height:1.3!important}.row #chatInput{font-size:9px!important;padding:5px!important}.row #send{flex-basis:44px!important;font-size:8px!important;padding:5px 2px!important}
 }
+
+/* ===== Check Check Interactive Cards v1 ===== */
+.refTable{position:relative}
+.refCenterPiles{position:relative}
+.refCenterPiles .refPile:last-child{position:relative;transition:filter .16s ease,transform .16s ease}
+.refCenterPiles .refPile:last-child.dragTarget{
+  filter:drop-shadow(0 0 16px rgba(255,255,255,.85));
+  transform:scale(1.06);
+}
+.hand .slot .cardFace,.hand .slot .cardBack{
+  touch-action:none;
+  -webkit-user-select:none;user-select:none;
+  transition:transform .16s ease,filter .16s ease;
+}
+.hand .slot.ccDraggable .cardFace,.hand .slot.ccDraggable .cardBack{cursor:grab}
+.hand .slot.ccDragging{opacity:.28}
+.ccDragGhost{
+  position:fixed;left:0;top:0;z-index:99999;pointer-events:none;
+  width:74px;height:104px;transform:translate(-50%,-58%) rotate(-5deg) scale(1.08);
+  filter:drop-shadow(0 14px 16px rgba(0,0,0,.45));
+  transition:transform .08s linear;
+}
+.ccDragGhost .cardFace,.ccDragGhost .cardBack{width:100%!important;height:100%!important}
+.ccThrowFx{
+  position:fixed;z-index:99998;pointer-events:none;width:74px;height:104px;
+  transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),
+             transform .28s cubic-bezier(.2,.8,.2,1),opacity .32s ease;
+  filter:drop-shadow(0 12px 14px rgba(0,0,0,.42));
+}
+.ccImpact{
+  position:fixed;z-index:99997;width:18px;height:18px;border:3px solid rgba(255,255,255,.92);
+  border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);
+  animation:ccImpact .42s ease-out forwards;
+}
+@keyframes ccImpact{from{opacity:1;width:18px;height:18px}to{opacity:0;width:115px;height:115px}}
+@media (max-width:600px){.ccDragGhost,.ccThrowFx{width:66px;height:94px}}
 </style>
 
 </body>
