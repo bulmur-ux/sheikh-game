@@ -137,6 +137,9 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
   .roomItem .actions .btn{width:100%}
 }
 
+
+/* ===== Organized member messages ===== */
+.messageFilters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}.messageFilters::-webkit-scrollbar{display:none}.messageFilter{white-space:nowrap;background:#17100d;color:#d8c49d;border:1px solid #4f381c;border-radius:999px;padding:7px 11px;font-weight:800}.messageFilter.active{background:#5a3b12;color:#ffe29a;border-color:#a8792b}.messageTarget{display:inline-block;margin-top:5px;border:1px solid #6a4c25;border-radius:999px;padding:4px 8px;color:#ffe29a;font-size:10px;font-weight:900}.messageBody{margin-top:9px;white-space:pre-wrap;line-height:1.7}.messageReply{margin-top:9px;padding:9px;border-radius:10px;background:#176b4633}.messageStatus{font-size:11px;color:#c8b795;margin-top:6px}
 </style>
 </head>
 <body>
@@ -243,7 +246,8 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 
     <div id="panel-messages" class="panel">
       <div class="section">
-        <div class="sectionTitle"><h2>📨 رسائل الأعضاء</h2></div>
+        <div class="sectionTitle"><h2>📨 رسائل الأعضاء</h2><button id="refreshMessages" class="btn btnDark refresh">تحديث ↻</button></div>
+        <div class="messageFilters" id="messageFilters"><button class="messageFilter active" data-message-filter="all">الكل</button><button class="messageFilter" data-message-filter="new">🔴 جديدة</button><button class="messageFilter" data-message-filter="review">🟡 قيد المراجعة</button><button class="messageFilter" data-message-filter="replied">🟢 تم الرد</button></div>
         <div id="memberMessagesList"><div class="empty">جاري تحميل الرسائل...</div></div>
       </div>
     </div>
@@ -278,6 +282,7 @@ let currentAdmin=null,currentRooms={},currentBans={},currentUsers={},currentAdmi
 let monitorVoice=null,monitorVoiceCode="",monitorVoiceStealth=true,monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};
 let monitorFilter="all",activeMonitorCode="";
 let currentMemberMessages={};
+let messageFilter="all";
 let currentRegisteredCount=null;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]))}
@@ -578,17 +583,32 @@ async function moderationAction(kind,code,uid,name){
   }
 }
 
+function canSeeSupportMessage(m){
+ if(isSuper())return true;
+ const target=String(m?.target||"administration"),role=String(currentAdmin?.role||""),p=currentAdmin?.permissions||{};
+ if(target==="generalModerator")return role==="generalModerator";
+ if(target==="roomModerator")return role==="roomModerator"||p.manageRooms===true||p.enterAsModerator===true;
+ if(target==="memberModerator")return p.manageMembers===true;
+ if(target==="complaintsModerator")return p.banPlayers===true||p.warnPlayers===true;
+ return role==="generalModerator"||p.manageMembers===true||p.manageRooms===true;
+}
 function renderMemberMessages(){
  const el=$("memberMessagesList");if(!el)return;
- const rows=Object.entries(currentMemberMessages||{}).sort((x,y)=>(Number(y[1]?.createdAt)||0)-(Number(x[1]?.createdAt)||0));
- if(!rows.length){el.innerHTML='<div class="empty">لا توجد رسائل من الأعضاء</div>';return}
- el.innerHTML=rows.map(([id,m])=>`<div class="item"><div class="itemHead"><div style="flex:1"><div class="itemTitle">${m.readByAdmin?"📩":"🔴"} ${esc(m.name||"عضو")}</div><div class="itemMeta">عضوية #${esc(m.memberNo||"—")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div><div style="margin-top:8px;white-space:pre-wrap">${esc(m.message||"")}</div>${m.reply?`<div style="margin-top:9px;padding:9px;border-radius:10px;background:#176b4633"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:""}</div><div class="actions"><button class="btn btnGold" data-support-reply="${esc(id)}">↩️ رد</button></div></div></div>`).join("");
+ let rows=Object.entries(currentMemberMessages||{}).filter(([,m])=>canSeeSupportMessage(m));
+ rows=rows.filter(([,m])=>messageFilter==="all"||(messageFilter==="new"&&!m.readByAdmin&&!m.reply)||(messageFilter==="review"&&m.readByAdmin&&!m.reply)||(messageFilter==="replied"&&!!m.reply));
+ rows.sort((x,y)=>(Number(y[1]?.createdAt)||0)-(Number(x[1]?.createdAt)||0));
+ if(!rows.length){el.innerHTML='<div class="empty">لا توجد رسائل في هذا القسم</div>';return}
+ el.innerHTML=rows.map(([id,m])=>`<div class="item"><div class="itemHead"><div style="flex:1"><div class="itemTitle">${m.readByAdmin?"📩":"🔴"} ${esc(m.name||"عضو")}</div><div class="itemMeta">عضوية #${esc(m.memberNo||"—")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div><span class="messageTarget">إلى: ${esc(m.targetLabel||"الإدارة")}</span><div class="messageBody">${esc(m.message||"")}</div><div class="messageStatus">${m.reply?"🟢 تم الرد":(m.readByAdmin?"🟡 قيد المراجعة":"🔴 جديدة")}</div>${m.reply?`<div class="messageReply"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:""}</div><div class="actions"><button class="btn btnGold" data-support-reply="${esc(id)}">↩️ رد</button>${!m.readByAdmin?`<button class="btn btnDark" data-support-review="${esc(id)}">👁️ مراجعة</button>`:""}</div></div></div>`).join("");
 }
 async function replySupportMessage(id){
- const m=currentMemberMessages?.[id];if(!m)return;
+ const m=currentMemberMessages?.[id];if(!m||!canSeeSupportMessage(m))return;
  const v=prompt(`الرد على ${m.name||"العضو"}:`,m.reply||"");if(v===null)return;
  const reply=String(v).trim().slice(0,500);if(!reply)return;
- await update(ref(db,`supportMessages/${id}`),{reply,replyAt:Date.now(),replyBy:auth.currentUser?.uid||"",readByAdmin:true});
+ await update(ref(db,`supportMessages/${id}`),{reply,replyAt:Date.now(),replyBy:auth.currentUser?.uid||"",replyByName:currentUsers?.[auth.currentUser?.uid]?.username||"الإدارة",status:"replied",readByAdmin:true});
+}
+async function markSupportReview(id){
+ const m=currentMemberMessages?.[id];if(!m||!canSeeSupportMessage(m))return;
+ await update(ref(db,`supportMessages/${id}`),{readByAdmin:true,status:"review",readAt:Date.now(),readBy:auth.currentUser?.uid||""});
 }
 
 function renderBans(){
@@ -863,9 +883,14 @@ onAuthStateChanged(auth,async user=>{
 });
 
 document.addEventListener("click",async e=>{
- const b=e.target.closest?.("[data-support-reply]");if(!b)return;
- try{await replySupportMessage(b.dataset.supportReply)}catch(err){alert("تعذر إرسال الرد: "+(err?.message||err))}
+ const reply=e.target.closest?.("[data-support-reply]");
+ if(reply){try{await replySupportMessage(reply.dataset.supportReply)}catch(err){alert("تعذر إرسال الرد: "+(err?.message||err))}return}
+ const review=e.target.closest?.("[data-support-review]");
+ if(review){try{await markSupportReview(review.dataset.supportReview)}catch(err){alert("تعذر تحديث الرسالة: "+(err?.message||err))}return}
+ const filter=e.target.closest?.("[data-message-filter]");
+ if(filter){messageFilter=filter.dataset.messageFilter||"all";document.querySelectorAll(".messageFilter").forEach(x=>x.classList.toggle("active",x===filter));renderMemberMessages();return}
 });
+$("refreshMessages")?.addEventListener("click",()=>renderMemberMessages());
 </script>
 </body>
 </html>
