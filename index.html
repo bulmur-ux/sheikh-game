@@ -2057,7 +2057,7 @@ const AVATAR_GALLERY_CATEGORIES=[
 ];
 let selectedReadyAvatar="";
 function avatarItemsFromJson(data){
- const list=Array.isArray(data)?data:(Array.isArray(data?.files)?data.files:(Array.isArray(data?.avatars)?data.avatars:(Array.isArray(data?.items)?data.items:[])));
+ const list=Array.isArray(data)?data:(Array.isArray(data?.avatars)?data.avatars:(Array.isArray(data?.items)?data.items:[]));
  return list.map((x,i)=>{
    if(typeof x==="string")return {file:x,name:x};
    const file=x?.file||x?.filename||x?.src||x?.url||x?.path||"";
@@ -2117,7 +2117,7 @@ async function accountScreen(msg="",type=""){
  document.getElementById("accountChangeName").onclick=async()=>{const last=Number(profile.nameLastChangedAt||0),wait=30*24*60*60*1000,remain=last+wait-Date.now();if(last&&remain>0){const days=Math.ceil(remain/(24*60*60*1000));message(`يمكن تغيير الاسم بعد ${days} يوم`,'error');return}const next=(prompt("اكتب اسم المستخدم الجديد:",username)||"").trim(),norm=normalizeUsername(next);if(!next)return;if(next.length<2||norm.length<2){message("الاسم قصير","error");return}if(norm===profile.usernameNorm){message("هذا هو اسمك الحالي","error");return}let claimed=false;try{const claim=await runTransaction(ref(db,`usernames/${norm}`),cur=>cur===null?uid:undefined,{applyLocally:false});if(!claim.committed||claim.snapshot.val()!==uid)throw new Error("اسم المستخدم مستخدم مسبقاً");claimed=true;await update(ref(db,`users/${uid}`),{username:next,usernameNorm:norm,nameLastChangedAt:Date.now()});if(profile.usernameNorm)await remove(ref(db,`usernames/${profile.usernameNorm}`));myName=next;localStorage.setItem("sheikh_name",next);accountScreen("تم تغيير اسم المستخدم — التغيير القادم بعد 30 يوم","success")}catch(e){if(claimed)try{await remove(ref(db,`usernames/${norm}`))}catch{}message(e?.message||"تعذر تغيير الاسم","error")}};
  document.getElementById("accountChangeEmail").onclick=async()=>{const next=(prompt("اكتب البريد الإلكتروني الجديد:",user.email||"")||"").trim().toLowerCase();if(!next||next===String(user.email||"").toLowerCase())return;try{await verifyBeforeUpdateEmail(user,next);message("أرسلنا رابط تحقق إلى البريد الجديد. بعد تأكيده سجّل الدخول بالبريد الجديد.","success")}catch(e){message(authErrorText(e),"error")}};
  document.getElementById("accountChangePhone").onclick=async()=>{const next=prompt("رقم الهاتف (اختياري):",phone||"");if(next===null)return;const clean=next.trim();try{await update(ref(db,`users/${uid}`),{phone:clean});accountScreen("تم حفظ رقم الهاتف","success")}catch(e){message("تعذر حفظ رقم الهاتف","error")}};
- document.getElementById("chooseAvatar").onclick=()=>{const box=document.getElementById("avatarChoices");if(box.classList.contains("show"))box.classList.remove("show");else openReadyAvatarGallery()};
+ document.getElementById("chooseAvatar").onclick=()=>openReadyAvatarGallery();
  if(document.getElementById("uploadAvatar"))document.getElementById("uploadAvatar").onclick=()=>document.getElementById("avatarFile").click();
  document.getElementById("avatarCloseBtn").onclick=()=>document.getElementById("avatarChoices").classList.remove("show");
  document.getElementById("avatarUseBtn").onclick=async()=>{if(!selectedReadyAvatar)return;try{await saveAvatarUrl(selectedReadyAvatar);accountScreen("تم تغيير الصورة الشخصية","success")}catch(e){message("تعذر حفظ الصورة","error")}};
