@@ -2372,6 +2372,17 @@ async function botUseDrawnPower(botId,drawn,g){
  return false;
 }
 
+async function botCallCheck(botId,g){
+ const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
+ if(g?.ending)return false;
+ const order=Array.isArray(g?.turnOrder)?g.turnOrder:[];
+ const remaining={};for(const id of order)if(id!==botId)remaining[id]=true;
+ await update(ref(db,`rooms/${roomCode}/public/game`),{ending:true,checkCalledBy:botId,finalRemaining:remaining,decisionUntil:null,decisionUid:null,hasDrawn:null,actionLockUid:null,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} قال شيك`});
+ await sendSystem(`${r.players?.[botId]?.name||"الكمبيوتر"} قال شيك`);
+ await botAdvanceTurn(botId);
+ return true;
+}
+
 async function runComputerBotWork(){
  const snap=await get(ref(db,`rooms/${roomCode}/public`));if(!snap.exists())return;const r=snap.val()||{};if(!r.computerMatch||uid!==r.hostId)return;const g=r.game||{};
  if(g.phase==="memorize"){
@@ -2388,6 +2399,10 @@ async function runComputerBotWork(){
  if(g.decisionUid===botId){await botAdvanceTurn(botId);return}
 
  const href=ref(db,`rooms/${roomCode}/privateHands/${botId}`),hsnap=await get(href),hand=hsnap.val()||{},cards=(hand.cards||[]).slice(),discard=g.discard;
+
+ // إذا بقيت للكمبيوتر ورقة واحدة وكانت جوكر، يحسم الجولة بشيك بدل أن يعلق أو يدور بلا قرار.
+ const liveCards=cards.filter(Boolean);
+ if(!g.ending&&liveCards.length===1&&liveCards[0]?.r==="JOKER"){await botCallCheck(botId,g);return}
 
  // أولاً: نفس رتبة الميدان — يرمي المطابقات. القوة لا تتفعل من اليد.
  if(discard){
@@ -3266,7 +3281,7 @@ async function tryPlayHands(indices){
    const g=game(),pile=Array.isArray(g.discardPile)?g.discardPile.slice():[];
    pile.push(...chosen);
    await update(ref(db,`rooms/${roomCode}/public/game`),{discard:chosen[chosen.length-1],discardPile:pile,discardSeq:Number(g.discardSeq||0)+chosen.length,lastAction:`${myName} رمى ${chosen.length} ${chosen.length===1?"ورقة":"أوراق"} صحيحة`,hasDrawn:null,actionSeq:Number(g.actionSeq||0)+1});
-   sfx("correct");ccActionBurst(chosen.length>1?"ياك ياك!":"شيك شيك!");toast(chosen.length===1?"صح ✅":"كل الأوراق المحددة صحيحة ✅");
+   sfx("correct");toast(chosen.length===1?"صح ✅":"كل الأوراق المحددة صحيحة ✅");
    if(await checkEmptyAndEnd(cards))return;
    await finishTurn();return;
  }
@@ -3277,7 +3292,7 @@ async function tryPlayHands(indices){
    cards.push(penalty);
    await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cards);
    await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cards)});
-   sfx("wrong");ccActionFx("انتبه!","ورقة عقوبة","danger");setTimeout(()=>sfx("penalty"),180);
+   sfx("wrong");setTimeout(()=>sfx("penalty"),180);
    toast(`رمية غلط ❌ رجعت كل الأوراق المحددة + ورقة عقوبة`);
    await sendSystem(`${myName} رميته فيها ورقة غلط — رجعت كل الأوراق المحددة وأخذ ورقة عقوبة واحدة`);
  }else toast("الرمية غلط ورجعت كلها، لكن الرزمة خلصت");
@@ -3446,21 +3461,8 @@ async function processSwapRequest(req){if(!req||processingSwap)return;processing
  if(req.status==="returned"&&req.fromUid===uid&&myHand){const cs=(myHand.cards||[]).slice();cs[req.myIndex]=req.returned;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await set(ref(db,`rooms/${roomCode}/public/game/swapRequest`),null);await sendSystem(`${myName} استخدم قوة الولد`);await finishTurn()}
  if(req.status==="failed"&&req.fromUid===uid){toast(req.reason||"فشل التبديل");await set(ref(db,`rooms/${roomCode}/public/game/swapRequest`),null);await finishTurn()}}finally{processingSwap=false}}
 
-// ===== أكشن شيك شيك =====
-let ccActionFxTimer=null;
-function ccActionFx(main,sub="",kind="gold"){
-  let el=document.getElementById("ccActionFx");
-  if(!el){el=document.createElement("div");el.id="ccActionFx";document.body.appendChild(el)}
-  el.className=`ccActionFx ${kind}`;
-  el.innerHTML=`<div class="ccActionMain">${esc(main)}</div>${sub?`<div class="ccActionSub">${esc(sub)}</div>`:""}`;
-  clearTimeout(ccActionFxTimer);requestAnimationFrame(()=>el.classList.add("show"));
-  if(navigator.vibrate)navigator.vibrate(kind==="danger"?[45,35,70]:[35]);
-  ccActionFxTimer=setTimeout(()=>{el.classList.remove("show");setTimeout(()=>{if(!el.classList.contains("show"))el.innerHTML=""},260)},1050);
-}
-function ccActionBurst(label="شيك شيك!"){ccActionFx(label,"رمية مضبوطة","gold")}
-
-async function kabas(i){const c=myHand?.cards?.[i],d=game().discard,seq=game().discardSeq||0;if(!c||!d)return;if(myHand.lastKabasSeq===seq){toast("كبست على هالرميه قبل");return}if(!sameRank(c,d)){toast("مو نفس الورقة");await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{lastKabasSeq:seq});return}const cs=(myHand.cards||[]).slice();cs[i]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{lastKabasSeq:seq});await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cs)});await sendSystem(`${myName} كبس ${cardLabel(c)} ⚡`);ccActionFx("ياك ياك!","كبسة سريعة ⚡","blue");toast("كبسة صحيحة ⚡");if(await checkEmptyAndEnd(cs))return;}
-async function callCheck(){sfx("check");if(!isMyTurn())return;ccActionFx("شــــيـــك!","شد حيلك — آخر لَفّة","danger");const order=game().turnOrder||[],remaining={};for(const id of order)if(id!==uid)remaining[id]=true;await update(ref(db,`rooms/${roomCode}/public/game`),{ending:true,checkCalledBy:uid,finalRemaining:remaining,decisionUntil:null,decisionUid:null});await sendSystem(`${myName} قال شيك`);await advanceTurnNow(true)}
+async function kabas(i){const c=myHand?.cards?.[i],d=game().discard,seq=game().discardSeq||0;if(!c||!d)return;if(myHand.lastKabasSeq===seq){toast("كبست على هالرميه قبل");return}if(!sameRank(c,d)){toast("مو نفس الورقة");await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{lastKabasSeq:seq});return}const cs=(myHand.cards||[]).slice();cs[i]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/privateHands/${uid}`),{lastKabasSeq:seq});await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cs)});await sendSystem(`${myName} كبس ${cardLabel(c)} ⚡`);toast("كبسة صحيحة ⚡");if(await checkEmptyAndEnd(cs))return;}
+async function callCheck(){sfx("check");if(!isMyTurn())return;const order=game().turnOrder||[],remaining={};for(const id of order)if(id!==uid)remaining[id]=true;await update(ref(db,`rooms/${roomCode}/public/game`),{ending:true,checkCalledBy:uid,finalRemaining:remaining,decisionUntil:null,decisionUid:null});await sendSystem(`${myName} قال شيك`);await advanceTurnNow(true)}
 async function finishTurn(){
  const g=game();if(g.phase!=="playing"||turnUid()!==uid)return;
  // حماية نهائية: إذا وصلت اليد إلى صفر بأي مسار، تنتهي الجولة فوراً ويسجل اللاعب صفر.
@@ -3484,7 +3486,7 @@ async function advanceTurnNow(fromCheck=false){
   await update(ref(db,`rooms/${roomCode}/public/game`),{
    phase:"reveal",hasDrawn:null,actionLockUid:null,turnStartedAt:0,
    timeoutClaim:null,decisionUntil:null,decisionUid:null,lastAction:"انتهت الأدوار الأخيرة — كشف النتائج"
-  });ccActionFx("آخر لَفّة خلصت!","كشف الأوراق","gold");
+  });
   return;
  }
 
@@ -3800,77 +3802,11 @@ function renderGame(){
  if(document.getElementById("check"))document.getElementById("check").onclick=callCheck;
  if(document.getElementById("passTurn"))document.getElementById("passTurn").onclick=passAfterPlay;
  document.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>swapPendingWithSlot(+b.dataset.swap));
- setupInteractiveCardThrow();
  startTurnCountdownUi();
  if(globalIntroUntil>Date.now()){clearTimeout(pendingStartTimer);pendingStartTimer=setTimeout(()=>finishInitialPeek(String(g.roundToken||"")),Math.max(0,globalIntroUntil-Date.now()+80));const tick=()=>{const el=document.getElementById("introCount");if(el){const n=Math.max(0,Math.ceil((globalIntroUntil-Date.now())/1000));el.textContent=n;if(n>0)setTimeout(tick,250)}};tick()}
 }
 
-// ===== لمس وسحب الورقة إلى الميدان =====
-// لا يغير قوانين اللعبة: عند الإفلات يستعمل نفس tryPlayHand الحالي.
-let ccDragState=null;
-function ccPointInRect(x,y,r){return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom}
-function ccRemoveDrag(){
-  document.querySelector(".ccDragGhost")?.remove();
-  document.querySelectorAll(".ccDragging").forEach(x=>x.classList.remove("ccDragging"));
-  document.getElementById("ccDiscardDrop")?.classList.remove("dragTarget");
-  ccDragState=null;
-}
-function ccImpactAt(x,y){
-  const e=document.createElement("div");e.className="ccImpact";e.style.left=x+"px";e.style.top=y+"px";
-  document.body.appendChild(e);setTimeout(()=>e.remove(),480);
-}
-function ccAnimateThrow(fromEl,targetEl,done){
-  const a=fromEl.getBoundingClientRect(),b=targetEl.getBoundingClientRect();
-  const fx=document.createElement("div");fx.className="ccThrowFx";
-  const visual=fromEl.querySelector(".cardFace,.cardBack");
-  if(visual)fx.innerHTML=visual.outerHTML;
-  fx.style.left=(a.left+a.width/2-37)+"px";fx.style.top=(a.top+a.height/2-52)+"px";
-  fx.style.transform="rotate(-7deg) scale(1.04)";
-  document.body.appendChild(fx);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    fx.style.left=(b.left+b.width/2-37)+"px";fx.style.top=(b.top+b.height/2-52)+"px";
-    fx.style.transform=`rotate(${Math.random()>.5?8:-8}deg) scale(.92)`;
-  }));
-  setTimeout(()=>{ccImpactAt(b.left+b.width/2,b.top+b.height/2);fx.style.opacity="0";setTimeout(()=>fx.remove(),180);done?.()},285);
-}
-function setupInteractiveCardThrow(){
-  const drop=document.getElementById("ccDiscardDrop");
-  if(!drop||!isMyTurn()||game()?.phase!=="playing"||myHand?.pending||turnActionLocked())return;
-  document.querySelectorAll('.hand .slot[data-cc-slot]').forEach(slot=>{
-    const visual=slot.querySelector(".cardFace,.cardBack");if(!visual)return;
-    slot.classList.add("ccDraggable");
-    visual.onpointerdown=e=>{
-      if(e.pointerType==="mouse"&&e.button!==0)return;
-      if(!isMyTurn()||myHand?.pending||turnActionLocked())return;
-      const i=Number(slot.dataset.ccSlot),card=myHand?.cards?.[i];if(!card)return;
-      e.preventDefault();e.stopPropagation();
-      const ghost=document.createElement("div");ghost.className="ccDragGhost";ghost.innerHTML=visual.outerHTML;
-      ghost.style.left=e.clientX+"px";ghost.style.top=e.clientY+"px";document.body.appendChild(ghost);
-      slot.classList.add("ccDragging");
-      ccDragState={i,slot,visual,ghost,pid:e.pointerId,over:false};
-      const move=ev=>{
-        if(!ccDragState||ev.pointerId!==ccDragState.pid)return;ev.preventDefault();
-        ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
-        const over=ccPointInRect(ev.clientX,ev.clientY,drop.getBoundingClientRect());
-        ccDragState.over=over;drop.classList.toggle("dragTarget",over);
-        ghost.style.transform=`translate(-50%,-58%) rotate(${Math.max(-12,Math.min(12,(ev.clientX-innerWidth/2)/35))}deg) scale(${over?1.18:1.08})`;
-      };
-      const cleanup=()=>{document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",end);document.removeEventListener("pointercancel",cancel)};
-      const end=ev=>{
-        if(!ccDragState||ev.pointerId!==ccDragState.pid)return;ev.preventDefault();
-        const st=ccDragState,over=st.over;cleanup();ccRemoveDrag();
-        if(over)ccAnimateThrow(st.slot,drop,()=>tryPlayHand(st.i));
-        else st.slot.animate([{transform:"translateY(-8px)"},{transform:"translateY(0)"}],{duration:180,easing:"ease-out"});
-      };
-      const cancel=()=>{cleanup();ccRemoveDrag()};
-      document.addEventListener("pointermove",move,{passive:false});
-      document.addEventListener("pointerup",end,{passive:false});
-      document.addEventListener("pointercancel",cancel,{passive:false});
-    };
-  });
-}
-
-function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);const g=game()||{};const memorizeReveal=g.phase==="memorize"&&!!myHand&&Number(g.memorizeUntil||0)>Date.now();return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><span class="slotNum">${i+1}</span><div class="emptyCardSlot">✓ فارغة</div></div>`;const reveal=(memorizeReveal&&i<2)||((localRevealUntil[i]||0)>Date.now());return `<div class="slot" data-cc-slot="${i}"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
+function renderHandSlots(){const cards=myHand?.cards||[null,null,null,null],pending=!!myHand?.pending;const n=Math.max(4,cards.length);const g=game()||{};const memorizeReveal=g.phase==="memorize"&&!!myHand&&Number(g.memorizeUntil||0)>Date.now();return Array.from({length:n},(_,i)=>{const c=cards[i];if(!c)return `<div class="slot empty"><span class="slotNum">${i+1}</span><div class="emptyCardSlot">✓ فارغة</div></div>`;const reveal=(memorizeReveal&&i<2)||((localRevealUntil[i]||0)>Date.now());return `<div class="slot"><span class="slotNum">${i+1}</span>${reveal?`<div class="cardFace ${cardClass(c)}">${cardFaceHtml(c)}</div>`:`<div class="cardBack" aria-label="الورقة ${i+1}"></div>`}${pending&&isMyTurn()?`<button class="btn alt" data-swap="${i}">بدّل بهذي</button>`:""}</div>`}).join("")}
 function renderResults(){
  const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),totals=g.cumulativeScores||{},limit=scoreLimit(g),eligibleIds=Object.keys(currentRoom.players||{}).filter(id=>Number(totals[id]||0)<limit),fixedDone=Number(g.totalRounds||0)>0&&Number(g.roundNo||1)>=Number(g.totalRounds||0),final=fixedDone||eligibleIds.length<2,totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));
  const lowestTotal=totalArr.length?Number(totalArr[0][1]):null,leaders=totalArr.filter(([,v])=>Number(v)===lowestTotal).map(([id])=>id);
@@ -4084,53 +4020,6 @@ let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress
 }
 
 /* ===== Check Check Interactive Cards v1 ===== */
-.refTable{position:relative}
-.refCenterPiles{position:relative}
-.refCenterPiles .refPile:last-child{position:relative;transition:filter .16s ease,transform .16s ease}
-.refCenterPiles .refPile:last-child.dragTarget{
-  filter:drop-shadow(0 0 16px rgba(255,255,255,.85));
-  transform:scale(1.06);
-}
-.hand .slot .cardFace,.hand .slot .cardBack{
-  touch-action:none;
-  -webkit-user-select:none;user-select:none;
-  transition:transform .16s ease,filter .16s ease;
-}
-.hand .slot.ccDraggable .cardFace,.hand .slot.ccDraggable .cardBack{cursor:grab}
-.hand .slot.ccDragging{opacity:.28}
-.ccDragGhost{
-  position:fixed;left:0;top:0;z-index:99999;pointer-events:none;
-  width:74px;height:104px;transform:translate(-50%,-58%) rotate(-5deg) scale(1.08);
-  filter:drop-shadow(0 14px 16px rgba(0,0,0,.45));
-  transition:transform .08s linear;
-}
-.ccDragGhost .cardFace,.ccDragGhost .cardBack{width:100%!important;height:100%!important}
-.ccThrowFx{
-  position:fixed;z-index:99998;pointer-events:none;width:74px;height:104px;
-  transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),
-             transform .28s cubic-bezier(.2,.8,.2,1),opacity .32s ease;
-  filter:drop-shadow(0 12px 14px rgba(0,0,0,.42));
-}
-.ccImpact{
-  position:fixed;z-index:99997;width:18px;height:18px;border:3px solid rgba(255,255,255,.92);
-  border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);
-  animation:ccImpact .42s ease-out forwards;
-}
-@keyframes ccImpact{from{opacity:1;width:18px;height:18px}to{opacity:0;width:115px;height:115px}}
-@media (max-width:600px){.ccDragGhost,.ccThrowFx{width:66px;height:94px}}
-
-/* ===== Check Check Arcade Action FX v2 ===== */
-.ccActionFx{position:fixed;inset:0;z-index:100500;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transform:scale(.55) rotate(-5deg);transition:opacity .16s ease,transform .24s cubic-bezier(.2,1.35,.35,1);text-align:center;padding:20px}
-.ccActionFx.show{opacity:1;transform:scale(1) rotate(0)}
-.ccActionMain{font-size:clamp(42px,11vw,86px);font-weight:1000;line-height:1;color:#ffe59a;text-shadow:0 4px 0 #6d2633,0 8px 22px #000,0 0 28px rgba(255,207,73,.85);letter-spacing:1px}
-.ccActionSub{margin-top:12px;padding:8px 18px;border:2px solid rgba(255,222,132,.85);border-radius:999px;background:rgba(30,8,8,.78);color:#fff4cf;font-size:clamp(17px,4.8vw,28px);font-weight:950;box-shadow:0 8px 28px #0008}
-.ccActionFx.danger .ccActionMain{color:#fff;text-shadow:0 4px 0 #8b0e25,0 8px 22px #000,0 0 32px #ff244d}
-.ccActionFx.blue .ccActionMain{color:#fff;text-shadow:0 4px 0 #174f91,0 8px 22px #000,0 0 32px #42b8ff}
-.ccActionFx.show:before,.ccActionFx.show:after{content:"";position:absolute;width:28vmin;height:28vmin;border:5px solid rgba(255,221,113,.8);border-radius:50%;animation:ccShock .65s ease-out forwards}
-.ccActionFx.show:after{animation-delay:.08s}
-@keyframes ccShock{from{transform:scale(.25);opacity:1}to{transform:scale(2.8);opacity:0}}
-#ccDiscardDrop.dragTarget{animation:ccDropPulse .55s ease-in-out infinite alternate}
-@keyframes ccDropPulse{from{filter:drop-shadow(0 0 10px rgba(255,224,112,.65));transform:scale(1.03)}to{filter:drop-shadow(0 0 28px rgba(255,245,190,1));transform:scale(1.09)}}
 </style>
 
 </body>
