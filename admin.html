@@ -278,6 +278,7 @@ let currentAdmin=null,currentRooms={},currentBans={},currentUsers={},currentAdmi
 let monitorVoice=null,monitorVoiceCode="",monitorVoiceStealth=true,monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};
 let monitorFilter="all",activeMonitorCode="";
 let currentMemberMessages={};
+let currentRegisteredCount=null;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]))}
 function msg(text,type='err'){const el=$('loginMsg');el.className='msg '+type;el.textContent=text}
@@ -377,7 +378,7 @@ function renderStats(){
     if(livePlayers.size>=2)games++;
   });
 
-  $('membersCount').textContent=Object.keys(currentUsers||{}).length;
+  $('membersCount').textContent=String(currentRegisteredCount===null?Object.keys(currentUsers||{}).length:currentRegisteredCount);
   $('onlineCount').textContent=onlineUids.size;
   $('roomsCount').textContent=rooms.length;
   $('inRoomsCount').textContent=inRoomUids.size;
@@ -698,7 +699,8 @@ function subscribeAll(){
   }else{$('roomsList').innerHTML='<div class="empty">ما عندك صلاحية إدارة الغرف.</div>'}
   stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans();if(isSuper()||hasPerm('manageMembers'))renderMembers()},()=>{}));
   if(hasPerm('viewLogs'))stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>{currentLogs=s.val()||{};renderLogs(currentLogs)},()=>{}));else $('logsList').innerHTML='<div class="empty">ما عندك صلاحية مشاهدة السجل.</div>';
-  stops.push(onValue(ref(db,'supportMessages'),s=>{currentMemberMessages=s.val()||{};renderMemberMessages()},()=>{currentMemberMessages={};renderMemberMessages()}));
+  stops.push(onValue(ref(db,'supportMessages'),s=>{const raw=s.val()||{},flat={};for(const [memberUid,msgs] of Object.entries(raw)){for(const [messageId,m] of Object.entries(msgs||{})){if(m&&typeof m==='object')flat[`${memberUid}/${messageId}`]={...m,uid:m.uid||memberUid}}}currentMemberMessages=flat;renderMemberMessages()},()=>{currentMemberMessages={};renderMemberMessages()}));
+  stops.push(onValue(ref(db,'usernames'),s=>{currentRegisteredCount=Object.keys(s.val()||{}).length;renderStats()},()=>{currentRegisteredCount=null;renderStats()}));
   // users يغذي عداد اللاعبين المسجلين لحظيًا.
   stops.push(onValue(ref(db,'users'),s=>{
     currentUsers=s.val()||{};renderStats();

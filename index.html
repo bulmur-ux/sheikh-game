@@ -2318,7 +2318,7 @@ function bindHomeStats(){
   for(const [userId,sessions] of Object.entries(all)){let hasSession=false,isActive=false;for(const x of Object.values(sessions||{})){if(!x)continue;hasSession=true;if(x.state==="room"||x.state==="game")isActive=true}if(hasSession)visitors++;if(isActive)activeUsers.add(userId)}
   visitorEl.textContent=String(visitors);activeEl.textContent=String(activeUsers.size);
  },()=>{visitorEl.textContent="—";activeEl.textContent="—"}));
- unsubHomeStats.push(onValue(ref(db,"users"),snap=>{memberEl.textContent=String(Object.keys(snap.val()||{}).length)},()=>{memberEl.textContent="—"}));
+ unsubHomeStats.push(onValue(ref(db,"usernames"),snap=>{memberEl.textContent=String(Object.keys(snap.val()||{}).length)},()=>{memberEl.textContent="—"}));
 }
 
 const FALLBACK_FUN_SOUNDS={
@@ -2615,15 +2615,15 @@ async function sendSupportMessage(){
  b.onclick=async()=>{
   const message=String(document.getElementById("supportText")?.value||"").trim().slice(0,500);
   if(!message){toast("اكتب الرسالة أولاً");return}
-  try{const p=push(ref(db,"supportMessages"));await set(p,{uid:auth.currentUser.uid,name:profile.username||myName||"عضو",memberNo:profile.memberNo||"",message,createdAt:Date.now(),readByAdmin:false,reply:""});closeModal();toast("تم إرسال الرسالة للإدارة ✅")}
+  try{const p=push(ref(db,`supportMessages/${auth.currentUser.uid}`));await set(p,{uid:auth.currentUser.uid,name:profile.username||myName||"عضو",memberNo:profile.memberNo||profile.memberNumber||"",message,createdAt:Date.now(),readByAdmin:false,reply:""});closeModal();toast("تم إرسال الرسالة للإدارة ✅")}
   catch(e){toast("تعذر إرسال الرسالة — نراجع صلاحيات قاعدة البيانات")}
  };
 }
 async function showSupportMessages(){
  if(!auth.currentUser||auth.currentUser.isAnonymous)return;
  try{
-  const s=await get(ref(db,"supportMessages")),all=s.val()||{};
-  const rows=Object.values(all).filter(m=>m?.uid===auth.currentUser.uid).sort((x,y)=>(Number(y?.createdAt)||0)-(Number(x?.createdAt)||0));
+  const s=await get(ref(db,`supportMessages/${auth.currentUser.uid}`)),all=s.val()||{};
+  const rows=Object.values(all).sort((x,y)=>(Number(y?.createdAt)||0)-(Number(x?.createdAt)||0));
   openModal(`<h3>📬 رسائلي مع الإدارة</h3>${rows.length?rows.map(m=>`<div style="padding:12px;margin:8px 0;border:1px solid #b68a38;border-radius:14px"><div>${esc(m.message||"")}</div>${m.reply?`<div style="margin-top:9px;padding:9px;border-radius:10px;background:#1e6b4b33"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:`<small>بانتظار رد الإدارة</small>`}</div>`).join(""):"<p>لا توجد رسائل حتى الآن.</p>"}`);
  }catch(e){toast("تعذر تحميل الرسائل")}
 }
