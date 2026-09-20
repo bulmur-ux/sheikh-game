@@ -2617,17 +2617,19 @@ async function sendSupportMessage(){
   ["memberModerator","👥 مشرف الأعضاء"],
   ["complaintsModerator","⚠️ مشرف الشكاوى والمخالفات"]
  ];
- openModal(`<h3>✉️ مراسلة الإدارة</h3>
-  <label style="display:block;margin:10px 0 6px;font-weight:900">إرسال إلى</label>
-  <select id="supportTarget" style="width:100%;box-sizing:border-box;border:1px solid #b68a38;border-radius:14px;padding:12px;font:inherit;background:#fff">
-   ${destinations.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}
+ openModal(`<div style="color:#2b211b!important">
+  <h3 style="color:#6d2633!important;font-size:24px;margin:0 0 16px">✉️ مراسلة الإدارة</h3>
+  <label style="display:block;margin:10px 0 7px;font-weight:900;color:#5b452f!important;font-size:16px">إرسال إلى</label>
+  <select id="supportTarget" style="width:100%;box-sizing:border-box;border:2px solid #c99b35;border-radius:14px;padding:13px;font:inherit;background:#fff!important;color:#1f1814!important;font-weight:800">
+   ${destinations.map(([v,l])=>`<option value="${v}" style="color:#1f1814;background:#fff">${l}</option>`).join("")}
   </select>
-  <label style="display:block;margin:12px 0 6px;font-weight:900">محتوى الرسالة</label>
-  <textarea id="supportText" maxlength="500" placeholder="اكتب رسالتك هنا..." style="width:100%;min-height:145px;box-sizing:border-box;border:1px solid #b68a38;border-radius:14px;padding:12px;font:inherit"></textarea>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-   <button id="supportSendBtn" class="btn">📨 إرسال الرسالة</button>
-   <button id="supportBackBtn" class="btn alt">↩️ رجوع</button>
-  </div>`);
+  <label style="display:block;margin:15px 0 7px;font-weight:900;color:#5b452f!important;font-size:16px">محتوى الرسالة</label>
+  <textarea id="supportText" maxlength="500" placeholder="اكتب رسالتك هنا..." style="width:100%;min-height:150px;box-sizing:border-box;border:2px solid #c99b35;border-radius:14px;padding:13px;font:inherit;background:#fff!important;color:#1f1814!important;caret-color:#1f1814;opacity:1"></textarea>
+  <div style="display:grid;grid-template-columns:1.25fr .9fr;gap:10px;margin-top:14px">
+   <button id="supportSendBtn" class="btn" style="background:#d9a62f!important;color:#21170b!important;font-size:17px;min-height:54px">📨 إرسال الرسالة</button>
+   <button id="supportBackBtn" class="btn alt" style="background:#fff!important;color:#2b211b!important;border:2px solid #d7c5a5!important;font-size:17px;min-height:54px">↩️ رجوع</button>
+  </div>
+ </div>`);
  const back=document.getElementById("supportBackBtn");if(back)back.onclick=closeModal;
  const b=document.getElementById("supportSendBtn");if(!b)return;
  b.onclick=async()=>{
