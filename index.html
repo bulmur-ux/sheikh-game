@@ -2860,7 +2860,7 @@ async function startRandomComputer(){
  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code).catch(()=>{});subscribe(code);ensureComputerBotHeartbeat();
 }
 let botWorkTimer=0,botWorkKey="";
-let botLastRunAt=0;
+let botLastRunAt=0,botWorkInFlight=false;
 function scheduleComputerBotWork(r=currentRoom){
  if(!r?.computerMatch||uid!==r.hostId||r.status!=="game")return;
  const g=r.game||{},turn=(g.turnOrder||[])[Number(g.turnIndex||0)]||"";
@@ -2870,11 +2870,15 @@ function scheduleComputerBotWork(r=currentRoom){
  if(key===botWorkKey && now-botLastRunAt<2000)return;
  botWorkKey=key;botLastRunAt=now;clearTimeout(botWorkTimer);
  botWorkTimer=setTimeout(async()=>{
+   if(botWorkInFlight)return;
+   botWorkInFlight=true;
    try{await runComputerBotWork()}
    catch(e){
      console.warn("bot work",e);
      botWorkKey="";
      setTimeout(()=>scheduleComputerBotWork(currentRoom),450);
+   }finally{
+     botWorkInFlight=false;
    }
  },650+Math.floor(Math.random()*450));
 }
@@ -2893,12 +2897,13 @@ function ensureComputerBotHeartbeat(){
        // وإذا تجاوز 12 ثانية، مرّر الدور حتى لا تتجمد المباراة عند 00:00.
        if(isComputerBot(botId)&&g.phase==="playing"&&started>0){
          const age=Date.now()-started;
-         if(age>12000){
+         // لا نمرر الدور بالقوة والكمبيوتر ما زال ينفذ سحب/تبديل؛ هذا كان يسبب تعليقاً وتضارباً.
+         if(age>8000&&!botWorkInFlight)botWorkKey="";
+         if(age>18000&&!botWorkInFlight){
            botWorkKey="";
-           botAdvanceTurn(botId).catch(e=>console.warn("bot watchdog advance",e));
+           scheduleComputerBotWork(currentRoom);
            return;
          }
-         if(age>8000)botWorkKey="";
        }
        scheduleComputerBotWork(currentRoom);
      }
@@ -3099,9 +3104,9 @@ async function runComputerBotWork(){
   const old=cards[worst];cards[worst]=drawn;
   await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);
   await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});
-  await botPutDiscard(old,`${r.players?.[botId]?.name||"الكمبيوتر"} بدّل ورقة`);
+  await botPutDiscard(old,`${r.players?.[botId]?.name||"الكمبيوتر"} سحب ورقة واحتفظ بها وبدّل ورقة من يده`);
  }else{
-  await botPutDiscard(drawn,`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ورقة`);
+  await botPutDiscard(drawn,`${r.players?.[botId]?.name||"الكمبيوتر"} سحب ورقة ولم يحتفظ بها ورماها للميدان`);
  }
  await botAdvanceTurn(botId);
 }
@@ -4291,6 +4296,21 @@ async function maybeFinishReveal(){
   const rev=revealSnap.val()||{},players=playersSnap.val()||{};
   const order=(Array.isArray(g.turnOrder)?g.turnOrder:[]).filter(id=>players?.[id]?.role!=="spectator");
   if(!order.length)return;
+
+  // مباراة الكمبيوتر يديرها المضيف: لا ننتظر كشفاً قد لا يصل من BOT أو من جهاز المضيف بعد تبدل الحالة.
+  if(currentRoom?.computerMatch && uid===currentRoom.hostId){
+   const missingNow=order.filter(id=>!rev[id]);
+   for(const id of missingNow){
+    if(id!==uid&&!isComputerBot(id))continue;
+    const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
+    const cards=Array.isArray(hs.cards)?hs.cards:[];
+    if(!cards.length)continue;
+    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
+    await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),payload);
+    rev[id]=payload;
+   }
+  }
+
   const missing=order.filter(id=>!rev[id]);
   if(missing.length)return;
   const scores={},totals={...(g.cumulativeScores||{})};
