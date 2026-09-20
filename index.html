@@ -2651,12 +2651,12 @@ async function showSupportMessages(){
   const s=await get(ref(db,`supportMessages/${auth.currentUser.uid}`)),all=s.val()||{};
   const rows=Object.values(all).sort((x,y)=>(Number(y?.createdAt)||0)-(Number(x?.createdAt)||0));
   const statusText=m=>m.reply?"🟢 تم الرد":(m.readByAdmin?"🟡 قيد المراجعة":"🔴 جديدة");
-  openModal(`<h3>📬 رسائلي مع الإدارة</h3>${rows.length?rows.map(m=>`<div style="padding:12px;margin:8px 0;border:1px solid #b68a38;border-radius:14px">
-   <div style="font-size:12px;color:#7d6748;margin-bottom:6px"><b>إلى:</b> ${esc(m.targetLabel||"الإدارة")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div>
-   <div style="white-space:pre-wrap">${esc(m.message||"")}</div>
-   <div style="margin-top:8px;font-size:12px"><b>الحالة:</b> ${statusText(m)}</div>
-   ${m.reply?`<div style="margin-top:9px;padding:9px;border-radius:10px;background:#1e6b4b33"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:`<small style="display:block;margin-top:7px">بانتظار رد الإدارة</small>`}
-  </div>`).join(""):"<p>لا توجد رسائل حتى الآن.</p>"}<button id="supportMessagesBack" class="btn alt" style="margin-top:8px;width:100%">↩️ رجوع</button>`);
+  openModal(`<div style="color:#2b211b!important"><h3 style="color:#3a2819!important;font-weight:950;text-align:center">📬 رسائلي مع الإدارة</h3>${rows.length?rows.map(m=>`<div style="padding:14px;margin:10px 0;border:2px solid #c79a3b;border-radius:16px;background:#fffaf0;color:#2b211b!important;box-shadow:0 2px 8px rgba(40,29,23,.06)">
+   <div style="font-size:13px;color:#5b4633!important;margin-bottom:9px;font-weight:750"><b style="color:#352519!important">إلى:</b> ${esc(m.targetLabel||"الإدارة")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div>
+   <div style="white-space:pre-wrap;color:#201812!important;font-size:16px;font-weight:800;line-height:1.8">${esc(m.message||"")}</div>
+   <div style="margin-top:10px;font-size:13px;color:#403225!important"><b style="color:#352519!important">الحالة:</b> <span style="font-weight:900">${statusText(m)}</span></div>
+   ${m.reply?`<div style="margin-top:11px;padding:12px;border-radius:12px;background:#e4f1e8!important;border:1px solid #9cc6aa;color:#173c28!important;font-size:15px;line-height:1.7"><b style="color:#14532d!important">🛡️ رد الإدارة:</b><br><span style="color:#17251c!important;font-weight:800">${esc(m.reply)}</span></div>`:`<small style="display:block;margin-top:9px;color:#6b5843!important;font-weight:750">بانتظار رد الإدارة</small>`}
+  </div>`).join(""):"<p style="color:#3a2819!important;text-align:center;font-weight:800">لا توجد رسائل حتى الآن.</p>"}<button id="supportMessagesBack" class="btn alt" style="margin-top:10px;width:100%;background:#fff!important;color:#21170b!important;border:2px solid #d7c5a5!important;font-size:17px">↩️ رجوع</button></div>`);
   const back=document.getElementById("supportMessagesBack");if(back)back.onclick=closeModal;
  }catch(e){toast("تعذر تحميل الرسائل")}
 }
@@ -4765,6 +4765,99 @@ r.style.setProperty('--vvh',h+'px');r.style.setProperty('--vvw',w+'px');r.style.
 s();addEventListener('resize',s,{passive:true});addEventListener('orientationchange',()=>setTimeout(s,120),{passive:true});
 if(window.visualViewport){visualViewport.addEventListener('resize',s,{passive:true});visualViewport.addEventListener('scroll',s,{passive:true});}})();
 </script>
+
+<style id="final-card-layout-fix-20260920">
+/* ===== ترتيب الأوراق النهائي: وضوح الطولي + منع التداخل بالعرض ===== */
+
+/* أوراق الخصوم: مروحة واضحة، يظهر جزء مستقل من كل ورقة */
+.refSeatCards{
+  display:flex!important;
+  justify-content:center!important;
+  align-items:flex-end!important;
+  width:92px!important;
+  height:38px!important;
+  overflow:visible!important;
+  direction:ltr!important;
+}
+.refSeatCards .cardBack{
+  flex:0 0 auto!important;
+  width:25px!important;
+  height:36px!important;
+  margin:0 -3px!important;
+  border-radius:4px!important;
+  box-shadow:0 2px 5px #0009!important;
+}
+
+/* الهاتف بالطول */
+@media (max-width:699px) and (orientation:portrait){
+  .refTable{min-height:650px!important;}
+  .refSeat{min-width:108px!important;}
+  .refSeatCards{width:104px!important;height:43px!important;}
+  .refSeatCards .cardBack{width:29px!important;height:41px!important;margin:0 -3px!important;}
+
+  /* اليد: أربع أوراق متساوية بدون تداخل */
+  .refHandWrap{padding:10px 6px 12px!important;overflow:visible!important;}
+  .refHandWrap .hand{
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:7px!important;
+    width:100%!important;
+    overflow:visible!important;
+    align-items:end!important;
+  }
+  .refHandWrap .slot{
+    width:100%!important;min-width:0!important;min-height:0!important;margin:0!important;
+  }
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{
+    width:100%!important;height:auto!important;aspect-ratio:0.70!important;
+    max-width:86px!important;margin:0 auto!important;
+  }
+  .refHandWrap .slot button{
+    position:relative!important;left:auto!important;bottom:auto!important;
+    width:100%!important;margin-top:5px!important;font-size:10px!important;padding:6px 2px!important;
+  }
+}
+
+/* الهاتف بالعرض: اليد كاملة داخل العمود الأوسط */
+@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
+  .refBottom{
+    grid-template-columns:88px minmax(220px,1fr) 142px!important;
+    gap:5px!important;
+  }
+  .refHandWrap{min-width:0!important;overflow:hidden!important;padding:0 2px 4px!important;}
+  .refHandWrap .hand{
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:4px!important;
+    width:100%!important;
+    overflow:visible!important;
+    align-items:end!important;
+  }
+  .refHandWrap .slot{
+    width:100%!important;min-width:0!important;min-height:86px!important;margin:0!important;
+  }
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{
+    width:100%!important;height:auto!important;aspect-ratio:0.70!important;
+    max-width:54px!important;margin:0 auto!important;
+  }
+  .refHandWrap .slotNum{top:-10px!important;}
+  .refHandWrap .slot button{
+    position:relative!important;left:auto!important;bottom:auto!important;
+    width:100%!important;margin-top:2px!important;padding:3px 1px!important;font-size:7px!important;
+    white-space:nowrap!important;
+  }
+  .refSeatCards{width:82px!important;height:34px!important;}
+  .refSeatCards .cardBack{width:23px!important;height:33px!important;margin:0 -3px!important;}
+}
+
+/* الشاشات القصيرة جداً بالعرض */
+@media (orientation:landscape) and (min-width:650px) and (max-height:400px){
+  .refBottom{grid-template-columns:76px minmax(200px,1fr) 125px!important;}
+  .refHandWrap .slot{min-height:76px!important;}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{max-width:47px!important;}
+  .refHandWrap .slot button{font-size:6.5px!important;padding:2px 0!important;}
+}
+</style>
 
 </body>
 </html>
