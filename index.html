@@ -2313,12 +2313,24 @@ function bindHomeStats(){
  stopHomeStats();
  const visitorEl=document.getElementById("statVisitors"),memberEl=document.getElementById("statMembers"),activeEl=document.getElementById("statActive");
  if(!visitorEl||!memberEl||!activeEl)return;
- unsubHomeStats.push(onValue(ref(db,"presence"),snap=>{
-  const all=snap.val()||{};let visitors=0,activeUsers=new Set();
-  for(const [userId,sessions] of Object.entries(all)){let hasSession=false,isActive=false;for(const x of Object.values(sessions||{})){if(!x)continue;hasSession=true;if(x.state==="room"||x.state==="game")isActive=true}if(hasSession)visitors++;if(isActive)activeUsers.add(userId)}
-  visitorEl.textContent=String(visitors);activeEl.textContent=String(activeUsers.size);
- },()=>{visitorEl.textContent="—";activeEl.textContent="—"}));
- unsubHomeStats.push(onValue(ref(db,"system/memberCounter"),snap=>{const n=Number(snap.val());memberEl.textContent=Number.isFinite(n)&&n>=1001?String(n-1000):"—"},()=>{memberEl.textContent="—"}));
+ let homePresence={},homeRooms={};
+ const paint=()=>{
+  const roomCodes=new Set(Object.keys(homeRooms||{}).map(x=>String(x).trim().toUpperCase()));
+  let online=new Set(),active=new Set();
+  for(const [userId,sessions] of Object.entries(homePresence||{})){
+   for(const x of Object.values(sessions||{})){
+    if(!x||!["home","room","game"].includes(String(x.state||"")))continue;
+    online.add(userId);
+    const rc=String(x.room||"").trim().toUpperCase();
+    if((x.state==="room"||x.state==="game")&&rc&&roomCodes.has(rc))active.add(userId);
+   }
+  }
+  visitorEl.textContent=String(online.size);
+  activeEl.textContent=String(active.size);
+ };
+ unsubHomeStats.push(onValue(ref(db,"presence"),snap=>{homePresence=snap.val()||{};paint()},()=>{visitorEl.textContent="—";activeEl.textContent="—"}));
+ unsubHomeStats.push(onValue(ref(db,"rooms"),snap=>{homeRooms=snap.val()||{};paint()}));
+ unsubHomeStats.push(onValue(ref(db,"users"),snap=>{memberEl.textContent=String(Object.keys(snap.val()||{}).length)},()=>{memberEl.textContent="—"}));
 }
 
 const FALLBACK_FUN_SOUNDS={
@@ -3218,7 +3230,47 @@ async function maybeAutoStartRandomRoom(r){
  try{const totals={};for(const id of order)totals[id]=0;await beginRound(order,1,0,totals,{ruleMode:Number(r.ruleMode||1),scoreLimit:120});await sendSystem(`🎲 اكتملت غرفة النظام — بدأت المباراة • القانون ${Number(r.ruleMode||1)} • حد الخروج 120`);return true}catch(e){await remove(ref(db,`rooms/${roomCode}/public/randomStarting`)).catch(()=>{});throw e}
 }
 
-async function home(msg=""){
+async 
+async function sendMessageToAdmin(){
+ if(!auth.currentUser||auth.currentUser.isAnonymous){toast("سجل الدخول أولاً");return}
+ let profile={};
+ try{const s=await get(ref(db,`users/${auth.currentUser.uid}`));profile=s.val()||{}}catch{}
+ openModal(`
+  <div style="padding:8px 2px">
+   <h3 style="margin:0 0 12px;color:#f2c54a">✉️ مراسلة الإدارة</h3>
+   <textarea id="supportMessageText" maxlength="500" placeholder="اكتب رسالتك للإدارة..." style="width:100%;min-height:150px;resize:vertical;border-radius:14px;border:1px solid #9d742d;padding:12px;font:inherit"></textarea>
+   <button id="supportMessageSend" class="btn" style="margin-top:10px">إرسال الرسالة</button>
+  </div>`);
+ requestAnimationFrame(()=>{
+  document.getElementById("supportMessageSend")?.addEventListener("click",async()=>{
+   const text=String(document.getElementById("supportMessageText")?.value||"").trim().slice(0,500);
+   if(!text){toast("اكتب الرسالة أولاً");return}
+   try{
+    await set(push(ref(db,"supportMessages")),{
+     uid:auth.currentUser.uid,
+     name:profile.username||myName||"عضو",
+     memberNo:profile.memberNo||"",
+     message:text,
+     createdAt:Date.now(),
+     readByAdmin:false,
+     reply:""
+    });
+    closeModal();toast("تم إرسال رسالتك للإدارة ✅");
+   }catch(e){toast("تعذر إرسال الرسالة — تحقق من صلاحيات قاعدة البيانات")}
+  },{once:true});
+ });
+}
+async function showMyAdminMessages(){
+ if(!auth.currentUser||auth.currentUser.isAnonymous)return;
+ try{
+  const s=await get(ref(db,"supportMessages")),all=s.val()||{};
+  const mine=Object.entries(all).filter(([,m])=>m?.uid===auth.currentUser.uid).sort((a,b)=>(Number(b[1]?.createdAt)||0)-(Number(a[1]?.createdAt)||0));
+  const body=mine.length?mine.map(([,m])=>`<div style="text-align:right;padding:12px;margin:8px 0;border:1px solid #9d742d;border-radius:14px;background:#160d09"><div style="font-size:12px;color:#d7c5ac">${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div><div style="margin-top:6px;line-height:1.8">${esc(m.message||"")}</div>${m.reply?`<div style="margin-top:9px;padding:10px;border-radius:10px;background:#1f654844;color:#dfffee"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:`<div style="margin-top:8px;color:#d7c5ac;font-size:12px">بانتظار رد الإدارة</div>`}</div>`).join(""):'<div style="padding:20px;text-align:center">لا توجد رسائل حتى الآن</div>';
+  openModal(`<h3 style="margin-top:0;color:#f2c54a">📬 رسائلي مع الإدارة</h3>${body}`);
+ }catch(e){toast("تعذر تحميل الرسائل")}
+}
+
+function home(msg=""){
  cleanupSubs(); currentRoom=null;myHand=null;
  if(!auth.currentUser||auth.currentUser.isAnonymous){authScreen("login",msg);return}
  let profile={};try{const ps=await get(ref(db,`users/${auth.currentUser.uid}`));if(ps.exists())profile=ps.val()||{}}catch{}
@@ -3230,7 +3282,7 @@ async function home(msg=""){
 <header class="premiumHero">
  <div class="premiumProfile"><img src="${esc(avatar)}" alt="الصورة الشخصية"><div><b>${esc(myName)}</b><span>🇦🇪 رقم العضوية: ${esc(String(memberNo))}</span>${(()=>{const r=rankForXp(profile.xp||0);return `<em><img src="${r.icon}" alt="">${r.name} • ${Number(profile.xp||0)} XP</em>`})()}</div></div>
  <div class="premiumBrand"><strong>شيك شيك</strong><b>CHECK CHECK</b><small>الشيك • السكور • لعبة المجلس أونلاين</small></div>
- <nav class="premiumNav">${myAdmin?`<button id="adminPanelBtn">⚙️<span>الإدارة</span></button>`:""}<button id="accountBtn">👤<span>حسابي</span></button><button id="homeRulesBtn">📖<span>القواعد</span></button><button id="homeStatsJump">🏆<span>إحصائياتي</span></button><button id="logoutBtn" class="logout">↪️<span>خروج</span></button></nav>
+ <nav class="premiumNav">${myAdmin?`<button id="adminPanelBtn">⚙️<span>الإدارة</span></button>`:""}<button id="accountBtn">👤<span>حسابي</span></button><button id="contactAdminBtn">✉️<span>الإدارة</span></button><button id="myMessagesBtn">📬<span>رسائلي</span></button><button id="homeRulesBtn">📖<span>القواعد</span></button><button id="homeStatsJump">🏆<span>إحصائياتي</span></button><button id="logoutBtn" class="logout">↪️<span>خروج</span></button></nav>
 </header>
 <section class="premiumStatsStrip"><div><span>الزوار الآن</span><b id="statVisitors">—</b></div><div><span>الأعضاء</span><b id="statMembers">—</b></div><div><span>المتفاعلين الآن</span><b id="statActive">—</b></div></section>
 <section class="premiumPlayGrid">
@@ -3249,6 +3301,8 @@ ${savedRoomsHtml()}
  document.getElementById("randomRules").onclick=showRulesModal;
  document.getElementById("computerRules").onclick=showRulesModal;
  document.getElementById("homeRulesBtn").onclick=showRulesModal;
+ const contactAdminBtn=document.getElementById("contactAdminBtn");if(contactAdminBtn)contactAdminBtn.onclick=sendMessageToAdmin;
+ const myMessagesBtn=document.getElementById("myMessagesBtn");if(myMessagesBtn)myMessagesBtn.onclick=showMyAdminMessages;
  document.getElementById("homeStatsJump").onclick=()=>document.getElementById("premiumStatsBox")?.scrollIntoView({behavior:"smooth"});
  document.querySelectorAll("[data-savedjoin]").forEach(b=>b.onclick=()=>{document.getElementById("code").value=b.dataset.savedjoin;joinRoom()});
  document.querySelectorAll("[data-savedremove]").forEach(b=>b.onclick=()=>removeSavedRoom(b.dataset.savedremove));

@@ -176,7 +176,8 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
       <button class="tab" data-tab="monitor">المراقب</button>
       <button class="tab" data-tab="bans">الحظر</button>
       <button class="tab memberAccess" data-tab="admins">الأعضاء</button>
-      <button class="tab" data-tab="logs">السجل</button>
+      <button class="tab" data-tab="messages">📨 الرسائل</button>
+       <button class="tab" data-tab="logs">السجل</button>
     </div>
 
     <div id="panel-rooms" class="panel active">
@@ -240,6 +241,15 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
       </div>
     </div>
 
+
+    <div id="panel-messages" class="panel">
+      <div class="section">
+        <div class="sectionTitle"><h2>📨 رسائل الأعضاء</h2><button id="refreshMessages" class="btn btnDark refresh">تحديث ↻</button></div>
+        <div class="note" style="margin:0 0 10px">رسائل الأعضاء المرسلة من الصفحة الرئيسية. يمكنك فتح الرسالة والرد عليها من هنا.</div>
+        <div id="memberMessagesList"><div class="empty">جاري تحميل الرسائل...</div></div>
+      </div>
+    </div>
+
     <div id="panel-logs" class="panel">
       <div class="section">
         <div class="sectionTitle"><h2>سجل عمليات الإدارة</h2><button id="refreshLogs" class="btn btnDark refresh">تحديث ↻</button></div>
@@ -257,7 +267,20 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 </div>
 
 <div id="voiceAudios" aria-hidden="true" style="position:fixed;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none"></div>
-<script src="voice.js"></script>
+<script src="voice.js">
+document.addEventListener("click",async e=>{
+  const r=e.target.closest?.("[data-reply-message]");
+  if(r){try{await replyMemberMessage(r.dataset.replyMessage)}catch(err){alert("تعذر إرسال الرد: "+(err?.message||err))}return}
+  const m=e.target.closest?.("[data-read-message]");
+  if(m){try{await markMemberMessageRead(m.dataset.readMessage)}catch(err){alert("تعذر تحديث الرسالة: "+(err?.message||err))}}
+});
+
+
+const refreshMessagesBtn=document.getElementById("refreshMessages");
+if(refreshMessagesBtn)refreshMessagesBtn.addEventListener("click",async()=>{
+  try{const s=await get(ref(db,"supportMessages"));currentMemberMessages=s.val()||{};renderMemberMessages()}catch(e){}
+});
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -269,6 +292,7 @@ const $=id=>document.getElementById(id);
 let currentAdmin=null,currentRooms={},currentBans={},currentUsers={},currentAdmins={},currentPresence={},currentLogs={},memberFilter="all",editingAdminUid="",stops=[];
 let monitorVoice=null,monitorVoiceCode="",monitorVoiceStealth=true,monitorVoiceState={active:false,starting:false,muted:true,remoteCount:0};
 let monitorFilter="all",activeMonitorCode="";
+let currentMemberMessages={};
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]))}
 function msg(text,type='err'){const el=$('loginMsg');el.className='msg '+type;el.textContent=text}
@@ -553,7 +577,7 @@ async function setAdminMonitor(code,stealth){
 }
 async function moderationAction(kind,code,uid,name){
   if(!canRooms())return;
-  const now=Date.now(),base=`moderation/${code}/${uid}`;
+  const now=Date.now(),base=`rooms/${code}/public/moderation/${uid}`;
   if(kind==='warn'){
     const reason=prompt(`رسالة التحذير إلى ${name}:`,'يرجى الالتزام بقوانين الغرفة.')??null;if(reason===null)return;
     await set(push(ref(db,`${base}/warnings`)),{room:code,message:reason,by:auth.currentUser.uid,createdAt:now});await logAction('تحذير لاعب',`${name} في الغرفة ${code}: ${reason}`);return;
@@ -566,6 +590,46 @@ async function moderationAction(kind,code,uid,name){
     const mins=Number(prompt(`مدة تعطيل الصوت لـ ${name} بالدقائق:`, '10'));if(!Number.isFinite(mins)||mins<=0)return;
     await update(ref(db,base),{voiceMutedUntil:now+mins*60000,voiceMutedBy:auth.currentUser.uid});await logAction('تعطيل صوت',`${name} لمدة ${mins} دقيقة`);return;
   }
+}
+
+
+function renderMemberMessages(){
+  const list=$('memberMessagesList'); if(!list)return;
+  const entries=Object.entries(currentMemberMessages||{}).sort((x,y)=>(Number(y[1]?.createdAt)||0)-(Number(x[1]?.createdAt)||0));
+  if(!entries.length){list.innerHTML='<div class="empty">لا توجد رسائل من الأعضاء</div>';return}
+  list.innerHTML=entries.map(([id,m])=>{
+    const u=currentUsers[m.uid]||{};
+    const name=m.name||u.username||'عضو';
+    const memberNo=m.memberNo||u.memberNo||'—';
+    const reply=m.reply||'';
+    return `<div class="item">
+      <div class="itemHead" style="align-items:flex-start">
+        <div style="min-width:0;flex:1">
+          <div class="itemTitle">${m.readByAdmin?'📩':'🔴'} ${esc(name)}</div>
+          <div class="itemMeta">عضوية #${esc(memberNo)} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString('ar-AE'):''}</div>
+          <div style="margin-top:9px;line-height:1.8;white-space:pre-wrap">${esc(m.message||'')}</div>
+          ${reply?`<div style="margin-top:10px;padding:10px;border-radius:12px;background:#176b4633;border:1px solid #2ba871;color:#d9ffed"><b>رد الإدارة:</b><br>${esc(reply)}</div>`:''}
+        </div>
+        <div class="actions">
+          <button class="btn btnGold" data-reply-message="${esc(id)}">↩️ رد</button>
+          <button class="btn btnDark" data-read-message="${esc(id)}">${m.readByAdmin?'مقروءة ✓':'تحديد كمقروءة'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function replyMemberMessage(id){
+  const m=currentMemberMessages?.[id]; if(!m)return;
+  const text=prompt(`الرد على ${m.name||'العضو'}:`,m.reply||'')??null;
+  if(text===null)return;
+  const reply=String(text).trim().slice(0,500); if(!reply)return;
+  await update(ref(db,`supportMessages/${id}`),{
+    reply,replyAt:Date.now(),replyBy:auth.currentUser?.uid||'',readByAdmin:true
+  });
+  await logAction('رد على رسالة عضو',`${m.name||'عضو'}: ${reply}`);
+}
+async function markMemberMessageRead(id){
+  await update(ref(db,`supportMessages/${id}`),{readByAdmin:true,readAt:Date.now()});
 }
 
 function renderBans(){
