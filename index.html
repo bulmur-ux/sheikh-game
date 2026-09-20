@@ -2610,13 +2610,37 @@ modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
 async function sendSupportMessage(){
  if(!auth.currentUser||auth.currentUser.isAnonymous){toast("سجل الدخول أولاً");return}
  let profile={};try{const s=await get(ref(db,`users/${auth.currentUser.uid}`));profile=s.val()||{}}catch{}
- openModal(`<h3>✉️ مراسلة الإدارة</h3><textarea id="supportText" maxlength="500" placeholder="اكتب رسالتك للإدارة..." style="width:100%;min-height:145px;box-sizing:border-box;border:1px solid #b68a38;border-radius:14px;padding:12px;font:inherit"></textarea><button id="supportSendBtn" class="btn" style="margin-top:10px;width:100%">إرسال الرسالة</button>`);
+ const destinations=[
+  ["administration","🛡️ الإدارة"],
+  ["generalModerator","👑 المشرف العام"],
+  ["roomModerator","🚪 مشرف الغرف"],
+  ["memberModerator","👥 مشرف الأعضاء"],
+  ["complaintsModerator","⚠️ مشرف الشكاوى والمخالفات"]
+ ];
+ openModal(`<h3>✉️ مراسلة الإدارة</h3>
+  <label style="display:block;margin:10px 0 6px;font-weight:900">إرسال إلى</label>
+  <select id="supportTarget" style="width:100%;box-sizing:border-box;border:1px solid #b68a38;border-radius:14px;padding:12px;font:inherit;background:#fff">
+   ${destinations.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}
+  </select>
+  <label style="display:block;margin:12px 0 6px;font-weight:900">محتوى الرسالة</label>
+  <textarea id="supportText" maxlength="500" placeholder="اكتب رسالتك هنا..." style="width:100%;min-height:145px;box-sizing:border-box;border:1px solid #b68a38;border-radius:14px;padding:12px;font:inherit"></textarea>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+   <button id="supportSendBtn" class="btn">📨 إرسال الرسالة</button>
+   <button id="supportBackBtn" class="btn alt">↩️ رجوع</button>
+  </div>`);
+ const back=document.getElementById("supportBackBtn");if(back)back.onclick=closeModal;
  const b=document.getElementById("supportSendBtn");if(!b)return;
  b.onclick=async()=>{
   const message=String(document.getElementById("supportText")?.value||"").trim().slice(0,500);
+  const target=String(document.getElementById("supportTarget")?.value||"administration");
+  const targetLabel=destinations.find(x=>x[0]===target)?.[1]?.replace(/^[^\s]+\s*/,"")||"الإدارة";
   if(!message){toast("اكتب الرسالة أولاً");return}
-  try{const p=push(ref(db,`supportMessages/${auth.currentUser.uid}`));await set(p,{uid:auth.currentUser.uid,name:profile.username||myName||"عضو",memberNo:profile.memberNo||profile.memberNumber||"",message,createdAt:Date.now(),readByAdmin:false,reply:""});closeModal();toast("تم إرسال الرسالة للإدارة ✅")}
-  catch(e){toast("تعذر إرسال الرسالة — نراجع صلاحيات قاعدة البيانات")}
+  b.disabled=true;b.textContent="جاري الإرسال...";
+  try{
+   const p=push(ref(db,`supportMessages/${auth.currentUser.uid}`));
+   await set(p,{uid:auth.currentUser.uid,name:profile.username||myName||"عضو",memberNo:profile.memberNo||profile.memberNumber||"",target,targetLabel,message,createdAt:Date.now(),status:"new",readByAdmin:false,reply:""});
+   closeModal();toast(`تم إرسال رسالتك إلى ${targetLabel} ✅`)
+  }catch(e){b.disabled=false;b.textContent="📨 إرسال الرسالة";toast("تعذر إرسال الرسالة — راجع صلاحيات قاعدة البيانات")}
  };
 }
 async function showSupportMessages(){
@@ -2624,7 +2648,14 @@ async function showSupportMessages(){
  try{
   const s=await get(ref(db,`supportMessages/${auth.currentUser.uid}`)),all=s.val()||{};
   const rows=Object.values(all).sort((x,y)=>(Number(y?.createdAt)||0)-(Number(x?.createdAt)||0));
-  openModal(`<h3>📬 رسائلي مع الإدارة</h3>${rows.length?rows.map(m=>`<div style="padding:12px;margin:8px 0;border:1px solid #b68a38;border-radius:14px"><div>${esc(m.message||"")}</div>${m.reply?`<div style="margin-top:9px;padding:9px;border-radius:10px;background:#1e6b4b33"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:`<small>بانتظار رد الإدارة</small>`}</div>`).join(""):"<p>لا توجد رسائل حتى الآن.</p>"}`);
+  const statusText=m=>m.reply?"🟢 تم الرد":(m.readByAdmin?"🟡 قيد المراجعة":"🔴 جديدة");
+  openModal(`<h3>📬 رسائلي مع الإدارة</h3>${rows.length?rows.map(m=>`<div style="padding:12px;margin:8px 0;border:1px solid #b68a38;border-radius:14px">
+   <div style="font-size:12px;color:#7d6748;margin-bottom:6px"><b>إلى:</b> ${esc(m.targetLabel||"الإدارة")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div>
+   <div style="white-space:pre-wrap">${esc(m.message||"")}</div>
+   <div style="margin-top:8px;font-size:12px"><b>الحالة:</b> ${statusText(m)}</div>
+   ${m.reply?`<div style="margin-top:9px;padding:9px;border-radius:10px;background:#1e6b4b33"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:`<small style="display:block;margin-top:7px">بانتظار رد الإدارة</small>`}
+  </div>`).join(""):"<p>لا توجد رسائل حتى الآن.</p>"}<button id="supportMessagesBack" class="btn alt" style="margin-top:8px;width:100%">↩️ رجوع</button>`);
+  const back=document.getElementById("supportMessagesBack");if(back)back.onclick=closeModal;
  }catch(e){toast("تعذر تحميل الرسائل")}
 }
 
