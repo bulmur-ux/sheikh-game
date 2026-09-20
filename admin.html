@@ -241,11 +241,9 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
       </div>
     </div>
 
-
     <div id="panel-messages" class="panel">
       <div class="section">
-        <div class="sectionTitle"><h2>📨 رسائل الأعضاء</h2><button id="refreshMessages" class="btn btnDark refresh">تحديث ↻</button></div>
-        <div class="note" style="margin:0 0 10px">رسائل الأعضاء المرسلة من الصفحة الرئيسية. يمكنك فتح الرسالة والرد عليها من هنا.</div>
+        <div class="sectionTitle"><h2>📨 رسائل الأعضاء</h2></div>
         <div id="memberMessagesList"><div class="empty">جاري تحميل الرسائل...</div></div>
       </div>
     </div>
@@ -267,20 +265,7 @@ border:1px solid #7a5725;border-radius:24px;box-shadow:0 18px 60px var(--shadow)
 </div>
 
 <div id="voiceAudios" aria-hidden="true" style="position:fixed;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none"></div>
-<script src="voice.js">
-document.addEventListener("click",async e=>{
-  const r=e.target.closest?.("[data-reply-message]");
-  if(r){try{await replyMemberMessage(r.dataset.replyMessage)}catch(err){alert("تعذر إرسال الرد: "+(err?.message||err))}return}
-  const m=e.target.closest?.("[data-read-message]");
-  if(m){try{await markMemberMessageRead(m.dataset.readMessage)}catch(err){alert("تعذر تحديث الرسالة: "+(err?.message||err))}}
-});
-
-
-const refreshMessagesBtn=document.getElementById("refreshMessages");
-if(refreshMessagesBtn)refreshMessagesBtn.addEventListener("click",async()=>{
-  try{const s=await get(ref(db,"supportMessages"));currentMemberMessages=s.val()||{};renderMemberMessages()}catch(e){}
-});
-</script>
+<script src="voice.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -592,44 +577,17 @@ async function moderationAction(kind,code,uid,name){
   }
 }
 
-
 function renderMemberMessages(){
-  const list=$('memberMessagesList'); if(!list)return;
-  const entries=Object.entries(currentMemberMessages||{}).sort((x,y)=>(Number(y[1]?.createdAt)||0)-(Number(x[1]?.createdAt)||0));
-  if(!entries.length){list.innerHTML='<div class="empty">لا توجد رسائل من الأعضاء</div>';return}
-  list.innerHTML=entries.map(([id,m])=>{
-    const u=currentUsers[m.uid]||{};
-    const name=m.name||u.username||'عضو';
-    const memberNo=m.memberNo||u.memberNo||'—';
-    const reply=m.reply||'';
-    return `<div class="item">
-      <div class="itemHead" style="align-items:flex-start">
-        <div style="min-width:0;flex:1">
-          <div class="itemTitle">${m.readByAdmin?'📩':'🔴'} ${esc(name)}</div>
-          <div class="itemMeta">عضوية #${esc(memberNo)} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString('ar-AE'):''}</div>
-          <div style="margin-top:9px;line-height:1.8;white-space:pre-wrap">${esc(m.message||'')}</div>
-          ${reply?`<div style="margin-top:10px;padding:10px;border-radius:12px;background:#176b4633;border:1px solid #2ba871;color:#d9ffed"><b>رد الإدارة:</b><br>${esc(reply)}</div>`:''}
-        </div>
-        <div class="actions">
-          <button class="btn btnGold" data-reply-message="${esc(id)}">↩️ رد</button>
-          <button class="btn btnDark" data-read-message="${esc(id)}">${m.readByAdmin?'مقروءة ✓':'تحديد كمقروءة'}</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+ const el=$("memberMessagesList");if(!el)return;
+ const rows=Object.entries(currentMemberMessages||{}).sort((x,y)=>(Number(y[1]?.createdAt)||0)-(Number(x[1]?.createdAt)||0));
+ if(!rows.length){el.innerHTML='<div class="empty">لا توجد رسائل من الأعضاء</div>';return}
+ el.innerHTML=rows.map(([id,m])=>`<div class="item"><div class="itemHead"><div style="flex:1"><div class="itemTitle">${m.readByAdmin?"📩":"🔴"} ${esc(m.name||"عضو")}</div><div class="itemMeta">عضوية #${esc(m.memberNo||"—")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div><div style="margin-top:8px;white-space:pre-wrap">${esc(m.message||"")}</div>${m.reply?`<div style="margin-top:9px;padding:9px;border-radius:10px;background:#176b4633"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:""}</div><div class="actions"><button class="btn btnGold" data-support-reply="${esc(id)}">↩️ رد</button></div></div></div>`).join("");
 }
-async function replyMemberMessage(id){
-  const m=currentMemberMessages?.[id]; if(!m)return;
-  const text=prompt(`الرد على ${m.name||'العضو'}:`,m.reply||'')??null;
-  if(text===null)return;
-  const reply=String(text).trim().slice(0,500); if(!reply)return;
-  await update(ref(db,`supportMessages/${id}`),{
-    reply,replyAt:Date.now(),replyBy:auth.currentUser?.uid||'',readByAdmin:true
-  });
-  await logAction('رد على رسالة عضو',`${m.name||'عضو'}: ${reply}`);
-}
-async function markMemberMessageRead(id){
-  await update(ref(db,`supportMessages/${id}`),{readByAdmin:true,readAt:Date.now()});
+async function replySupportMessage(id){
+ const m=currentMemberMessages?.[id];if(!m)return;
+ const v=prompt(`الرد على ${m.name||"العضو"}:`,m.reply||"");if(v===null)return;
+ const reply=String(v).trim().slice(0,500);if(!reply)return;
+ await update(ref(db,`supportMessages/${id}`),{reply,replyAt:Date.now(),replyBy:auth.currentUser?.uid||"",readByAdmin:true});
 }
 
 function renderBans(){
@@ -740,6 +698,7 @@ function subscribeAll(){
   }else{$('roomsList').innerHTML='<div class="empty">ما عندك صلاحية إدارة الغرف.</div>'}
   stops.push(onValue(ref(db,'bans'),s=>{currentBans=s.val()||{};renderBans();if(isSuper()||hasPerm('manageMembers'))renderMembers()},()=>{}));
   if(hasPerm('viewLogs'))stops.push(onValue(query(ref(db,'adminLogs'),limitToLast(100)),s=>{currentLogs=s.val()||{};renderLogs(currentLogs)},()=>{}));else $('logsList').innerHTML='<div class="empty">ما عندك صلاحية مشاهدة السجل.</div>';
+  stops.push(onValue(ref(db,'supportMessages'),s=>{currentMemberMessages=s.val()||{};renderMemberMessages()},()=>{currentMemberMessages={};renderMemberMessages()}));
   // users يغذي عداد اللاعبين المسجلين لحظيًا.
   stops.push(onValue(ref(db,'users'),s=>{
     currentUsers=s.val()||{};renderStats();
@@ -899,6 +858,11 @@ onAuthStateChanged(auth,async user=>{
   if(!enteredFromGame&&!manualAdminLogin){currentAdmin=null;showLogin();return}
   if(manualAdminLogin)return;
   try{currentAdmin=await fetchAdmin(user);if(currentAdmin){if(forcePinOnEntry)sessionStorage.removeItem(`sheikh_pin_ok_${user.uid}`);if(await requireAdminPin(user)){showDash(user);setupReturnRoom()}}else{showLogin()}}catch{showLogin()}
+});
+
+document.addEventListener("click",async e=>{
+ const b=e.target.closest?.("[data-support-reply]");if(!b)return;
+ try{await replySupportMessage(b.dataset.supportReply)}catch(err){alert("تعذر إرسال الرد: "+(err?.message||err))}
 });
 </script>
 </body>
