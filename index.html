@@ -1977,6 +1977,111 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 </style>
 
+
+<style id="mobile-room-game-repair-v1">
+/* ===== إصلاح الهاتف: الغرفة + اللعب + الشات ===== */
+html,body{max-width:100%;overflow-x:hidden}
+
+/* الغرفة: الشات يفتح فعلياً وتظهر خانة الكتابة */
+.lobbyV2 .roomChatBody:not(.isCollapsed){
+  display:block!important;max-height:none!important;height:auto!important;
+  overflow:visible!important;opacity:1!important;pointer-events:auto!important
+}
+.lobbyV2 .roomChatBody:not(.isCollapsed)>.panel{
+  display:flex!important;flex-direction:column!important;height:auto!important;
+  overflow:visible!important
+}
+.lobbyV2 .roomChatBody:not(.isCollapsed) .chat{
+  display:block!important;height:190px!important;min-height:150px!important;
+  max-height:190px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch
+}
+.lobbyV2 .roomChatBody:not(.isCollapsed) .quick{
+  display:flex!important;overflow-x:auto!important;gap:5px!important;padding:4px 0!important
+}
+.lobbyV2 .roomChatBody:not(.isCollapsed) .row{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 72px!important;
+  gap:6px!important;visibility:visible!important;opacity:1!important
+}
+.lobbyV2 .roomChatBody:not(.isCollapsed) #chatInput,
+.lobbyV2 .roomChatBody:not(.isCollapsed) #send{
+  display:block!important;visibility:visible!important;opacity:1!important;
+  min-height:42px!important
+}
+
+/* الهاتف بالطول: لا قص ولا تداخل */
+@media (max-width:699px) and (orientation:portrait){
+  body:has(.lobbyV2),body:has(.refGameShell){overflow-y:auto!important;overflow-x:hidden!important}
+  body:has(.lobbyV2) #app,body:has(.refGameShell) #app{
+    position:relative!important;inset:auto!important;width:100%!important;height:auto!important;
+    min-height:100dvh!important;overflow:visible!important
+  }
+  .lobbyV2{position:relative!important;width:100%!important;height:auto!important;min-height:100dvh!important;overflow:visible!important}
+  .roomChatCard{overflow:visible!important;height:auto!important;max-height:none!important}
+  .roomHeadActions{flex-wrap:wrap!important}
+  .leaveCompact{white-space:nowrap!important}
+
+  /* اللعبة بالطول ترجع كتدفق طبيعي بدلاً من تخطيط التلفزيون */
+  .refGameShell{
+    position:relative!important;inset:auto!important;width:100%!important;height:auto!important;
+    min-height:100dvh!important;overflow:visible!important;padding:8px 10px 24px!important
+  }
+  .refBrand{position:relative!important;left:auto!important;right:auto!important;top:auto!important;transform:none!important;margin:0 auto 10px!important}
+  .refLeftTop,.refLeftBottom,.refRightTop,.refRightChat,.refTable,.refBottom{
+    position:relative!important;left:auto!important;right:auto!important;top:auto!important;
+    bottom:auto!important;width:100%!important;max-width:100%!important;height:auto!important;
+    margin:0 0 10px!important;transform:none!important
+  }
+  .refLeftTop{order:1!important}
+  .refLeftBottom{order:2!important;max-height:none!important}
+  .refTable{min-height:620px!important;overflow:hidden!important;border-radius:34px!important}
+  .refBottom{display:block!important}
+  .refIntro{height:auto!important;min-height:120px!important}
+  .refHandWrap{overflow:visible!important;padding:8px 0!important}
+  .refHandWrap .hand{display:flex!important;justify-content:center!important;gap:5px!important;overflow:visible!important}
+  .refHandWrap .slot{width:23%!important;min-width:0!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:100%!important;height:auto!important;aspect-ratio:.70!important}
+  .refActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
+  .refActions .btn{min-height:58px!important}
+  .refRightTop{display:block!important}
+  .refRightTop #withdrawRound{
+    position:relative!important;top:auto!important;right:auto!important;left:auto!important;
+    width:100%!important;min-height:48px!important;margin:8px 0!important;font-size:14px!important;
+    display:block!important;visibility:visible!important
+  }
+  .refRightChat{overflow:visible!important;padding:0!important}
+  .refRightChat>.panel{display:flex!important;flex-direction:column!important;height:auto!important;overflow:visible!important}
+  .refRightChat .chat{display:block!important;height:220px!important;min-height:180px!important;max-height:220px!important;overflow-y:auto!important}
+  .refRightChat .quick{display:flex!important;overflow-x:auto!important;gap:5px!important}
+  .refRightChat .row{display:grid!important;grid-template-columns:minmax(0,1fr) 72px!important;gap:6px!important}
+  .refRightChat #chatInput,.refRightChat #send{
+    display:block!important;visibility:visible!important;opacity:1!important;min-height:44px!important
+  }
+}
+
+/* الهاتف بالعرض: ثلاثة أعمدة بدون تداخل */
+@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
+  body:has(.refGameShell),body:has(.refGameShell) #app{overflow:hidden!important}
+  .refGameShell{position:fixed!important;inset:0!important;overflow:hidden!important}
+  .refLeftTop{left:6px!important;top:6px!important;width:158px!important}
+  .refLeftBottom{left:6px!important;top:142px!important;width:158px!important;bottom:6px!important;max-height:none!important}
+  .refRightTop{right:6px!important;top:6px!important;width:210px!important}
+  .refRightChat{right:6px!important;top:116px!important;bottom:6px!important;width:210px!important}
+  .refTable{left:172px!important;right:224px!important;top:52px!important;bottom:116px!important}
+  .refBottom{left:172px!important;right:224px!important;bottom:4px!important;height:108px!important;grid-template-columns:105px minmax(260px,1fr) 165px!important}
+  .refBrand{top:3px!important}
+  .refRightTop #withdrawRound{
+    display:block!important;position:relative!important;right:auto!important;top:auto!important;
+    width:100%!important;margin-top:4px!important;min-height:28px!important
+  }
+  .refRightChat>.panel{height:100%!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+  .refRightChat .chat{flex:1 1 auto!important;height:auto!important;min-height:55px!important;overflow-y:auto!important}
+  .refRightChat .row{display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;gap:3px!important}
+  .refRightChat #chatInput,.refRightChat #send{display:block!important;visibility:visible!important;opacity:1!important}
+  .refHandWrap .slot{width:62px!important;min-width:62px!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:60px!important;height:86px!important}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
@@ -4263,7 +4368,7 @@ function renderLobby(){
   ${currentRoom.systemRandom?`<section class="hostSetupV2"><div class="hostSetupTitle">🎲 غرفة نظام عشوائية</div><div class="notice">بانتظار اكتمال ${Number(currentRoom.targetPlayers||2)} لاعبين • القانون ${Number(currentRoom.ruleMode||1)} • حد الخروج 120 • تبدأ تلقائياً عند اكتمال العدد • بدون متفرجين</div></section>`:(host?`<section class="hostSetupV2"><div class="hostSetupTitle">👑 إعداد المباراة</div><div class="hostSetupRow"><label>عدد اللاعبين<select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select></label><label>القانون<select id="ruleMode"><option value="1" selected>القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><label>الجولات<select id="roundCount">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${i===2?'selected':''}>${i+1}</option>`).join('')}<option value="open">مفتوحة</option></select></label><label>حد الخروج<select id="scoreLimit"><option value="50">50</option><option value="75">75</option><option value="100" selected>100</option><option value="125">125</option><option value="150">150</option><option value="200">200</option></select></label></div><div class="notice small">إذا وصل اللاعب إلى حد الخروج أو تجاوزه، يخرج من المباراة ويكمل الباقون.</div><div class="hostSetupActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="transferHost" class="btn alt" ${ps.length<2?'disabled':''}>👑 تسليم المضيف</button></div></section>`:'')}
   <section class="roomHostCard"><div class="roomSectionHead"><h3>👑 المضيف</h3>${canManageHost&&ps.length>1?`<button id="transferHostCard" class="hostTransferMini">نقل المضيفية</button>`:''}</div><div class="roomPerson hostOnly"><img src="${esc(avatarOf(hostP))}" alt=""><div><b>${esc(hostP.name||'المضيف')}</b><small>${host?'أنت المضيف':'صاحب الغرفة'} • عند خروجه تنتقل للأقدم تلقائيًا</small></div></div></section>
   <section class="roomPresentCard"><div class="roomSectionHead"><h3>👥 المتواجدون في الغرفة</h3><span>${ps.length} / ${currentRoom.systemRandom?Math.max(2,Math.min(4,Number(currentRoom.targetPlayers||2))):8}</span></div><div class="roomPeopleGrid">${people||'<div class="small">لا يوجد أعضاء</div>'}</div></section>
-  <section class="roomChatCard compactRoomTools"><div class="roomSectionHead"><h3>💬 الشات والصوت</h3><div class="roomHeadActions"><button id="toggleRoomChat" class="chatToggleBtn">فتح الشات</button><button id="leave" class="leaveCompact">خروج</button></div></div><div class="roomMediaTools"><button id="voiceTop" class="mediaPill">🎙️ المايك</button><button id="sfxTop" class="mediaPill">🔊 الصوت</button><button id="funTop" class="mediaPill">😂 التأثيرات</button><button id="radioTop" class="mediaPill">📻 الإذاعة</button></div><div id="roomChatBody" class="roomChatBody isCollapsed">${chatPanel()}</div></section>
+  <section class="roomChatCard compactRoomTools"><div class="roomSectionHead"><h3>💬 الشات والصوت</h3><div class="roomHeadActions"><button id="toggleRoomChat" class="chatToggleBtn">إخفاء الشات</button><button id="leave" class="leaveCompact">🚪 خروج / انسحاب</button></div></div><div class="roomMediaTools"><button id="voiceTop" class="mediaPill">🎙️ المايك</button><button id="sfxTop" class="mediaPill">🔊 الصوت</button><button id="funTop" class="mediaPill">😂 التأثيرات</button><button id="radioTop" class="mediaPill">📻 الإذاعة</button></div><div id="roomChatBody" class="roomChatBody">${chatPanel()}</div></section>
  </div>`;
  wireCommon();
  const saveBtn=document.getElementById("saveRoomBtn");if(saveBtn)saveBtn.onclick=saveCurrentRoom;
