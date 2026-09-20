@@ -1,0 +1,39 @@
+name: Interactive Preview
+
+on:
+  push:
+    branches:
+      - interactive-dev
+  workflow_dispatch:
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout interactive-dev
+        uses: actions/checkout@v4
+
+      - name: Create preview package
+        run: |
+          mkdir preview
+          cp -R Cards preview/
+          cp -R assets preview/
+          cp -R ranks preview/
+          cp index.html preview/
+          cp game.js preview/
+          cp sounds.js preview/
+          cp voice.js preview/
+          cp bg-mobile.PNG preview/
+          cp bg-wide.PNG preview/
+          cp manifest.webmanifest preview/
+          cp ranks-config.json preview/
+          cp icon-180.png preview/
+          cp icon-192.png preview/
+          cp icon-512.png preview/
+
+      - name: Upload preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: interactive-preview
+          path: preview
