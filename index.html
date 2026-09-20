@@ -2082,6 +2082,80 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 </style>
 
+
+<style id="final-game-layout-v2">
+/* ===== شيك شيك: ترتيب نهائي واضح للهاتف ===== */
+#sheet{color:#2b211b!important}
+#sheet h1,#sheet h2,#sheet h3,#sheet h4,#sheet b,#sheet strong{color:#24170f!important}
+#sheet .notice{color:#2b211b!important;background:#fff8e8!important;border-color:#d8b35c!important}
+#sheet .btn.danger{color:#fff!important}
+#sheet .btn:not(.danger){color:#24170f!important}
+
+/* الهاتف بالطول: الطاولة أقصر، الجولة شريط، ثم الورقة المسحوبة/الأوراق/الأزرار */
+@media (max-width:699px) and (orientation:portrait){
+  .refGameShell{padding:6px 8px 18px!important}
+  .refBrand{margin:0 auto 5px!important}
+  .refLeftTop{margin:4px 4px 6px!important;padding:7px!important}
+  .refLeftTop .refStat{padding:5px!important}.refLeftTop .refStat strong{font-size:16px!important}
+  .refLeftBottom{display:none!important}
+  .refRightTop{margin:4px!important;padding:7px!important}
+  .refRightTop .refTopTools{grid-template-columns:repeat(3,1fr)!important;gap:5px!important}
+  .refRightTop .refTopTools button{padding:6px 3px!important;font-size:16px!important}
+  .refRightTop .refRulesTitle,.refRightTop>.small{display:none!important}
+  .refRightTop #withdrawRound{min-height:42px!important;margin:5px 0 0!important}
+
+  .refTable{height:470px!important;min-height:470px!important;margin:5px 3px 0!important;border-radius:28px!important}
+  .refTable:before{inset:5%!important}
+  .refSeat.top{top:10px!important}.refSeat.bottom{bottom:10px!important}
+  .refSeat.left{left:6px!important}.refSeat.right{right:6px!important}
+  .refSeat .refAvatar{width:52px!important;height:52px!important}
+  .refSeatLabel{font-size:10px!important;min-width:82px!important;padding:4px 7px!important}
+  .refSeatCards .cardBack{width:25px!important;height:36px!important}
+  .refCenterPiles{top:50%!important;gap:20px!important}
+  .refCenterPiles .cardBack,.refCenterPiles .cardFace{width:76px!important;height:108px!important}
+  .refTurnTimer{top:6px!important;font-size:18px!important;padding:5px 12px!important}
+  .refLastAction{bottom:3px!important;max-width:88%!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:10px!important;padding:4px 9px!important}
+
+  .refBottom{margin:0 3px 7px!important;display:flex!important;flex-direction:column!important;gap:6px!important;overflow:visible!important}
+  .refIntro{order:1!important;min-height:0!important;height:42px!important;margin:0!important;padding:4px 10px!important;border-radius:11px!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:8px!important}
+  .refIntro strong{font-size:17px!important}.refIntro .refWaiting{margin:0!important;font-size:10px!important}
+  .refHandWrap{order:2!important;width:100%!important;padding:118px 0 3px!important;position:relative!important;overflow:visible!important}
+  .refPendingPreview{top:4px!important;bottom:auto!important;left:50%!important;transform:translateX(-50%)!important;padding:5px 7px!important;gap:3px!important}
+  .refPendingPreview .refPendingLabel{font-size:11px!important}
+  .refPendingPreview .cardFace{width:66px!important;height:94px!important}
+  .refHandWrap .hand{gap:5px!important}.refHandWrap .slot{width:23%!important;min-width:0!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:100%!important;height:auto!important;aspect-ratio:.70!important}
+  .refActions{order:3!important;width:100%!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;margin:0!important;padding:0!important}
+  .refActions .btn{min-height:50px!important;font-size:13px!important}
+  .refRightChat{margin:8px 3px 0!important}
+}
+
+/* الهاتف بالعرض: الوسط للعبة، الورقة المسحوبة لا تختفي، والأزرار ثابتة وواضحة */
+@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
+  .refLeftTop{left:5px!important;top:5px!important;width:145px!important;padding:6px!important}
+  .refLeftBottom{display:none!important}
+  .refRightTop{right:5px!important;top:5px!important;width:190px!important;padding:6px!important}
+  .refRightChat{right:5px!important;top:108px!important;bottom:5px!important;width:190px!important}
+  .refTable{left:158px!important;right:203px!important;top:46px!important;bottom:126px!important}
+  .refBottom{left:158px!important;right:203px!important;bottom:3px!important;height:119px!important;display:grid!important;grid-template-columns:minmax(0,1fr) 178px!important;gap:6px!important;overflow:visible!important}
+  .refBottom>.refIntro{display:none!important}
+  .refHandWrap{position:relative!important;padding:2px 4px 3px!important;overflow:visible!important}
+  .refHandWrap .hand{gap:5px!important;justify-content:flex-end!important}
+  .refHandWrap .slot{width:58px!important;min-width:58px!important}
+  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:56px!important;height:80px!important}
+  .refPendingPreview{left:12px!important;top:auto!important;bottom:3px!important;transform:none!important;padding:4px 6px!important}
+  .refPendingPreview .refPendingLabel{font-size:9px!important}
+  .refPendingPreview .cardFace{width:54px!important;height:76px!important}
+  .refActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important;padding:0 0 3px!important}
+  .refActions .btn{min-height:42px!important;font-size:10px!important;padding:5px 3px!important}
+  .refCenterPiles{gap:18px!important}.refCenterPiles .cardBack,.refCenterPiles .cardFace{width:64px!important;height:91px!important}
+  .refSeat.top{top:5px!important}.refSeat.bottom{bottom:4px!important}.refSeat.left{left:5px!important}.refSeat.right{right:5px!important}
+  .refSeat .refAvatar{width:44px!important;height:44px!important}.refSeatLabel{font-size:9px!important;min-width:82px!important}
+  .refTurnTimer{top:4px!important;padding:4px 9px!important;font-size:15px!important}
+  .computerExitFixed{left:6px!important;top:auto!important;bottom:5px!important}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
