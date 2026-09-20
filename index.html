@@ -2648,15 +2648,27 @@ async function sendSupportMessage(){
 async function showSupportMessages(){
  if(!auth.currentUser||auth.currentUser.isAnonymous)return;
  try{
-  const s=await get(ref(db,`supportMessages/${auth.currentUser.uid}`)),all=s.val()||{};
+  const snap=await get(ref(db,`supportMessages/${auth.currentUser.uid}`));
+  const all=snap.val()||{};
   const rows=Object.values(all).sort((x,y)=>(Number(y?.createdAt)||0)-(Number(x?.createdAt)||0));
   const statusText=m=>m.reply?"🟢 تم الرد":(m.readByAdmin?"🟡 قيد المراجعة":"🔴 جديدة");
-  openModal(`<div style="color:#2b211b!important"><h3 style="color:#3a2819!important;font-weight:950;text-align:center">📬 رسائلي مع الإدارة</h3>${rows.length?rows.map(m=>`<div style="padding:14px;margin:10px 0;border:2px solid #c79a3b;border-radius:16px;background:#fffaf0;color:#2b211b!important;box-shadow:0 2px 8px rgba(40,29,23,.06)">
-   <div style="font-size:13px;color:#5b4633!important;margin-bottom:9px;font-weight:750"><b style="color:#352519!important">إلى:</b> ${esc(m.targetLabel||"الإدارة")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div>
-   <div style="white-space:pre-wrap;color:#201812!important;font-size:16px;font-weight:800;line-height:1.8">${esc(m.message||"")}</div>
-   <div style="margin-top:10px;font-size:13px;color:#403225!important"><b style="color:#352519!important">الحالة:</b> <span style="font-weight:900">${statusText(m)}</span></div>
-   ${m.reply?`<div style="margin-top:11px;padding:12px;border-radius:12px;background:#e4f1e8!important;border:1px solid #9cc6aa;color:#173c28!important;font-size:15px;line-height:1.7"><b style="color:#14532d!important">🛡️ رد الإدارة:</b><br><span style="color:#17251c!important;font-weight:800">${esc(m.reply)}</span></div>`:`<small style="display:block;margin-top:9px;color:#6b5843!important;font-weight:750">بانتظار رد الإدارة</small>`}
-  </div>`).join(""):"<p style="color:#3a2819!important;text-align:center;font-weight:800">لا توجد رسائل حتى الآن.</p>"}<button id="supportMessagesBack" class="btn alt" style="margin-top:10px;width:100%;background:#fff!important;color:#21170b!important;border:2px solid #d7c5a5!important;font-size:17px">↩️ رجوع</button></div>`);
+  let body="";
+  if(rows.length){
+   body=rows.map(m=>{
+    const replyHtml=m.reply
+     ? `<div style="margin-top:11px;padding:12px;border-radius:12px;background:#e4f1e8!important;border:1px solid #9cc6aa;color:#173c28!important;font-size:15px;line-height:1.7"><b style="color:#14532d!important">🛡️ رد الإدارة:</b><br><span style="color:#17251c!important;font-weight:800">${esc(m.reply)}</span></div>`
+     : `<small style="display:block;margin-top:9px;color:#6b5843!important;font-weight:750">بانتظار رد الإدارة</small>`;
+    return `<div style="padding:14px;margin:10px 0;border:2px solid #c79a3b;border-radius:16px;background:#fffaf0;color:#2b211b!important;box-shadow:0 2px 8px rgba(40,29,23,.06)">
+     <div style="font-size:13px;color:#5b4633!important;margin-bottom:9px;font-weight:750"><b style="color:#352519!important">إلى:</b> ${esc(m.targetLabel||"الإدارة")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div>
+     <div style="white-space:pre-wrap;color:#201812!important;font-size:16px;font-weight:800;line-height:1.8">${esc(m.message||"")}</div>
+     <div style="margin-top:10px;font-size:13px;color:#403225!important"><b style="color:#352519!important">الحالة:</b> <span style="font-weight:900">${statusText(m)}</span></div>
+     ${replyHtml}
+    </div>`;
+   }).join("");
+  }else{
+   body='<p style="color:#3a2819!important;text-align:center;font-weight:800">لا توجد رسائل حتى الآن.</p>';
+  }
+  openModal(`<div style="color:#2b211b!important"><h3 style="color:#3a2819!important;font-weight:950;text-align:center">📬 رسائلي مع الإدارة</h3>${body}<button id="supportMessagesBack" class="btn alt" style="margin-top:10px;width:100%;background:#fff!important;color:#21170b!important;border:2px solid #d7c5a5!important;font-size:17px">↩️ رجوع</button></div>`);
   const back=document.getElementById("supportMessagesBack");if(back)back.onclick=closeModal;
  }catch(e){toast("تعذر تحميل الرسائل")}
 }
