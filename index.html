@@ -1693,6 +1693,71 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 </style>
 
+
+<style id="room-random-polish-v3">
+/* بطاقة العشوائي والكمبيوتر تحدد النوع؛ النافذة تعرض الخيارات المطلوبة فقط */
+#randomMenuV2{direction:rtl}
+#randomMenuV2 label{display:block;text-align:right;font-weight:900;color:#8b2439;margin-top:12px}
+#randomMenuV2 select{width:100%;min-height:52px;margin-top:6px;border:2px solid #c89a3c;border-radius:14px;background:#fff;color:#17100d;font-weight:900;padding:8px 12px}
+#randomMenuV2 .randomRulesBtn{margin:14px 0 4px!important}
+#randomMenuV2 #rndStart{min-height:58px;font-size:18px;font-weight:950}
+#randomMenuV2 #rndBackHome{width:100%;min-height:52px;margin-top:12px;border:2px solid #9d7427;border-radius:14px;background:#fff;color:#3a2415;font-weight:900}
+
+/* غرفة أنظف: الطاولة تبقى كما هي، الأدوات حولها أخف */
+.roomHeadActions{display:flex;gap:6px;align-items:center}
+.chatToggleBtn{width:auto!important;padding:8px 12px!important;border-radius:10px!important;border:1px solid #9b6b29!important;background:#2b1912!important;color:#f5d98c!important;font-weight:900!important}
+.roomChatBody{max-height:420px;overflow:hidden;opacity:1;transition:max-height .22s ease,opacity .18s ease}
+.roomChatBody.isCollapsed{max-height:0!important;opacity:0!important;pointer-events:none}
+.compactRoomTools .roomMediaTools{margin-bottom:0!important}
+.roomTopCard{gap:8px!important}
+.hostSetupV2 .notice{margin-top:6px}
+.hostSetupActions .btn{min-height:48px!important}
+.roomPresentCard{margin-bottom:8px!important}
+
+/* الجوال بالطول */
+@media(max-width:699px) and (orientation:portrait){
+ body:has(.lobbyV2),body:has(.premiumHome){overflow-y:auto!important;height:auto!important;min-height:100dvh!important}
+ body:has(.lobbyV2) .wrap,body:has(.premiumHome) .wrap{height:auto!important;min-height:100dvh!important;overflow:visible!important}
+ .lobbyV2{padding:7px 7px 26px!important}
+ .roomTopCard{padding:8px!important}
+ .roomQuickTools .toolBtn,.roomQuickTools .rulesIconBtn{width:40px!important;height:40px!important}
+ .newTable{width:min(92vw,470px)!important}
+ .hostSetupRow{gap:6px!important}
+ .hostSetupRow select{min-height:43px!important;font-size:12px!important}
+ .roomMediaTools{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important}
+ .mediaPill{font-size:9px!important;padding:7px 2px!important}
+ .roomHeadActions{gap:4px}
+ .chatToggleBtn,.leaveCompact{padding:7px 9px!important;font-size:11px!important}
+}
+
+/* الهاتف بالعرض: الصفحة كاملة قابلة للتمرير ولا يوجد قص */
+@media(orientation:landscape) and (max-height:650px){
+ html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+ body:has(.premiumHome),body:has(.lobbyV2){position:static!important;height:auto!important;min-height:100dvh!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important}
+ body:has(.premiumHome) .wrap,body:has(.lobbyV2) .wrap{position:static!important;height:auto!important;min-height:100dvh!important;overflow:visible!important}
+ body:has(.premiumHome) #app,body:has(.lobbyV2) #app{position:static!important;height:auto!important;min-height:100dvh!important;overflow:visible!important;padding-bottom:34px!important}
+ .premiumHome{height:auto!important;min-height:100dvh!important;overflow:visible!important;padding-bottom:30px!important}
+ .premiumPlayCard{height:auto!important;min-height:150px!important;overflow:visible!important}
+ .lobbyV2{height:auto!important;min-height:100dvh!important;overflow:visible!important;padding-bottom:34px!important}
+ .lobbyV2 .newTable{width:min(68vh,430px)!important}
+ .lobbyV2 .roomTopCard{padding:6px 8px!important}
+ .lobbyV2 .roomTicker{margin-bottom:4px!important}
+ .lobbyV2 .hostSetupV2,.lobbyV2 .roomHostCard,.lobbyV2 .roomPresentCard,.lobbyV2 .roomChatCard{height:auto!important;overflow:visible!important}
+ .lobbyV2 .roomChatBody:not(.isCollapsed){max-height:260px!important;overflow:auto!important}
+}
+
+/* آيباد/كمبيوتر: الغرفة تستفيد من العرض بدون تغيير منطقها */
+@media(min-width:900px){
+ .lobbyV2{max-width:1180px!important}
+ .lobbyV2 .roomTopCard{display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important}
+ .lobbyV2 .roomCodeCompact{justify-self:start}
+ .lobbyV2 .roomQuickTools{justify-self:end}
+ .lobbyV2 .newTable{width:min(56vw,560px)!important}
+ .lobbyV2 .hostSetupV2{max-width:920px!important;margin-left:auto!important;margin-right:auto!important}
+ .lobbyV2 .roomHostCard,.lobbyV2 .roomPresentCard,.lobbyV2 .roomChatCard{max-width:920px!important;margin-left:auto!important;margin-right:auto!important}
+}
+</style>
+
 </head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
@@ -2348,52 +2413,37 @@ function removeSavedRoom(code){setSavedRooms(getSavedRooms().filter(x=>x.code!==
 function savedRoomsHtml(){const a=getSavedRooms();return `<div class="panel homeRoomCard"><h3>⭐ الغرف المحفوظة <small style="opacity:.65">${a.length}/5</small></h3>${a.length?`<div style="display:grid;gap:8px">${a.map(x=>`<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px"><button class="btn alt" data-savedjoin="${esc(x.code)}" style="flex:1">🚪 ${esc(x.code)}</button><button class="btn danger" data-savedremove="${esc(x.code)}" title="حذف من المحفوظة">✕</button></div>`).join("")}</div>`:`<div class="small">ما عندك غرف محفوظة للحين.</div>`}</div>`}
 let randomQueueCancelToken=0;
 function randomPlaySetup(initialMode="online"){
- openModal(`<div id="randomMenuV2">
-   <h3>🎲 اللعب العشوائي</h3>
-   <div class="notice">غرف النظام فقط — بدون متفرجين • حد الخروج <b>120</b> • الأقل مجموع يفوز.</div>
-   <label>نوع اللعب
-     <select id="rndMode"><option value="online">👥 أونلاين</option><option value="computer">🤖 الكمبيوتر</option></select>
-   </label>
-   <div class="gap"></div>
+ const bot=initialMode==="computer";
+ const title=bot?"🤖 لعب ضد الكمبيوتر":"🎲 اللعب العشوائي";
+ const startLabel=bot?"🤖 ابدأ ضد الكمبيوتر":"🔀 ابدأ اللعب العشوائي";
+ openModal(`<div id="randomMenuV2" class="${bot?'computerMode':'onlineMode'}">
+   <h3>${title}</h3>
+   <div class="notice">${bot?'مباراة خاصة ضد الكمبيوتر — بدون متفرجين.':'غرف النظام العشوائية — بدون متفرجين.'} • حد الخروج <b>120</b> • الأقل مجموع يفوز.</div>
+   <input id="rndMode" type="hidden" value="${bot?'computer':'online'}">
    <label>عدد اللاعبين
      <select id="rndCount"><option value="2">2 لاعبين</option><option value="3">3 لاعبين</option><option value="4">4 لاعبين</option></select>
    </label>
    <div class="gap"></div>
    <label>القانون
      <select id="rndRule"><option value="1">القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select>
-<button type="button" class="btn alt randomRulesBtn" onclick="showRulesModal()">📖 قواعد اللعب — القانون 1 والقانون 2</button>
    </label>
+   <button type="button" id="rndRulesOpen" class="btn alt randomRulesBtn">📖 قواعد اللعب — القانون 1 والقانون 2</button>
    <div class="gap"></div>
-   <button id="rndStart" class="btn green">👥 ابدأ أونلاين</button>
+   <button id="rndStart" class="btn ${bot?'alt':'green'}">${startLabel}</button>
    <button id="rndCancel" class="btn danger" style="display:none">✕ إلغاء البحث</button>
-   <div id="rndMsg" class="small"></div>
+   <div id="rndMsg" class="small">${bot?'🤖 اختر العدد والقانون ثم ابدأ المباراة مباشرة.':'👥 اختر العدد والقانون وسيبحث النظام عن لاعبين عشوائيين.'}</div>
    <button id="rndBackHome" type="button">↩️ الرجوع إلى الصفحة الرئيسية</button>
  </div>`);
- const mode=document.getElementById("rndMode"),start=document.getElementById("rndStart"),cancel=document.getElementById("rndCancel"),msg=document.getElementById("rndMsg"),back=document.getElementById("rndBackHome");
- if(mode)mode.value=initialMode==="computer"?"computer":"online";
- const sync=()=>{
-   const bot=mode.value==="computer";
-   start.textContent=bot?"🤖 ابدأ ضد الكمبيوتر":"👥 ابدأ أونلاين";
-   start.className=bot?"btn alt":"btn green";
-   if(msg)msg.textContent=bot?"🤖 اختر العدد والقانون ثم ابدأ المباراة مباشرة.":"";
- };
- mode.onchange=sync;sync();
- start.onclick=async()=>{
+ const mode=document.getElementById("rndMode"),startBtn=document.getElementById("rndStart"),cancel=document.getElementById("rndCancel"),msg=document.getElementById("rndMsg"),back=document.getElementById("rndBackHome"),rules=document.getElementById("rndRulesOpen");
+ if(rules)rules.onclick=showRulesModal;
+ startBtn.onclick=async()=>{
    if(mode.value==="online")return joinRandomOnline();
-   start.disabled=true;
+   startBtn.disabled=true;
    try{await startRandomComputer();}
-   catch(e){console.warn("computer start",e);if(msg)msg.textContent="تعذر بدء مباراة الكمبيوتر: "+(e?.message||e);start.disabled=false}
+   catch(e){console.warn("computer start",e);if(msg)msg.textContent="تعذر بدء مباراة الكمبيوتر: "+(e?.message||e);startBtn.disabled=false}
  };
- cancel.onclick=()=>{
-   randomQueueCancelToken++;
-   cancel.disabled=true;
-   if(msg)msg.textContent="جاري إلغاء البحث...";
- };
- back.onclick=()=>{
-   randomQueueCancelToken++;
-   closeModal();
-   window.scrollTo({top:0,behavior:"smooth"});
- };
+ cancel.onclick=()=>{randomQueueCancelToken++;cancel.disabled=true;if(msg)msg.textContent="جاري إلغاء البحث...";};
+ back.onclick=()=>{randomQueueCancelToken++;closeModal();window.scrollTo({top:0,behavior:"smooth"});};
 }
 
 function isComputerBot(id){return String(id||"").startsWith("BOT_")}
@@ -3994,7 +4044,7 @@ function renderLobby(){
   ${currentRoom.systemRandom?`<section class="hostSetupV2"><div class="hostSetupTitle">🎲 غرفة نظام عشوائية</div><div class="notice">بانتظار اكتمال ${Number(currentRoom.targetPlayers||2)} لاعبين • القانون ${Number(currentRoom.ruleMode||1)} • حد الخروج 120 • تبدأ تلقائياً عند اكتمال العدد • بدون متفرجين</div></section>`:(host?`<section class="hostSetupV2"><div class="hostSetupTitle">👑 إعداد المباراة</div><div class="hostSetupRow"><label>عدد اللاعبين<select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select></label><label>القانون<select id="ruleMode"><option value="1" selected>القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><label>الجولات<select id="roundCount">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${i===2?'selected':''}>${i+1}</option>`).join('')}<option value="open">مفتوحة</option></select></label><label>حد الخروج<select id="scoreLimit"><option value="50">50</option><option value="75">75</option><option value="100" selected>100</option><option value="125">125</option><option value="150">150</option><option value="200">200</option></select></label></div><div class="notice small">إذا وصل اللاعب إلى حد الخروج أو تجاوزه، يخرج من المباراة ويكمل الباقون.</div><div class="hostSetupActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="transferHost" class="btn alt" ${ps.length<2?'disabled':''}>👑 تسليم المضيف</button></div></section>`:'')}
   <section class="roomHostCard"><div class="roomSectionHead"><h3>👑 المضيف</h3>${canManageHost&&ps.length>1?`<button id="transferHostCard" class="hostTransferMini">نقل المضيفية</button>`:''}</div><div class="roomPerson hostOnly"><img src="${esc(avatarOf(hostP))}" alt=""><div><b>${esc(hostP.name||'المضيف')}</b><small>${host?'أنت المضيف':'صاحب الغرفة'} • عند خروجه تنتقل للأقدم تلقائيًا</small></div></div></section>
   <section class="roomPresentCard"><div class="roomSectionHead"><h3>👥 المتواجدون في الغرفة</h3><span>${ps.length} / ${currentRoom.systemRandom?Math.max(2,Math.min(4,Number(currentRoom.targetPlayers||2))):8}</span></div><div class="roomPeopleGrid">${people||'<div class="small">لا يوجد أعضاء</div>'}</div></section>
-  <section class="roomChatCard"><div class="roomSectionHead"><h3>💬 شات الغرفة</h3><button id="leave" class="leaveCompact">خروج</button></div><div class="roomMediaTools"><button id="voiceTop" class="mediaPill">🎙️ المايك</button><button id="sfxTop" class="mediaPill">🔊 الصوت</button><button id="funTop" class="mediaPill">😂 التأثيرات</button><button id="radioTop" class="mediaPill">📻 الإذاعة</button></div>${chatPanel()}</section>
+  <section class="roomChatCard compactRoomTools"><div class="roomSectionHead"><h3>💬 الشات والصوت</h3><div class="roomHeadActions"><button id="toggleRoomChat" class="chatToggleBtn">فتح الشات</button><button id="leave" class="leaveCompact">خروج</button></div></div><div class="roomMediaTools"><button id="voiceTop" class="mediaPill">🎙️ المايك</button><button id="sfxTop" class="mediaPill">🔊 الصوت</button><button id="funTop" class="mediaPill">😂 التأثيرات</button><button id="radioTop" class="mediaPill">📻 الإذاعة</button></div><div id="roomChatBody" class="roomChatBody isCollapsed">${chatPanel()}</div></section>
  </div>`;
  wireCommon();
  const saveBtn=document.getElementById("saveRoomBtn");if(saveBtn)saveBtn.onclick=saveCurrentRoom;
@@ -4003,6 +4053,7 @@ function renderLobby(){
   document.getElementById('playerCount')?.addEventListener('change',syncCount);document.querySelectorAll('[data-active]').forEach(b=>b.addEventListener('change',()=>{const checked=[...document.querySelectorAll('[data-active]:checked')];if(checked.length>4){b.checked=false;toast('الحد الأعلى 4 لاعبين')}if(checked.length<2){b.checked=true;toast('لازم لاعبين على الأقل')}const w=document.querySelector(`[data-seatwrap="${b.dataset.active}"]`);if(w){w.classList.toggle('active',b.checked);const st=w.querySelector('.newSeatState');if(st)st.textContent=b.checked?'مختار للطاولة':'متفرج'}}));syncCount();
   const st=document.getElementById('start');if(st)st.onclick=startGame;const th=document.getElementById('transferHost');if(th)th.onclick=showHostTransfer;document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kickPlayer(b.dataset.kick)});
  }
+ const chatToggle=document.getElementById('toggleRoomChat'),chatBody=document.getElementById('roomChatBody');if(chatToggle&&chatBody)chatToggle.onclick=()=>{const closed=chatBody.classList.toggle('isCollapsed');chatToggle.textContent=closed?'فتح الشات':'إخفاء الشات'};
  const thc=document.getElementById('transferHostCard');if(thc)thc.onclick=showHostTransfer;
  const sx=document.getElementById('sfxTop');if(sx)sx.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem('sheikh_sfx_muted','0');updateSfxUi()}await unlockAudio();sfx('correct');toast('اختبار الصوت 🔊')};const vt=document.getElementById('voiceTop');if(vt)vt.onclick=()=>voiceActive?stopLiveVoice(true):startLiveVoice();const ft=document.getElementById('funTop');if(ft)ft.onclick=showSoundBoard;const rt=document.getElementById('radioTop');if(rt)rt.onclick=showRadioPanel;const hp=document.getElementById('roomHelp');if(hp)hp.onclick=()=>openModal(`<h3>ℹ️ تعليمات الغرفة</h3><div class="notice" style="line-height:1.9;text-align:right">المضيف يختار من 2 إلى 4 لاعبين للطاولة، والباقي يبقون متفرجين. بداية كل جولة تُختار عشوائيًا من اللاعبين المشاركين، وليست مرتبطة بالمضيف. ويمكن نقل المضيفية لعضو آخر، وعند خروج المضيف تنتقل تلقائيًا للأقدم.</div><button id="closeRoomHelp" class="btn alt">إغلاق</button>`),setTimeout(()=>{const b=document.getElementById('closeRoomHelp');if(b)b.onclick=closeModal},0);
 }
