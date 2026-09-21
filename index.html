@@ -3169,7 +3169,12 @@ async function runComputerBotWork(){
  // يسحب من الرزمة. J/Q/K تتفعل فقط من السحب وبحسب القانون المختار.
  const take=await takeDeckCards(1);if(!take.ok){await botAdvanceTurn(botId);return}
  const drawn=take.cards[0];
- if(await botUseDrawnPower(botId,drawn,g)){await botAdvanceTurn(botId);return}
+ if(await botUseDrawnPower(botId,drawn,g)){
+  // إذا بقيت ورقة واحدة بعد تنفيذ القوة، الكمبيوتر يقول شيك بدل ما يدخل في دورة لا تنتهي.
+  const afterPower=(await get(ref(db,`rooms/${roomCode}/privateHands/${botId}`))).val()||{};
+  if(!g.ending&&countCards(afterPower.cards||[])===1){await botCallCheck(botId,g);return}
+  await botAdvanceTurn(botId);return
+ }
 
  // الأوراق العادية/الجوكر: يحتفظ بالأفضل ويستبدل أعلى كلفة، أو يرمي المسحوبة.
  let worst=-1,worstCost=-999;cards.forEach((c,i)=>{const v=botCardCost(c);if(c&&v>worstCost){worstCost=v;worst=i}});
@@ -3182,6 +3187,11 @@ async function runComputerBotWork(){
  }else{
   await botPutDiscard(drawn,`${r.players?.[botId]?.name||"الكمبيوتر"} سحب ورقة ولم يحتفظ بها ورماها للميدان`);
  }
+
+ // حماية الورقة الأخيرة: إذا أنهى الكمبيوتر حركته وبقيت له ورقة واحدة،
+ // يقول شيك فوراً. بهذا لا يظل يسحب/يبدل على نفس الورقة إلى ما لا نهاية.
+ const finalHand=(await get(ref(db,`rooms/${roomCode}/privateHands/${botId}`))).val()||{};
+ if(!g.ending&&countCards(finalHand.cards||[])===1){await botCallCheck(botId,g);return}
  await botAdvanceTurn(botId);
 }
 async function joinRandomOnline(){
