@@ -2934,7 +2934,7 @@ async function startRandomComputer(){
  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code).catch(()=>{});subscribe(code);ensureComputerBotHeartbeat();
 }
 let botWorkTimer=0,botWorkKey="";
-let botLastRunAt=0,botWorkInFlight=false;
+let botLastRunAt=0,botWorkInFlight=false,botWorkStartedAt=0;
 function scheduleComputerBotWork(r=currentRoom){
  if(!r?.computerMatch||uid!==r.hostId||r.status!=="game")return;
  const g=r.game||{},turn=(g.turnOrder||[])[Number(g.turnIndex||0)]||"";
@@ -2944,15 +2944,17 @@ function scheduleComputerBotWork(r=currentRoom){
  if(key===botWorkKey && now-botLastRunAt<2000)return;
  botWorkKey=key;botLastRunAt=now;clearTimeout(botWorkTimer);
  botWorkTimer=setTimeout(async()=>{
-   if(botWorkInFlight)return;
-   botWorkInFlight=true;
+   // حماية: محاولة كمبيوتر قديمة لا تقفل كل الأدوار التالية للأبد.
+   if(botWorkInFlight && Date.now()-Number(botWorkStartedAt||0)<10000)return;
+   if(botWorkInFlight){botWorkInFlight=false;botWorkKey="";}
+   botWorkInFlight=true;botWorkStartedAt=Date.now();
    try{await runComputerBotWork()}
    catch(e){
      console.warn("bot work",e);
      botWorkKey="";
      setTimeout(()=>scheduleComputerBotWork(currentRoom),450);
    }finally{
-     botWorkInFlight=false;
+     botWorkInFlight=false;botWorkStartedAt=0;
    }
  },650+Math.floor(Math.random()*450));
 }
@@ -3146,11 +3148,10 @@ async function runComputerBotWork(){
 
  const href=ref(db,`rooms/${roomCode}/privateHands/${botId}`),hsnap=await get(href),hand=hsnap.val()||{},cards=(hand.cards||[]).slice(),discard=g.discard;
 
- // إذا بقيت للكمبيوتر ورقة واحدة وكانت جوكر، يحسم الجولة بشيك بدل أن يعلق أو يدور بلا قرار.
  const liveCards=cards.filter(Boolean);
- if(!g.ending&&liveCards.length===1&&liveCards[0]?.r==="JOKER"){await botCallCheck(botId,g);return}
 
- // أولاً: نفس رتبة الميدان — يرمي المطابقات. القوة لا تتفعل من اليد.
+ // أولاً: إذا الورقة الأخيرة تطابق الميدان، يلعبها وينهي الجولة.
+ // القوة لا تتفعل من اليد.
  if(discard){
   const idx=[];cards.forEach((c,i)=>{if(c&&sameRank(c,discard))idx.push(i)});
   if(idx.length){
@@ -3165,6 +3166,10 @@ async function runComputerBotWork(){
    await botAdvanceTurn(botId);return
   }
  }
+
+ // بقيت ورقة واحدة ولم تُرمَ: يقول الكمبيوتر شيك فوراً.
+ // يشمل الجوكر وأي ورقة أخرى، ويمنع التعليق في آخر ورقة.
+ if(!g.ending&&liveCards.length===1){await botCallCheck(botId,g);return}
 
  // يسحب من الرزمة. J/Q/K تتفعل فقط من السحب وبحسب القانون المختار.
  const take=await takeDeckCards(1);if(!take.ok){await botAdvanceTurn(botId);return}
