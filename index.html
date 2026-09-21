@@ -1339,7 +1339,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 
 <style id="real-card-assets-fixed">
 .cardFace,.cardBack{padding:0!important;overflow:hidden!important;background:#fff!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important;aspect-ratio:5/7!important}
-.cardBack{background-image:url("Cards/back.png")!important}
+.cardBack{background-image:url("Cards/back.webp")!important}
 .cardFace .gameCardImage{display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;object-position:center!important;border:0!important;margin:0!important;padding:0!important;user-select:none!important;-webkit-user-drag:none!important}
 .cardFace .faceCardInner,.cardFace .pipGrid{display:none!important}
 </style>
@@ -1366,7 +1366,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
   border-radius:inherit!important;
 }
 .cardBack{
-  background-image:url("Cards/back.png?v=8")!important;
+  background-image:url("Cards/back.webp?v=8")!important;
   background-size:100% 100%!important;
   background-position:center!important;
   background-repeat:no-repeat!important;
@@ -2617,8 +2617,8 @@ function updateSfxUi(){
 }
 function cardLabel(c){if(!c)return"";if(c.r==="JOKER")return c.color==="color"?"🃏 ملون":"🃏 أسود";const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";return `${c.r}${sym}`}
 function cardImageFile(c){
- if(!c)return "Cards/back.png";
- if(c.r==="JOKER")return c.color==="color"?"Cards/joker_color.png":"Cards/joker_black.png";
+ if(!c)return "Cards/back.webp";
+ if(c.r==="JOKER")return c.color==="color"?"Cards/joker_color.webp":"Cards/joker_black.webp";
  const suitCode={"♠":"S","♥":"H","♦":"D","♣":"C",S:"S",H:"H",D:"D",C:"C"}[c.s]||c.s;
  return `Cards/${c.r}${suitCode}.png`;
 }
@@ -3591,6 +3591,18 @@ function subscribe(c){
   if(!s.exists()){home("الغرفة غير موجودة");return}
   const nextRoom=s.val();
   currentRoom=nextRoom;
+
+  // آخر ورقة للكمبيوتر: تشغيل مباشر من تحديث Firebase نفسه.
+  try{
+   const _g=nextRoom.game||{},_o=Array.isArray(_g.turnOrder)?_g.turnOrder:[];
+   const _bot=_o[Number(_g.turnIndex||0)]||"";
+   if(nextRoom.computerMatch && uid===nextRoom.hostId && nextRoom.status==="game" &&
+      _g.phase==="playing" && isComputerBot(_bot) &&
+      Number(nextRoom.players?.[_bot]?.cardCount||0)===1){
+     setTimeout(()=>rescueComputerLastCard(_bot),120);
+   }
+  }catch(_e){console.warn("last-card direct trigger",_e)}
+
   // اعرض الحالة فور وصولها من Firebase، ولا تنتظر presence أو منطق الجولة.
   render();updateAdminVoiceIndicator();
   if(voiceActive)syncVoicePeers(); else voiceController?.listen?.();
@@ -4456,8 +4468,8 @@ async function maybeFinishReveal(){
     if(id!==uid&&!isComputerBot(id))continue;
     const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
     const cards=Array.isArray(hs.cards)?hs.cards:[];
-    if(!cards.length)continue;
-    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
+    if(!cards.length && id!==g.emptyWinner)continue;
+    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:(id===g.emptyWinner?0:scoreHand(cards)),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
     await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),payload);
     rev[id]=payload;
    }
