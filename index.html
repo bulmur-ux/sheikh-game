@@ -4388,8 +4388,9 @@ async function maybeFinishReveal(){
     if(id!==uid&&!isComputerBot(id))continue;
     const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
     const cards=Array.isArray(hs.cards)?hs.cards:[];
-    if(!cards.length)continue;
-    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
+    // اللاعب الذي خلّص أوراقه يجب أن يرسل كشفاً أيضاً: يد فارغة + سكور 0.
+    // تجاهل اليد الفارغة كان يترك شاشة الكشف معلقة على 3 من 4.
+    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:id===g.emptyWinner?0:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
     await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),payload);
     rev[id]=payload;
    }
