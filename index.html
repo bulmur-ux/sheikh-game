@@ -1339,7 +1339,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 
 <style id="real-card-assets-fixed">
 .cardFace,.cardBack{padding:0!important;overflow:hidden!important;background:#fff!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important;aspect-ratio:5/7!important}
-.cardBack{background-image:url("Cards/back.webp")!important}
+.cardBack{background-image:url("Cards/back.png")!important}
 .cardFace .gameCardImage{display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;object-position:center!important;border:0!important;margin:0!important;padding:0!important;user-select:none!important;-webkit-user-drag:none!important}
 .cardFace .faceCardInner,.cardFace .pipGrid{display:none!important}
 </style>
@@ -1366,7 +1366,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
   border-radius:inherit!important;
 }
 .cardBack{
-  background-image:url("Cards/back.webp?v=8")!important;
+  background-image:url("Cards/back.png?v=8")!important;
   background-size:100% 100%!important;
   background-position:center!important;
   background-repeat:no-repeat!important;
@@ -2617,8 +2617,8 @@ function updateSfxUi(){
 }
 function cardLabel(c){if(!c)return"";if(c.r==="JOKER")return c.color==="color"?"🃏 ملون":"🃏 أسود";const sym={H:"♥",D:"♦",S:"♠",C:"♣"}[c.s]||"";return `${c.r}${sym}`}
 function cardImageFile(c){
- if(!c)return "Cards/back.webp";
- if(c.r==="JOKER")return c.color==="color"?"Cards/joker_color.webp":"Cards/joker_black.webp";
+ if(!c)return "Cards/back.png";
+ if(c.r==="JOKER")return c.color==="color"?"Cards/joker_color.png":"Cards/joker_black.png";
  const suitCode={"♠":"S","♥":"H","♦":"D","♣":"C",S:"S",H:"H",D:"D",C:"C"}[c.s]||c.s;
  return `Cards/${c.r}${suitCode}.png`;
 }
@@ -2957,103 +2957,55 @@ function scheduleComputerBotWork(r=currentRoom){
  },650+Math.floor(Math.random()*450));
 }
 let computerBotHeartbeat=0;
-let botLastCardRescueBusy=false;
-
-async function rescueComputerLastCard(botId){
- if(!botId||!isComputerBot(botId)||!roomCode)return false;
+let lastCardWatchBusy=false,lastCardWatchAt=0;
+async function hardLastCardWatch(){
+ if(!roomCode||lastCardWatchBusy)return;
+ if(Date.now()-lastCardWatchAt<1200)return;
+ lastCardWatchAt=Date.now();lastCardWatchBusy=true;
+ const unlock=setTimeout(()=>{lastCardWatchBusy=false;botWorkInFlight=false;botWorkKey=""},4500);
  try{
-  const ps=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
-  const g=ps.game||{},order=Array.isArray(g.turnOrder)?g.turnOrder:[];
-  const cur=order[Number(g.turnIndex||0)]||"";
-  if(ps.status!=="game"||g.phase!=="playing"||cur!==botId)return false;
-  const handRef=ref(db,`rooms/${roomCode}/privateHands/${botId}`);
-  const hs=(await get(handRef)).val()||{};
+  const snap=await get(ref(db,`rooms/${roomCode}/public`));
+  const r=snap.val()||{},g=r.game||{},o=Array.isArray(g.turnOrder)?g.turnOrder:[];
+  const botId=o[Number(g.turnIndex||0)]||"";
+  if(!r.computerMatch||uid!==r.hostId||r.status!=="game"||g.phase!=="playing"||!isComputerBot(botId))return;
+  if(Number(r.players?.[botId]?.cardCount||0)!==1)return;
+  if(Date.now()-Number(g.turnStartedAt||0)<2500)return;
+
+  const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${botId}`))).val()||{};
   const cards=Array.isArray(hs.cards)?hs.cards.slice():[];
   const live=cards.map((c,i)=>c?{c,i}:null).filter(Boolean);
-  if(live.length!==1)return false;
-  const last=live[0].c,idx=live[0].i,name=ps.players?.[botId]?.name||"الكمبيوتر";
 
-  if(g.discard&&sameRank(last,g.discard)){
-   cards[idx]=null;
+  if(live.length===1&&g.discard&&sameRank(live[0].c,g.discard)){
+   const last=live[0].c;cards[live[0].i]=null;
    await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);
    await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:0});
-   await runTransaction(ref(db,`rooms/${roomCode}/public/game`),state=>{
-    if(!state||state.phase!=="playing")return state;
-    const o=Array.isArray(state.turnOrder)?state.turnOrder:[];
-    if((o[Number(state.turnIndex||0)]||"")!==botId)return state;
-    const pile=Array.isArray(state.discardPile)?state.discardPile.slice():[];pile.push(last);
-    state.discard=last;state.discardPile=pile;state.discardSeq=Number(state.discardSeq||0)+1;
-    state.emptyWinner=botId;state.ending=true;state.phase="reveal";
-    state.hasDrawn=null;state.decisionUid=null;state.decisionUntil=null;state.actionLockUid=null;
-    state.turnStartedAt=0;state.turnSeq=Number(state.turnSeq||0)+1;
-    state.lastAction=`${name} لعب آخر ورقة — انتهت الجولة`;
-    return state;
+   await runTransaction(ref(db,`rooms/${roomCode}/public/game`),x=>{
+    if(!x||x.phase!=="playing")return x;
+    const oo=Array.isArray(x.turnOrder)?x.turnOrder:[];
+    if((oo[Number(x.turnIndex||0)]||"")!==botId)return x;
+    const pile=Array.isArray(x.discardPile)?x.discardPile.slice():[];pile.push(last);
+    x.discard=last;x.discardPile=pile;x.discardSeq=Number(x.discardSeq||0)+1;
+    x.emptyWinner=botId;x.ending=true;x.phase="reveal";x.turnStartedAt=0;
+    x.hasDrawn=null;x.actionLockUid=null;x.decisionUid=null;x.decisionUntil=null;
+    x.lastAction=`${r.players?.[botId]?.name||"الكمبيوتر"} خلص أوراقه — انتهت الجولة`;
+    return x;
    });
-   botWorkKey="";botWorkInFlight=false;return true;
+   return;
   }
 
-  if(!g.ending){
-   await runTransaction(ref(db,`rooms/${roomCode}/public/game`),state=>{
-    if(!state||state.phase!=="playing")return state;
-    const o=Array.isArray(state.turnOrder)?state.turnOrder:[];
-    if((o[Number(state.turnIndex||0)]||"")!==botId||state.ending)return state;
-    state.ending=true;state.checkCaller=botId;state.checkStartIndex=Number(state.turnIndex||0);
-    state.checkTurnsLeft=Math.max(0,o.length-1);
-    state.hasDrawn=null;state.decisionUid=null;state.decisionUntil=null;state.actionLockUid=null;
-    state.lastAction=`${name} قال شيك`;
-    state.turnIndex=o.length?(Number(state.turnIndex||0)+1)%o.length:0;
-    state.turnStartedAt=Date.now();state.turnSeq=Number(state.turnSeq||0)+1;
-    return state;
-   });
-   botWorkKey="";botWorkInFlight=false;return true;
-  }
-
-  await botAdvanceTurn(botId);
-  botWorkKey="";botWorkInFlight=false;return true;
- }catch(e){
-  console.warn("last card rescue",e);botWorkKey="";botWorkInFlight=false;return false;
+  if(!g.ending){await botCallCheck(botId,g)}
+  else{await botAdvanceTurn(botId)}
+ }catch(e){console.warn("hard last-card watch",e)}
+ finally{
+  clearTimeout(unlock);lastCardWatchBusy=false;
+  botWorkInFlight=false;botWorkKey="";
  }
-}
-let botOneCardForceBusy=false;
-async function forceBotOneCardProgress(botId){
- if(botOneCardForceBusy||!botId||!isComputerBot(botId)||!roomCode)return false;
- botOneCardForceBusy=true;
- try{
-  if(await rescueComputerLastCard(botId))return true;
-  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
-   if(!r||r.status!=="game"||!r.computerMatch)return r;
-   const g=r.game||{},o=Array.isArray(g.turnOrder)?g.turnOrder:[];
-   const cur=o[Number(g.turnIndex||0)]||"";
-   if(cur!==botId||g.phase!=="playing"||Number(r.players?.[botId]?.cardCount||0)!==1)return r;
-   if(g.ending){
-    const rem={...(g.finalRemaining||{})};if(rem[botId])delete rem[botId];g.finalRemaining=rem;
-    if(Object.keys(rem).length===0){
-     g.phase="reveal";g.turnStartedAt=0;g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
-     g.lastAction="انتهت الأدوار الأخيرة — كشف النتائج";return r;
-    }
-    let idx=Number(g.turnIndex||0),tries=0;
-    do{idx=(idx+1)%o.length;tries++}while(tries<o.length&&!rem[o[idx]]);
-    g.turnIndex=idx;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;
-    g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
-    g.lastAction=`انتقل الدور إلى ${r.players?.[o[idx]]?.name||"اللاعب التالي"}`;return r;
-   }
-   const rem={};for(const id of o)if(id!==botId)rem[id]=true;
-   g.ending=true;g.checkCalledBy=botId;g.finalRemaining=rem;
-   g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
-   g.lastAction=`${r.players?.[botId]?.name||"الكمبيوتر"} قال شيك`;
-   let idx=Number(g.turnIndex||0),tries=0;
-   do{idx=(idx+1)%o.length;tries++}while(tries<o.length&&!rem[o[idx]]);
-   g.turnIndex=idx;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;
-   return r;
-  });
-  botWorkKey="";botWorkInFlight=false;return !!tx.committed;
- }catch(e){console.warn("force one-card progress",e);botWorkKey="";botWorkInFlight=false;return false}
- finally{botOneCardForceBusy=false}
 }
 
 function ensureComputerBotHeartbeat(){
  clearInterval(computerBotHeartbeat);
  computerBotHeartbeat=setInterval(()=>{
+   hardLastCardWatch();
    try{
      if(currentRoom?.computerMatch && roomCode && uid===currentRoom.hostId && currentRoom.status==="game"){
        const g=currentRoom.game||{};
@@ -3065,12 +3017,6 @@ function ensureComputerBotHeartbeat(){
        // وإذا تجاوز 12 ثانية، مرّر الدور حتى لا تتجمد المباراة عند 00:00.
        if(isComputerBot(botId)&&g.phase==="playing"&&started>0){
          const age=Date.now()-started;
-         // إصلاح حاسم لآخر ورقة: هذا المسار مستقل عن قفل botWorkInFlight.
-         // إذا الكمبيوتر ظاهر عنده ورقة واحدة وتأخر أكثر من 3 ثوانٍ، نعالجها مباشرة.
-         if(Number(currentRoom?.players?.[botId]?.cardCount||0)===1&&age>3000){
-           rescueComputerLastCard(botId);
-           return;
-         }
          // لا نمرر الدور بالقوة والكمبيوتر ما زال ينفذ سحب/تبديل؛ هذا كان يسبب تعليقاً وتضارباً.
          if(age>8000&&!botWorkInFlight)botWorkKey="";
          if(age>18000&&!botWorkInFlight){
@@ -3246,13 +3192,9 @@ async function runComputerBotWork(){
 
  const href=ref(db,`rooms/${roomCode}/privateHands/${botId}`),hsnap=await get(href),hand=hsnap.val()||{},cards=(hand.cards||[]).slice(),discard=g.discard;
 
+ // إذا بقيت للكمبيوتر ورقة واحدة وكانت جوكر، يحسم الجولة بشيك بدل أن يعلق أو يدور بلا قرار.
  const liveCards=cards.filter(Boolean);
-
- // آخر ورقة تُعالج أولاً: المطابقة ستُرمى في المسار التالي،
- // وغير المطابقة (ومنها الجوكر) تقول شيك فوراً.
- if(!g.ending&&liveCards.length===1&&(!discard||!sameRank(liveCards[0],discard))){
-  await botCallCheck(botId,g);return
- }
+ if(!g.ending&&liveCards.length===1&&liveCards[0]?.r==="JOKER"){await botCallCheck(botId,g);return}
 
  // أولاً: نفس رتبة الميدان — يرمي المطابقات. القوة لا تتفعل من اليد.
  if(discard){
@@ -3622,22 +3564,12 @@ async function handleHostKickRequest(nextRoom){
  }finally{processingKickRequest=false}
 }
 function subscribe(c){
+ ensureComputerBotHeartbeat();
  cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();
  unsubRoom=onValue(ref(db,`rooms/${c}/public`),s=>{
   if(!s.exists()){home("الغرفة غير موجودة");return}
   const nextRoom=s.val();
   currentRoom=nextRoom;
-
-  // آخر ورقة للكمبيوتر: تشغيل مباشر من تحديث Firebase نفسه.
-  try{
-   const _g=nextRoom.game||{},_o=Array.isArray(_g.turnOrder)?_g.turnOrder:[];
-   const _bot=_o[Number(_g.turnIndex||0)]||"";
-   if(nextRoom.computerMatch && uid===nextRoom.hostId && nextRoom.status==="game" &&
-      _g.phase==="playing" && isComputerBot(_bot)){
-     setTimeout(()=>forceBotOneCardProgress(_bot),250);
-   }
-  }catch(_e){console.warn("last-card direct trigger",_e)}
-
   // اعرض الحالة فور وصولها من Firebase، ولا تنتظر presence أو منطق الجولة.
   render();updateAdminVoiceIndicator();
   if(voiceActive)syncVoicePeers(); else voiceController?.listen?.();
@@ -4503,8 +4435,8 @@ async function maybeFinishReveal(){
     if(id!==uid&&!isComputerBot(id))continue;
     const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
     const cards=Array.isArray(hs.cards)?hs.cards:[];
-    if(!cards.length && id!==g.emptyWinner)continue;
-    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:(id===g.emptyWinner?0:scoreHand(cards)),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
+    if(!cards.length)continue;
+    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
     await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),payload);
     rev[id]=payload;
    }
