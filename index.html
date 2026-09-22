@@ -3014,6 +3014,43 @@ async function rescueComputerLastCard(botId){
   console.warn("last card rescue",e);botWorkKey="";botWorkInFlight=false;return false;
  }
 }
+let botOneCardForceBusy=false;
+async function forceBotOneCardProgress(botId){
+ if(botOneCardForceBusy||!botId||!isComputerBot(botId)||!roomCode)return false;
+ botOneCardForceBusy=true;
+ try{
+  if(await rescueComputerLastCard(botId))return true;
+  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
+   if(!r||r.status!=="game"||!r.computerMatch)return r;
+   const g=r.game||{},o=Array.isArray(g.turnOrder)?g.turnOrder:[];
+   const cur=o[Number(g.turnIndex||0)]||"";
+   if(cur!==botId||g.phase!=="playing"||Number(r.players?.[botId]?.cardCount||0)!==1)return r;
+   if(g.ending){
+    const rem={...(g.finalRemaining||{})};if(rem[botId])delete rem[botId];g.finalRemaining=rem;
+    if(Object.keys(rem).length===0){
+     g.phase="reveal";g.turnStartedAt=0;g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
+     g.lastAction="انتهت الأدوار الأخيرة — كشف النتائج";return r;
+    }
+    let idx=Number(g.turnIndex||0),tries=0;
+    do{idx=(idx+1)%o.length;tries++}while(tries<o.length&&!rem[o[idx]]);
+    g.turnIndex=idx;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;
+    g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
+    g.lastAction=`انتقل الدور إلى ${r.players?.[o[idx]]?.name||"اللاعب التالي"}`;return r;
+   }
+   const rem={};for(const id of o)if(id!==botId)rem[id]=true;
+   g.ending=true;g.checkCalledBy=botId;g.finalRemaining=rem;
+   g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
+   g.lastAction=`${r.players?.[botId]?.name||"الكمبيوتر"} قال شيك`;
+   let idx=Number(g.turnIndex||0),tries=0;
+   do{idx=(idx+1)%o.length;tries++}while(tries<o.length&&!rem[o[idx]]);
+   g.turnIndex=idx;g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;
+   return r;
+  });
+  botWorkKey="";botWorkInFlight=false;return !!tx.committed;
+ }catch(e){console.warn("force one-card progress",e);botWorkKey="";botWorkInFlight=false;return false}
+ finally{botOneCardForceBusy=false}
+}
+
 function ensureComputerBotHeartbeat(){
  clearInterval(computerBotHeartbeat);
  computerBotHeartbeat=setInterval(()=>{
@@ -3597,7 +3634,7 @@ function subscribe(c){
    const _bot=_o[Number(_g.turnIndex||0)]||"";
    if(nextRoom.computerMatch && uid===nextRoom.hostId && nextRoom.status==="game" &&
       _g.phase==="playing" && isComputerBot(_bot)){
-     setTimeout(()=>rescueComputerLastCard(_bot),120);
+     setTimeout(()=>forceBotOneCardProgress(_bot),250);
    }
   }catch(_e){console.warn("last-card direct trigger",_e)}
 
