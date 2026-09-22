@@ -4032,7 +4032,10 @@ async function autoGameWork(){
   const cards=myHand.cards||[];
   await set(ref(db,`rooms/${roomCode}/public/reveals/${uid}`),{name:myName,cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)});
  }
- if(g.phase==="reveal")setTimeout(maybeFinishReveal,80);
+ if(g.phase==="reveal"){
+  setTimeout(forceComputerRevealCompletion,40);
+  setTimeout(maybeFinishReveal,120);
+ }
  scheduleRoundRecovery();
 }
 async function claimInitialHand(){
@@ -4413,6 +4416,29 @@ async function handleTurnTimeout(){
  }catch(e){console.warn("turn timeout",e)}finally{handlingTurnTimeout=false}
 }
 
+let revealWatchBusy=false;
+async function forceComputerRevealCompletion(){
+ if(revealWatchBusy||!roomCode)return;
+ revealWatchBusy=true;
+ try{
+  const pub=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{},g=pub.game||{};
+  if(pub.status!=="game"||g.phase!=="reveal"||!pub.computerMatch||uid!==pub.hostId)return;
+  const order=Array.isArray(g.turnOrder)?g.turnOrder:[],rev=pub.reveals||{},players=pub.players||{};
+  for(const id of order){
+   if(rev[id]||(id!==uid&&!isComputerBot(id)))continue;
+   const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
+   const cards=Array.isArray(hs.cards)?hs.cards:[];
+   const empty=(id===g.emptyWinner)||Number(players?.[id]?.cardCount||0)===0;
+   await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),{
+    name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),
+    cards,score:empty?0:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)
+   });
+  }
+  setTimeout(()=>maybeFinishReveal(),100);
+ }catch(e){console.warn("force reveal completion",e)}
+ finally{revealWatchBusy=false}
+}
+
 async function maybeFinishReveal(){
  if(revealFinalizing||game().phase!=="reveal"||!roomCode)return;
  revealFinalizing=true;
@@ -4435,8 +4461,9 @@ async function maybeFinishReveal(){
     if(id!==uid&&!isComputerBot(id))continue;
     const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
     const cards=Array.isArray(hs.cards)?hs.cards:[];
-    if(!cards.length)continue;
-    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
+    const isEmptyWinner=(id===g.emptyWinner)||Number(players?.[id]?.cardCount||0)===0;
+    if(!cards.length&&!isEmptyWinner)continue;
+    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:isEmptyWinner?0:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
     await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),payload);
     rev[id]=payload;
    }
@@ -4610,6 +4637,7 @@ function renderGame(){
  }
  if(g.phase==="reveal"){
   const rev=currentRoom.reveals||{},done=active.filter(id=>rev[id]).length;
+  if(currentRoom.computerMatch&&uid===currentRoom.hostId)setTimeout(forceComputerRevealCompletion,80);
   app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>🃏 كشف الأوراق</h2><p>تم استلام ${done} من ${active.length} لاعبين.</p>${myHand?`<div class="refCountdown" style="font-size:34px">${scoreHand(myHand.cards||[])}</div><p>سكورك في الجولة</p>`:""}</div></div></div>${chatPanel()}`;wireCommon();setTimeout(maybeFinishReveal,250);return;
  }
  const otherIds=active.filter(id=>id!==uid),positions=["top","left","right"],completedRounds=Math.max(0,Number(g.roundNo||1)-1),scores=active.map(id=>`<div class="refScoreRow"><span>${esc(currentRoom.players?.[id]?.name||"لاعب")}</span><b>${Number(totals[id]||0)} نقطة</b></div>`).join("");
