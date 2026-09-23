@@ -2934,7 +2934,7 @@ async function startRandomComputer(){
  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code).catch(()=>{});subscribe(code);ensureComputerBotHeartbeat();
 }
 let botWorkTimer=0,botWorkKey="";
-let botLastRunAt=0,botWorkInFlight=false;
+let botLastRunAt=0,botWorkInFlight=false,botWorkStartedAt=0;
 function scheduleComputerBotWork(r=currentRoom){
  if(!r?.computerMatch||uid!==r.hostId||r.status!=="game")return;
  const g=r.game||{},turn=(g.turnOrder||[])[Number(g.turnIndex||0)]||"";
@@ -2945,14 +2945,14 @@ function scheduleComputerBotWork(r=currentRoom){
  botWorkKey=key;botLastRunAt=now;clearTimeout(botWorkTimer);
  botWorkTimer=setTimeout(async()=>{
    if(botWorkInFlight)return;
-   botWorkInFlight=true;
+   botWorkInFlight=true;botWorkStartedAt=Date.now();
    try{await runComputerBotWork()}
    catch(e){
      console.warn("bot work",e);
      botWorkKey="";
      setTimeout(()=>scheduleComputerBotWork(currentRoom),450);
    }finally{
-     botWorkInFlight=false;
+     botWorkInFlight=false;botWorkStartedAt=0;
    }
  },650+Math.floor(Math.random()*450));
 }
@@ -3005,6 +3005,7 @@ async function hardLastCardWatch(){
 function ensureComputerBotHeartbeat(){
  clearInterval(computerBotHeartbeat);
  computerBotHeartbeat=setInterval(()=>{
+   enforceZeroHandRoundEnd();
    hardLastCardWatch();
    try{
      if(currentRoom?.computerMatch && roomCode && uid===currentRoom.hostId && currentRoom.status==="game"){
@@ -3017,6 +3018,11 @@ function ensureComputerBotHeartbeat(){
        // وإذا تجاوز 12 ثانية، مرّر الدور حتى لا تتجمد المباراة عند 00:00.
        if(isComputerBot(botId)&&g.phase==="playing"&&started>0){
          const age=Date.now()-started;
+         // إذا علقت عملية Firebase/قوة للكمبيوتر أكثر من 12 ثانية نفك القفل ونعيد تقييم نفس الدور.
+         if(botWorkInFlight&&botWorkStartedAt&&Date.now()-botWorkStartedAt>12000){
+           console.warn("BOT watchdog released stuck work",{botId,turnSeq:g.turnSeq});
+           botWorkInFlight=false;botWorkStartedAt=0;botWorkKey="";
+         }
          // لا نمرر الدور بالقوة والكمبيوتر ما زال ينفذ سحب/تبديل؛ هذا كان يسبب تعليقاً وتضارباً.
          if(age>8000&&!botWorkInFlight)botWorkKey="";
          if(age>18000&&!botWorkInFlight){
@@ -3031,12 +3037,13 @@ function ensureComputerBotHeartbeat(){
  },900);
 }
 async function botAdvanceTurn(botId){
- await runTransaction(ref(db,`rooms/${roomCode}/public/game`),g=>{
-  if(!g||g.phase!=="playing")return g;
+ await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
+  if(!r||r.status!=="game")return r;
+  const g=r.game||{};
+  if(g.phase!=="playing")return r;
   const o=Array.isArray(g.turnOrder)?g.turnOrder:[],cur=o[Number(g.turnIndex||0)]||"";
-  if(cur!==botId)return g;
+  if(cur!==botId)return r;
 
-  // بعد شيك: هذا الكمبيوتر يأخذ دوراً أخيراً واحداً فقط.
   if(g.ending){
    const remaining={...(g.finalRemaining||{})};
    if(remaining[botId])delete remaining[botId];
@@ -3044,22 +3051,30 @@ async function botAdvanceTurn(botId){
    if(Object.keys(remaining).length===0){
     g.phase="reveal";g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
     g.turnStartedAt=0;g.timeoutClaim=null;g.lastAction="انتهت الأدوار الأخيرة — كشف النتائج";
-    return g;
+    r.game=g;return r;
    }
   }
 
-  let idx=Number(g.turnIndex||0),tries=0;
+  let idx=Number(g.turnIndex||0),tries=0,found=false;
   do{
    idx=(idx+1)%o.length;tries++;
-   const next=o[idx],live=Number(currentRoom?.players?.[next]?.cardCount||0)>0;
-   if(g.ending){if(g.finalRemaining?.[next]&&live)break}
-   else if(live)break;
+   const next=o[idx],live=Number(r.players?.[next]?.cardCount||0)>0;
+   if(g.ending){
+    if(g.finalRemaining?.[next]&&live){found=true;break}
+   }else if(live){found=true;break}
   }while(tries<o.length);
+
+  if(!found){
+   g.phase="reveal";g.turnStartedAt=0;g.hasDrawn=null;g.actionLockUid=null;
+   g.decisionUid=null;g.decisionUntil=null;g.timeoutClaim=null;
+   g.lastAction="لا يوجد دور صالح — كشف النتائج";
+   r.game=g;return r;
+  }
 
   g.turnIndex=idx;g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
   g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;g.timeoutClaim=null;
-  g.lastAction=`انتقل الدور إلى ${currentRoom?.players?.[o[idx]]?.name||"اللاعب التالي"}`;
-  return g;
+  g.lastAction=`انتقل الدور إلى ${r.players?.[o[idx]]?.name||"اللاعب التالي"}`;
+  r.game=g;return r;
  });
 }
 async function botRevealAll(g){
@@ -3128,9 +3143,9 @@ async function botUseKing(botId,g,depth=0){
   const chosen=picks[specialIndex],other=picks[specialIndex?0:1];
   if(other)await returnCardToDeckTop(other);
   await botPutDiscard(chosen,`${botName} استخدم قوة ${chosen.r} من سحبة K`);
-  if(chosen.r==="J")return botUseJack(botId,g);
-  if(chosen.r==="Q")return botUseQueen(botId);
-  if(chosen.r==="K")return botUseKing(botId,g,depth+1);
+  if(chosen.r==="J"){await botUseJack(botId,g);return true}
+  if(chosen.r==="Q"){await botUseQueen(botId);return true}
+  if(chosen.r==="K"){await botUseKing(botId,g,depth+1);return true}
  }
 
  // وإلا يختار الأفضل من الورقتين ويبدله مع أعلى ورقة في يده، مثل قراره العادي.
@@ -3158,10 +3173,10 @@ async function botUseDrawnPower(botId,drawn,g){
  const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
  const botName=r.players?.[botId]?.name||"الكمبيوتر";
  await botPutDiscard(drawn,`${botName} استخدم قوة ${drawn.r}`);
- if(drawn.r==="J")return botUseJack(botId,g);
- if(drawn.r==="Q")return botUseQueen(botId);
- if(drawn.r==="K")return botUseKing(botId,g);
- return false;
+ if(drawn.r==="J"){await botUseJack(botId,g);return true}
+ if(drawn.r==="Q"){await botUseQueen(botId);return true}
+ if(drawn.r==="K"){await botUseKing(botId,g);return true}
+ return true;
 }
 
 async function botCallCheck(botId,g){
@@ -4134,7 +4149,24 @@ async function tryPlayHands(indices){
  await finishTurn();
 }
 async function putDiscard(card,log){const seq=(game().discardSeq||0)+1,pile=Array.isArray(game().discardPile)?game().discardPile.slice():[];pile.push(card);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:card,discardPile:pile,discardSeq:seq,lastAction:log,hasDrawn:null,actionSeq:(game().actionSeq||0)+1})}
-async function checkEmptyAndEnd(cards){if(countCards(cards)!==0)return false;await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",emptyWinner:uid,ending:true,hasDrawn:null,lastAction:`${myName} خلص أوراقه — انتهت الجولة`});await sendSystem(`${myName} خلص أوراقه! نتيجته 0 وانتهت الجولة`);sfx("win");return true}
+async function checkEmptyAndEnd(cards){
+ if(countCards(cards)!==0)return false;
+ await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
+  if(!r||r.status!=="game")return r;
+  const g=r.game||{};
+  if(g.phase!=="playing"&&g.phase!=="reveal")return r;
+  if(!r.players)r.players={};
+  if(!r.players[uid])r.players[uid]={name:myName||"لاعب"};
+  r.players[uid].cardCount=0;
+  g.phase="reveal";g.emptyWinner=uid;g.ending=true;
+  g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
+  g.turnStartedAt=0;g.timeoutClaim=null;g.finalRemaining={};
+  g.lastAction=`${myName} خلص أوراقه — انتهت الجولة`;
+  r.game=g;return r;
+ });
+ await sendSystem(`${myName} خلص أوراقه! نتيجته 0 وانتهت الجولة`);
+ sfx("win");setTimeout(forceComputerRevealCompletion,80);return true
+}
 async function discardAndFinish(card,log){await putDiscard(card,log);await finishTurn()}
 
 function chooseClear(n,title){const cards=myHand?.cards||[];openModal(`<h3>${title}</h3><div class="notice">اختر ${n} ${n===1?'ورقة':'ورقتين'} من أوراقك للمسح.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-clear="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div><div class="gap"></div><button id="cancelPower" class="btn danger">إلغاء القوة وإنهاء الدور</button>`);let chosen=[];sheet.querySelectorAll("[data-clear]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.clear;if(chosen.includes(i))return;chosen.push(i);b.disabled=true;b.textContent="تم الاختيار";if(chosen.length>=n){const cs=(myHand.cards||[]).slice();for(const k of chosen)cs[k]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cs)});closeModal();await sendSystem(`${myName} استخدم قوة الجوكر`);if(await checkEmptyAndEnd(cs))return;await finishTurn()}});document.getElementById("cancelPower").onclick=async()=>{closeModal();await finishTurn()}}
@@ -4309,7 +4341,35 @@ async function finishTurn(){
  // بعد إنهاء اللعب: 5 ثوانٍ فقط لشيك أو تمرير.
  await update(ref(db,`rooms/${roomCode}/public/game`),{decisionUid:uid,decisionUntil:Date.now()+5000,hasDrawn:null,actionLockUid:uid,lastAction:`${myName} أنهى لعبه — عنده 5 ثواني: شيك أو تمرير`});
 }
+let zeroHandGuardBusy=false;
+async function enforceZeroHandRoundEnd(){
+ if(zeroHandGuardBusy||!roomCode||!currentRoom||uid!==currentRoom.hostId)return false;
+ const g=currentRoom.game||{};
+ if(currentRoom.status!=="game"||g.phase!=="playing")return false;
+ const order=Array.isArray(g.turnOrder)?g.turnOrder:[];
+ if(!order.some(id=>Number(currentRoom.players?.[id]?.cardCount)===0))return false;
+ zeroHandGuardBusy=true;
+ try{
+  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
+   if(!r||r.status!=="game"||r.game?.phase!=="playing")return r;
+   const o=Array.isArray(r.game.turnOrder)?r.game.turnOrder:[];
+   const w=o.find(id=>Number(r.players?.[id]?.cardCount)===0);
+   if(!w)return r;
+   const gg=r.game;
+   gg.phase="reveal";gg.emptyWinner=w;gg.ending=true;gg.finalRemaining={};
+   gg.hasDrawn=null;gg.actionLockUid=null;gg.decisionUid=null;gg.decisionUntil=null;
+   gg.turnStartedAt=0;gg.timeoutClaim=null;
+   gg.lastAction=`${r.players?.[w]?.name||"اللاعب"} خلص أوراقه — انتهت الجولة`;
+   r.game=gg;return r;
+  });
+  if(tx.committed)setTimeout(forceComputerRevealCompletion,80);
+  return !!tx.committed;
+ }catch(e){console.warn("zero-hand guard",e);return false}
+ finally{zeroHandGuardBusy=false}
+}
+
 async function advanceTurnNow(fromCheck=false){
+ if(await enforceZeroHandRoundEnd())return;
  const snap=await get(ref(db,`rooms/${roomCode}/public/game`));
  const g=snap.val()||game(),order=Array.isArray(g.turnOrder)?g.turnOrder.filter(Boolean):[];
  if(!order.length)return;
