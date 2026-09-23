@@ -2169,7 +2169,6 @@ const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),app=d
 const REMEMBER_LOGIN_KEY="sheikh_remember_login";
 function rememberLoginEnabled(){return localStorage.getItem(REMEMBER_LOGIN_KEY)!=="0"}
 try{await setPersistence(auth,rememberLoginEnabled()?browserLocalPersistence:browserSessionPersistence)}catch(e){console.warn("auth persistence",e)}
-try{await setPersistence(auth,browserLocalPersistence)}catch(e){console.warn("auth persistence",e)}
 let uid=null,roomCode=localStorage.getItem("sheikh_room")||"",myName=localStorage.getItem("sheikh_name")||"",currentRoom=null,myHand=null;
 let myAdmin=null,adminEntryMode=localStorage.getItem("sheikh_admin_entry_mode")||"player";
 const SUPER_ADMIN_UID="8R4yhZGFVJZDc6vsDp9bE3QT9VP2";
@@ -2848,43 +2847,43 @@ async function startRandomComputer(){
  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code).catch(()=>{});subscribe(code);ensureComputerBotHeartbeat();
 }
 let botWorkTimer=0,botWorkKey="";
-let botLastRunAt=0,botWorkBusy=false;
-function scheduleComputerBotWork(r=currentRoom){
+let botLastRunAt=0,botWorkBusy=false,botWorkStartedAt=0;
+function scheduleComputerBotWork(r=currentRoom,force=false){
  if(!r?.computerMatch||uid!==r.hostId||r.status!=="game")return;
  const g=r.game||{},turn=(g.turnOrder||[])[Number(g.turnIndex||0)]||"";
+ if(!isComputerBot(turn)||g.phase!=="playing")return;
  const key=`${g.roundToken||""}:${g.phase||""}:${g.turnSeq||0}:${turn}:${g.decisionUid||""}`;
  const now=Date.now();
- // نفس المفتاح يسمح بإعادة المحاولة بعد ثانيتين إذا تعطل تنفيذ الكمبيوتر.
- if(key===botWorkKey && now-botLastRunAt<2000)return;
+ // Firebase onValue يشغل الكمبيوتر عند تغير الدور. لا نكرر نفس الحالة إلا كإنقاذ بعد تأخير حقيقي.
+ if(!force&&key===botWorkKey)return;
+ if(botWorkBusy){
+   // لا نفتح تنفيذين متوازيين. إذا علق طلب شبكة فترة طويلة، يسمح heartbeat بمحاولة إنقاذ لاحقة.
+   if(now-botWorkStartedAt<15000)return;
+   botWorkBusy=false;
+ }
  botWorkKey=key;botLastRunAt=now;clearTimeout(botWorkTimer);
  botWorkTimer=setTimeout(async()=>{
    if(botWorkBusy)return;
-   botWorkBusy=true;
+   botWorkBusy=true;botWorkStartedAt=Date.now();
    try{await runComputerBotWork()}
-   catch(e){
-     console.warn("bot work",e);
-     botWorkKey="";
-   }finally{
-     botWorkBusy=false;
-   }
- },700+Math.floor(Math.random()*300));
+   catch(e){console.warn("bot work",e);botWorkKey=""}
+   finally{botWorkBusy=false;botWorkStartedAt=0}
+ },500);
 }
 let computerBotHeartbeat=0;
 function ensureComputerBotHeartbeat(){
  clearInterval(computerBotHeartbeat);
  computerBotHeartbeat=setInterval(()=>{
    try{
-     if(!(currentRoom?.computerMatch && roomCode && uid===currentRoom.hostId && currentRoom.status==="game"))return;
-     const g=currentRoom.game||{};
-     const order=Array.isArray(g.turnOrder)?g.turnOrder:[];
+     if(!(currentRoom?.computerMatch&&roomCode&&uid===currentRoom.hostId&&currentRoom.status==="game"))return;
+     const g=currentRoom.game||{},order=Array.isArray(g.turnOrder)?g.turnOrder:[];
      const botId=order[Number(g.turnIndex||0)]||"";
      if(!isComputerBot(botId)||g.phase!=="playing")return;
-     const started=Number(g.turnStartedAt||0),age=started?Date.now()-started:0;
-     // فحص خفيف فقط. لا نشغل أكثر من حركة كمبيوتر في نفس الوقت.
-     if(age>10000&&!botWorkBusy)botWorkKey="";
-     scheduleComputerBotWork(currentRoom);
+     const age=Date.now()-Number(g.turnStartedAt||Date.now());
+     // heartbeat للإنقاذ فقط، وليس لتشغيل نفس الدور كل ثانيتين.
+     if(age>12000&&!botWorkBusy){botWorkKey="";scheduleComputerBotWork(currentRoom,true)}
    }catch(e){console.warn("bot heartbeat",e)}
- },2500);
+ },5000);
 }
 async function botAdvanceTurn(botId){
  await runTransaction(ref(db,`rooms/${roomCode}/public/game`),g=>{
@@ -3309,7 +3308,14 @@ ${savedRoomsHtml()}
  document.getElementById("logoutBtn").onclick=logoutPlayer;
  await startPresence("home","");bindHomeStats();
 }
-function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
+function cleanupSubs(){
+ for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}
+ unsubRoom=unsubChat=unsubHand=unsubFunny=null;
+ clearInterval(turnCountdownTimer);turnCountdownTimer=null;
+ clearTimeout(botWorkTimer);botWorkTimer=0;botWorkKey="";botWorkBusy=false;botWorkStartedAt=0;
+ clearInterval(computerBotHeartbeat);computerBotHeartbeat=0;
+ stopLiveVoice(false)
+}
 async function createRoom(){adminEntryMode="player";localStorage.setItem("sheikh_admin_entry_mode","player");const n=myName;if(!n){authScreen("login","سجل الدخول أولاً");return}try{await ensureAuth();const ban=await checkMyBan();if(ban)throw new Error("هذا الحساب محظور"+(ban.reason?": "+ban.reason:""));uid=auth.currentUser.uid;let c=randomCode();for(let i=0;i<5;i++){const s=await get(ref(db,`rooms/${c}/public`));if(!s.exists())break;c=randomCode()}const profSnap=await get(ref(db,`users/${uid}`)),prof=profSnap.val()||{};await set(ref(db,`rooms/${c}/public`),{hostId:uid,creatorId:uid,creatorName:n,status:"lobby",createdAt:Date.now(),players:{[uid]:{name:n,order:0,cardCount:0,ready:false,memberNo:prof.memberNo||null,xp:Number(prof.xp||0),avatarUrl:prof.avatarUrl||"icon-512.png",joinedAt:Date.now()}}});await set(ref(db,`roomIndex/${c}`),{hostId:uid,status:"lobby",createdAt:Date.now(),playerCount:1,updatedAt:Date.now()});myName=n;roomCode=c;localStorage.setItem("sheikh_name",n);localStorage.setItem("sheikh_room",c);await startPresence("room",c);subscribe(c)}catch(e){document.getElementById("err").textContent="تعذر إنشاء الغرفة: "+(e?.code||e?.message||"خطأ")}}
 async function joinRoom(){
  const n=myName,c=(document.getElementById("code")?.value||"").trim().toUpperCase();
