@@ -151,7 +151,9 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 
 /* Stage 14 — smooth play */
 .myCard{transition:transform .16s ease,box-shadow .16s ease,margin .16s ease}
-.myCard.newDraw{margin-left:10px!important;transform:translateY(-9px);box-shadow:0 0 0 3px #f2d16b,0 7px 16px #0008;z-index:80}
+ .hand{position:relative}
+.myCard.newDraw{position:absolute!important;left:50%!important;bottom:72px!important;margin:0!important;transform:translateX(-50%) translateY(-4px)!important;box-shadow:0 0 0 3px #f2d16b,0 9px 20px #0009;z-index:90;width:58px!important;flex-basis:58px!important}
+.myCard.newDraw.dragging{transform:translateX(-50%) translateY(-18px) scale(1.06)!important}
 .myCard.pureReady{box-shadow:inset 0 0 0 3px #e8c45a,0 3px 9px #0007}
 #revealJoker.show{display:inline-flex!important;background:linear-gradient(#f4d77a,#b98520)!important;color:#241507!important;font-weight:900}
 #gameHint{min-height:24px}
@@ -198,7 +200,8 @@ const tb=$("turnTimerBar");tb.style.transition="none";tb.style.transform="scaleX
 function renderDiscard(c){const e=$("discardPile");e.className="cardFace pileTap"+(isRed(c)?" red":"")+(c?.r==="JOKER"?" jokerFace":"");e.innerHTML=cardImgHTML(c)}
 function renderJokerIndicator(g){
  const w=$("indicatorWrap"),e=$("jokerIndicator"),b=$("revealJoker");
- if(g?.jokerRank&&g?.jokerIndicator){
+ const qualified=!!g?.qualified?.[uid];
+ if(g?.jokerRank&&g?.jokerIndicator&&qualified){
    w.style.display="";
    e.className="cardFace"+(isRed(g.jokerIndicator)?" red":"")+(g.jokerIndicator?.r==="JOKER"?" jokerFace":"");
    e.innerHTML=cardImgHTML(g.jokerIndicator);
@@ -208,9 +211,9 @@ function renderJokerIndicator(g){
    w.style.display="none";
    e.textContent="—";
    $("jokerSlot").textContent="جوكر الجولة: مخفي";
-   b.style.display="";
  }
 }
+
 let dragFrom=-1,dragOver=-1,dragPointer=null,dragMoved=false,multiSelected=new Set(),lastDiscardTap=-1,lastDiscardTapAt=0;
 function moveCard(from,to){
  if(from<0||to<0||from===to||from>=myHand.length||to>=myHand.length)return;
@@ -221,7 +224,7 @@ function moveCard(from,to){
 function handIndexAt(x,y){
  const cards=[...document.querySelectorAll("#myHand .myCard")];
  let best=-1,dist=1e9;
- cards.forEach((el,i)=>{const r=el.getBoundingClientRect(),cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2,d=Math.hypot(x-cx,y-cy);if(d<dist){dist=d;best=i}});
+ cards.forEach((el)=>{if(el.classList.contains("newDraw"))return;const i=Number(el.dataset.card),r=el.getBoundingClientRect(),cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2,d=Math.hypot(x-cx,y-cy);if(d<dist){dist=d;best=i}});
  return best;
 }
 
@@ -254,12 +257,13 @@ function findPureSequence(cards){
 }
 function refreshRevealButton(){
  const b=$("revealJoker");if(!b)return;
- const g=currentRoom?.game||{};
- if(g.jokerRank){b.style.display="none";b.classList.remove("show");return}
+ const g=currentRoom?.game||{},qualified=!!g.qualified?.[uid];
+ if(qualified){b.style.display="none";b.classList.remove("show");return}
  const pure=findPureSequence(myHand),ok=!!pure&&g.playerOrder?.includes(uid);
  b.style.display=ok?"":"none";b.disabled=!ok;b.classList.toggle("show",ok);
  b.textContent="✨ كشف الجوكر";
 }
+
 
 function naturalRun(cards){
  if(cards.length<3||cards.some(isPrintedJoker))return false;
@@ -433,7 +437,7 @@ function fitHandToPhone(){
  });
 }
 function renderHand(){
- const h=$("myHand"),jokerRank=currentRoom?.game?.jokerRank||null,res=smartArrange(myHand),g=currentRoom?.game||{};
+ const h=$("myHand"),g=currentRoom?.game||{},jokerRank=g.qualified?.[uid]?(g.jokerRank||null):null,res=smartArrange(myHand);
  const pure=findPureSequence(myHand),pureIdx=new Set((pure||[]).map(x=>x.i));
  const groupMap=new Map(),groupStart=new Set();
  res.groups.forEach((grp,gi)=>grp.forEach((x,k)=>{const idx=myHand.indexOf(x.c);if(idx>=0){groupMap.set(idx,gi);if(k===0)groupStart.add(idx)}}));
@@ -485,24 +489,29 @@ function renderHand(){
 }
 async function revealRoundJoker(){
  const g=currentRoom?.game||{},pure=findPureSequence(myHand);
- if(g.jokerRank)return;
+ if(g.qualified?.[uid])return;
  if(!pure){$("gameHint").textContent="تحتاج سيريل صافي من 3 أوراق أو أكثر.";return}
  try{
+   // إذا لاعب سابق كشف جوكر الجولة: لا نسحب مؤشر جديد، فقط نفتح نفس الجوكر لهذا اللاعب بعد تأهله.
+   if(g.jokerRank&&g.jokerIndicator){
+     await set(ref(db,`ramiRooms/${room}/public/game/qualified/${uid}`),true);
+     multiSelected.clear();
+     $("gameHint").textContent=`✨ تم كشف جوكر الجولة لك: ${g.jokerRank}`;
+     return;
+   }
    const ss=await get(ref(db,`ramiRooms/${room}/public/stock`)),stock=ss.val()||[];
    if(!stock.length)return $("gameHint").textContent="الكومة فارغة.";
-   const indicator=stock.shift();
-   const rank=indicator.r==="JOKER"?"A":indicator.r;
-   const patch={};
+   const indicator=stock.shift(),rank=indicator.r==="JOKER"?"A":indicator.r,patch={};
    patch[`ramiRooms/${room}/public/stock`]=stock;
    patch[`ramiRooms/${room}/public/game/jokerRank`]=rank;
    patch[`ramiRooms/${room}/public/game/jokerIndicator`]=indicator;
    patch[`ramiRooms/${room}/public/game/qualified/${uid}`]=true;
    await update(ref(db),patch);
    multiSelected.clear();
-   renderJokerIndicator({jokerRank:rank,jokerIndicator:indicator});
-   $("gameHint").textContent=`✨ انكشف الجوكر: ${rank} — ورقة المؤشر ${cardLabel(indicator)}`;
+   $("gameHint").textContent=`✨ انكشف الجوكر لك: ${rank} — ورقة المؤشر ${cardLabel(indicator)}`;
  }catch(e){$("gameHint").textContent="تعذر كشف الجوكر: "+(e?.message||"خطأ")}
 }
+
 async function drawStock(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw")return;const stock=[...(currentRoom.stock||[])];if(!stock.length)return $("gameHint").textContent="انتهت كومة السحب";const c=stock.shift(),hand=[...myHand,c];const patch={};patch[`ramiRooms/${room}/public/stock`]=stock;patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الكرت الجديد آخر اليد — حركه لمكانه أو ارمه مباشرة."}
 async function takeDiscard(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||!g.discard)return;const hand=[...myHand,g.discard];const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=null;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الرمية الجديدة آخر اليد — حركها أو ارم غيرها."}
 async function throwSelected(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="discard"||selected<0)return;const hand=[...myHand];if(!hand[selected])return;const [c]=hand.splice(selected,1),order=g.playerOrder||[],i=order.indexOf(uid),next=order[(i+1)%order.length];selected=-1;const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=c;patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;patch[`ramiRooms/${room}/public/game/turnUid`]=next;patch[`ramiRooms/${room}/public/game/phase`]="draw";patch[`ramiRooms/${room}/public/game/lastDiscardBy`]=uid;await update(ref(db),patch)}
