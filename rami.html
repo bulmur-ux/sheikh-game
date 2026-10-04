@@ -125,6 +125,8 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 .pileImg{width:100%;height:100%;display:block;object-fit:cover;border-radius:6px;pointer-events:none}
 .cardBack .pileImg{object-fit:cover}
 .myCard.selected .cardImg,.myCard.multi .cardImg{border-radius:5px}
+
+.handResult{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}.handResult.show{display:flex}.handResultCard{width:min(360px,92vw);background:#241410;border:2px solid #d0a13b;border-radius:20px;padding:20px;text-align:center;box-shadow:0 18px 55px #000}.handResultCard h2{margin:0 0 8px;color:#f5d77c}.handResultCard p{margin:6px 0 14px;color:#f5ead6}.handResultCard .btn{width:100%;margin-top:7px}.handBtn.ready{animation:handPulse 1.2s infinite}@keyframes handPulse{50%{transform:scale(1.05);box-shadow:0 0 18px #f5d77c99}}
 </style>
 </head>
 <body><main class="wrap">
@@ -135,7 +137,7 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 <section class="panel gameBox" id="gameBox"><div class="gameHead"><div class="code" id="gameCode">غرفة -----</div><div><div class="turn" id="turnText">بانتظار الدور</div><div class="turnTimer"><i id="turnTimerBar"></i></div></div><button class="roleBtn" id="exitGame">الغرفة</button></div><div class="table"><div class="seats" id="seats"></div><div class="centerPile"><div class="pileWrap"><button type="button" class="cardBack pileTap" id="stockPile"><img class="pileImg" src="Cards/back.png" alt="السحبة"></button><div>السحبة</div></div><div class="pileWrap" id="indicatorWrap" style="display:none"><div class="cardFace" id="jokerIndicator">—</div><div>مؤشر الجوكر</div></div><div class="pileWrap"><button type="button" class="cardFace pileTap" id="discardPile">—</button><div>الرمية</div></div></div><div class="jokerSlot" id="jokerSlot">جوكر الجولة: مخفي</div><div class="handArea" id="handArea"><div class="handStatus" id="handStatus"></div><div class="quickActions"><button class="sortBtn show" id="sortSuit">↕ ترتيب ذكي</button><button class="sortBtn" id="sortRank">ترتيب</button><button class="sortBtn" id="revealJoker" disabled>✨ كشف الجوكر</button><button class="sortBtn show handBtn" id="declareHand">🏆 هاند</button></div><div class="hand" id="myHand"></div></div></div><div class="actions"><button class="btn alt" id="drawStock">اسحب 🂠</button><button class="btn alt" id="takeDiscard">خذ الرمية</button><button class="btn" id="throwCard">ارمِ المختار</button></div><div class="hint" id="gameHint">رتّب يدك بالسحب. حدّد 3 كروت أو أكثر للسيريل الصافي وكشف الجوكر.</div></section>
 <section class="panel" id="rulesBox"><h2>القواعد المثبتة</h2><div class="rules"><div class="rule">👥 الغرفة 8 • اللعب 2–6</div><div class="rule">🂠 14 كرت لكل لاعب</div><div class="rule">🃏 جوكر أسود + أحمر فقط</div><div class="rule">🔗 السيريل: 3 كروت أو أكثر</div><div class="rule">♣️ التشابه: 3 أو 4</div><div class="rule">✨ سيريل صافي لكشف جوكر الجولة</div><div class="rule">✋ الهاند من رمية لاعب فقط</div><div class="rule">🏆 الصحيح −5 • جوكر −10</div></div></section>
 </main>
-<script type="module">
+<div class="handResult" id="handResult"><div class="handResultCard"><h2 id="handResultTitle">🏆 هاند</h2><p id="handResultText"></p><button class="btn" id="nextRoundBtn">🎴 جولة جديدة</button><button class="btn alt" id="closeHandResult">إغلاق</button></div></div><script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import{getDatabase,ref,get,set,update,onValue,remove,runTransaction}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
@@ -158,7 +160,7 @@ async function toggleRole(id){if(!room||currentRoom?.hostId!==uid||currentRoom?.
 function renderLobby(r){const ps=Object.entries(r.players||{}).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)),active=ps.filter(([,p])=>(p.role||"player")==="player").length;$("players").innerHTML=ps.map(([id,p])=>`<div class="person"><div class="personMain"><b>${esc(p.name||"لاعب")}</b><small>${p.memberNo?`عضو ${esc(p.memberNo)}`:"لاعب ريمي"}</small></div><div class="badges">${id===r.hostId?'<span class="badge">👑 صاحب الغرفة</span>':""}<span class="badge ${p.role==='spectator'?'watch':''}">${p.role==='spectator'?'👁 مشاهد':'🎴 لاعب'}</span>${r.hostId===uid&&r.status==='lobby'?`<button class="roleBtn" data-role-id="${id}">${p.role==='spectator'?'إدخاله اللعب':'تحويل لمشاهد'}</button>`:""}</div></div>`).join("");document.querySelectorAll("[data-role-id]").forEach(b=>b.onclick=()=>toggleRole(b.dataset.roleId));$("roomStatus").textContent=`الموجودون ${ps.length}/8 • اللاعبون ${active}/6${r.status==='playing'?' • الجولة بدأت':''}`;$("hostStart").style.display=r.hostId===uid&&r.status==="lobby"?"block":"none";$("startGame").disabled=active<2||active>6;$("startGame").textContent=active>=2&&active<=6?"🎴 ابدأ اللعب":`🎴 ابدأ اللعب (${active}/2)`}
 async function startGame(){if(currentRoom?.hostId!==uid||currentRoom?.status!=="lobby")return;const ids=Object.entries(currentRoom.players||{}).filter(([,p])=>(p.role||"player")==="player").sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).map(([id])=>id);if(ids.length<2||ids.length>6)return $("roomStatus").textContent="اختَر من 2 إلى 6 لاعبين";const deck=makeDeck(),hands={};for(const id of ids)hands[id]=deck.splice(0,14);const discard=deck.shift();const counts={};ids.forEach(id=>counts[id]=14);const patch={};patch[`ramiRooms/${room}/public/status`]="playing";patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:ids[0],phase:"draw",discard,counts,round:1,startedAt:Date.now(),jokerRank:null};patch[`ramiRooms/${room}/public/stock`]=deck;for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];try{await update(ref(db),patch)}catch(e){$("roomStatus").textContent="تعذر بدء الجولة: "+(e?.message||"خطأ")}}
 function showGame(on){$("entryBox").style.display="none";$("roomBox").style.display=on?"none":"block";$("brand").style.display=on?"none":"block";$("rulesBox").style.display=on?"none":"block";$("gameBox").style.display=on?"block":"none"}
-function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.players||{};if(!order.includes(uid)){showGame(false);$("roomStatus").textContent="أنت مشاهد • الجولة شغالة";return}showGame(true);$("gameCode").textContent=`غرفة ${room}`;$("turnText").textContent=g.turnUid===uid?(g.phase==="draw"?"دورك • اسحب":"دورك • ارمِ ورقة"):`دور ${players[g.turnUid]?.name||"لاعب"}`;const others=order.filter(id=>id!==uid);$("seats").innerHTML=others.map(id=>`<div class="seat ${id===g.turnUid?'active':''}"><div class="avatar">${esc((players[id]?.name||"؟").slice(0,1))}</div><div class="seatName">${esc(players[id]?.name||"لاعب")}</div><div class="count">🂠 ${g.counts?.[id]??14}</div></div>`).join("");renderDiscard(g.discard);renderJokerIndicator(g);renderHand();const mineTurn=g.turnUid===uid;$("drawStock").disabled=!mineTurn||g.phase!=="draw";$("takeDiscard").disabled=!mineTurn||g.phase!=="draw"||!g.discard;$("throwCard").disabled=!mineTurn||g.phase!=="discard"||selected<0;
+function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.players||{};if(!order.includes(uid)){showGame(false);$("roomStatus").textContent="أنت مشاهد • الجولة شغالة";return}showGame(true);$("gameCode").textContent=`غرفة ${room}`;if(g.phase==="ended"){$("turnText").textContent="انتهت الجولة";if(g.winnerUid){showHandResult("🏆 انتهت الجولة",`${players[g.winnerUid]?.name||"اللاعب"} سوّى هاند صحيح.`);$("nextRoundBtn").style.display=r.hostId===uid?"block":"none"}return}$("turnText").textContent=g.turnUid===uid?(g.phase==="draw"?"دورك • اسحب":"دورك • ارمِ ورقة"):`دور ${players[g.turnUid]?.name||"لاعب"}`;const others=order.filter(id=>id!==uid);$("seats").innerHTML=others.map(id=>`<div class="seat ${id===g.turnUid?'active':''}"><div class="avatar">${esc((players[id]?.name||"؟").slice(0,1))}</div><div class="seatName">${esc(players[id]?.name||"لاعب")}</div><div class="count">🂠 ${g.counts?.[id]??14}</div></div>`).join("");renderDiscard(g.discard);renderJokerIndicator(g);renderHand();const mineTurn=g.turnUid===uid;$("drawStock").disabled=!mineTurn||g.phase!=="draw";$("takeDiscard").disabled=!mineTurn||g.phase!=="draw"||!g.discard;$("throwCard").disabled=!mineTurn||g.phase!=="discard"||selected<0;
 $("stockPile").disabled=$("drawStock").disabled;$("discardPile").disabled=$("takeDiscard").disabled;
 $("stockPile").classList.toggle("ready",mineTurn&&g.phase==="draw");$("discardPile").classList.toggle("ready",mineTurn&&g.phase==="draw"&&!!g.discard);
 $("gameHint").textContent=mineTurn?(g.phase==="draw"?"اضغط السحبة أو الرمية مباشرة.":"اختر الورقة واضغطها مرة ثانية للرمي."):"انتظر دورك.";
@@ -271,9 +273,99 @@ function updateHandUX(){
  const a=handAnalysis(),s=$("handStatus"),dh=$("declareHand"),g=currentRoom?.game||{};
  s.textContent=a.groups?`${a.groups} مجموعات مرتبة • ${a.loose} خارج المجموعات`:"رتّب أوراقك بالسحب أو الترتيب الذكي";
  const canHand=g.turnUid===uid&&g.phase==="discard"&&myHand.length===15&&a.loose<=1&&!!g.jokerRank;
- dh.classList.add("show");dh.disabled=!(g.turnUid===uid&&g.phase==="discard"&&myHand.length===15);
+ dh.classList.add("show");dh.disabled=!(g.turnUid===uid&&g.phase==="discard"&&myHand.length===15);dh.classList.toggle("ready",!dh.disabled&&selected>=0);
 }
 
+
+function isWildCard(c,jokerRank,useRankAsWild=true){return isPrintedJoker(c)||(useRankAsWild&&jokerRank&&c.r===jokerRank)}
+function bitCount(n){let c=0;while(n){n&=n-1;c++}return c}
+function meldCheck(cards,jokerRank){
+ const jr=[];cards.forEach((c,i)=>{if(jokerRank&&c.r===jokerRank&&!isPrintedJoker(c))jr.push(i)});
+ const modes=1<<jr.length;
+ for(let mode=0;mode<modes;mode++){
+   const wild=new Set();cards.forEach((c,i)=>{if(isPrintedJoker(c))wild.add(i)});
+   jr.forEach((idx,k)=>{if(mode&(1<<k))wild.add(idx)});
+   const nat=cards.filter((_,i)=>!wild.has(i)),wc=wild.size;
+   // Set: 3-4 cards, natural cards same rank and unique suits.
+   if(cards.length>=3&&cards.length<=4&&nat.length){
+     const ranks=new Set(nat.map(c=>c.r)),suits=new Set(nat.map(c=>c.s));
+     if(ranks.size===1&&suits.size===nat.length&&nat.length+wc===cards.length)return {ok:true,type:'set',clean:wc===0};
+   }
+   // Run: same suit, exact consecutive window; A can be low or high. Missing spots are wildcards.
+   if(cards.length>=3&&nat.length){
+     const suits=new Set(nat.map(c=>c.s));
+     if(suits.size===1){
+       for(const aceHigh of [false,true]){
+         const vals=nat.map(c=>c.r==='A'?(aceHigh?14:1):rankSeqValue(c.r));
+         if(new Set(vals).size!==vals.length)continue;
+         const L=cards.length;
+         for(let start=1;start<=14-L+1;start++){
+           const end=start+L-1;if(end>14)continue;
+           if(vals.some(v=>v<start||v>end))continue;
+           const occupied=new Set(vals),missing=[];for(let v=start;v<=end;v++)if(!occupied.has(v))missing.push(v);
+           if(missing.length!==wc)continue;
+           let adjacent=false;for(let i=1;i<missing.length;i++)if(missing[i]===missing[i-1]+1){adjacent=true;break}
+           if(adjacent)continue; // no Joker + Joker next to each other
+           return {ok:true,type:'run',clean:wc===0};
+         }
+       }
+     }
+   }
+ }
+ return {ok:false};
+}
+function validateCompleteHand(cards,jokerRank){
+ if(cards.length!==14)return {ok:false,reason:'لازم يبقى عندك 14 ورقة بعد الرمية.'};
+ const n=cards.length,full=(1<<n)-1,memo=new Map();
+ function solve(mask,hasClean){
+   if(mask===0)return hasClean?[]:null;
+   const key=mask+'|'+(hasClean?1:0);if(memo.has(key))return memo.get(key);
+   let first=0;while(first<n&&!(mask&(1<<first)))first++;
+   const rest=[];for(let i=first+1;i<n;i++)if(mask&(1<<i))rest.push(i);
+   const max=rest.length;
+   for(let sub=0;sub<(1<<max);sub++){
+     const size=1+bitCount(sub);if(size<3)continue;
+     let m=1<<first,grp=[cards[first]];
+     for(let k=0;k<max;k++)if(sub&(1<<k)){m|=1<<rest[k];grp.push(cards[rest[k]])}
+     const chk=meldCheck(grp,jokerRank);if(!chk.ok)continue;
+     const tail=solve(mask^m,hasClean||(chk.type==='run'&&chk.clean));
+     if(tail){const ans=[{cards:grp,...chk},...tail];memo.set(key,ans);return ans}
+   }
+   memo.set(key,null);return null;
+ }
+ const groups=solve(full,false);
+ return groups?{ok:true,groups}:{ok:false,reason:'الـ14 ورقة ما تكوّن هاند كامل، أو ما عندك سيريل صافي.'};
+}
+function showHandResult(title,text){$('handResultTitle').textContent=title;$('handResultText').textContent=text;$('handResult').classList.add('show')}
+async function declareHandNow(){
+ const g=currentRoom?.game||{};
+ if(g.turnUid!==uid||g.phase!=='discard')return $('gameHint').textContent='الهاند يكون في دورك بعد السحب.';
+ if(myHand.length!==15)return $('gameHint').textContent='اسحب أولاً؛ لازم يكون عندك 15 ورقة قبل الهاند.';
+ if(selected<0)return $('gameHint').textContent='اختر الورقة الزايدة اللي بتـرميها، وبعدها اضغط «هاند».';
+ const remain=myHand.filter((_,i)=>i!==selected),check=validateCompleteHand(remain,g.jokerRank||null);
+ if(!check.ok){$('gameHint').textContent='❌ '+check.reason;return}
+ const thrown=myHand[selected],patch={};
+ patch[`ramiRooms/${room}/privateHands/${uid}`]=remain;
+ patch[`ramiRooms/${room}/public/game/discard`]=thrown;
+ patch[`ramiRooms/${room}/public/game/counts/${uid}`]=14;
+ patch[`ramiRooms/${room}/public/game/phase`]='ended';
+ patch[`ramiRooms/${room}/public/game/winnerUid`]=uid;
+ patch[`ramiRooms/${room}/public/game/endedAt`]=Date.now();
+ patch[`ramiRooms/${room}/public/game/winnerGroups`]=check.groups.map(g=>g.cards);
+ await update(ref(db),patch);selected=-1;
+ showHandResult('🏆 هاند صحيح',`${myName} أنهى الجولة بنجاح.`);
+}
+async function newRound(){
+ if(currentRoom?.hostId!==uid)return $('gameHint').textContent='صاحب الغرفة يبدأ الجولة الجديدة.';
+ const old=currentRoom?.game||{},ids=old.playerOrder||[];if(ids.length<2)return;
+ const deck=makeDeck(),hands={},counts={};for(const id of ids){hands[id]=deck.splice(0,14);counts[id]=14}
+ const discard=deck.shift(),round=(old.round||1)+1,starter=ids[round%ids.length];const patch={};
+ patch[`ramiRooms/${room}/public/status`]='playing';
+ patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:starter,phase:'draw',discard,counts,round,startedAt:Date.now(),jokerRank:null,qualified:{}};
+ patch[`ramiRooms/${room}/public/stock`]=deck;
+ for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];
+ await update(ref(db),patch);$('handResult').classList.remove('show');
+}
 function fitHandToPhone(){
  const h=$("myHand");if(!h||!myHand.length)return;
  const cards=[...h.querySelectorAll(".myCard")];if(!cards.length)return;
@@ -389,12 +481,8 @@ $("stockPile").onclick=()=>{if(!$("drawStock").disabled)drawStock()};
 $("discardPile").onclick=()=>{if(!$("takeDiscard").disabled)takeDiscard()};$("throwCard").onclick=throwSelected;$("sortSuit").onclick=()=>applySmartArrange(true);$("sortRank").onclick=()=>sortHand("rank");$("revealJoker").onclick=revealRoundJoker;
 window.addEventListener("resize",()=>fitHandToPhone());
 window.addEventListener("orientationchange",()=>setTimeout(fitHandToPhone,120));
-$("declareHand").onclick=()=>{
- const a=handAnalysis(),g=currentRoom?.game||{};
- if(!(g.turnUid===uid&&g.phase==="discard"))return;
- if(myHand.length!==15){$("gameHint").textContent="اسحب أولاً، وبعدها اضغط هاند.";return}
- if(a.loose>1){$("gameHint").textContent=`رتّب يدك أولاً — عندك ${a.loose} أوراق غير داخلة في ترتيب مكتمل.`;return}
- $("gameHint").textContent="🏆 جاهز للهاند — اختر الورقة الزايدة ثم ارمها لإنهاء اليد.";
-};
+$("declareHand").onclick=declareHandNow;
+$("nextRoundBtn").onclick=newRound;
+$("closeHandResult").onclick=()=>$("handResult").classList.remove("show");
 onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return location.href="index.html";uid=u.uid;await profile();const saved=localStorage.getItem("rami_room");if(saved)try{const s=await get(ref(db,`ramiRooms/${saved}/public`));if(s.exists()&&s.val()?.players?.[uid])await enter(saved);else localStorage.removeItem("rami_room")}catch{}});
 </script></body></html>
