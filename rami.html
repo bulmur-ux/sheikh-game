@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ريمي | مجلس شيك شيك</title>
+<meta name="theme-color" content="#6d2633">
+<style>
+:root{--maroon:#6d2633;--gold:#d0a13b;--cream:#fff8e9;--ink:#2a1d17}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;background:radial-gradient(circle at top,#7d3341 0,#3b171e 48%,#160d0c 100%);color:#fff}.wrap{width:min(100%,620px);margin:auto;padding:18px 14px 36px}.top{display:flex;align-items:center;justify-content:space-between;gap:10px}.back{border:1px solid #d0a13b;background:#fff8e9;color:#3a2017;border-radius:13px;padding:11px 14px;font-weight:900;text-decoration:none}.brand{text-align:center;margin:28px 0 18px}.brand .icon{font-size:58px}.brand h1{font-size:38px;margin:4px 0;color:#f4ca61}.brand p{margin:0;color:#ead8b7}.panel{background:rgba(22,12,10,.9);border:1px solid rgba(208,161,59,.7);border-radius:20px;padding:18px;margin:12px 0;box-shadow:0 12px 32px #0005}.panel h2{margin:0 0 8px;color:#f4ca61}.player{font-size:18px;font-weight:900}.member{font-size:12px;color:#d8c4a5;margin-top:3px}.gameBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.btn{border:0;border-radius:14px;padding:14px;font:inherit;font-weight:900;background:var(--gold);color:#24180f}.btn.alt{background:#fff8e9}.btn:disabled{opacity:.48}.note{font-size:13px;line-height:1.8;color:#e7d8c1}.rules{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.rule{background:#fff8e9;color:#3a261d;border-radius:14px;padding:11px;font-size:12px;font-weight:800}.status{text-align:center;background:#2c1915;border:1px dashed #d0a13b;border-radius:14px;padding:12px;margin-top:12px;color:#f4ca61;font-weight:900}@media(max-width:430px){.rules,.gameBtns{grid-template-columns:1fr}.brand h1{font-size:34px}}
+</style>
+</head>
+<body><main class="wrap">
+<div class="top"><a class="back" href="index.html">↩ شيك شيك</a><b>مجلس شيك شيك</b></div>
+<section class="brand"><div class="icon">🃏</div><h1>ريمي</h1><p>الهاند الروسي</p></section>
+<section class="panel"><h2>حيّاك في ريمي</h2><div class="player" id="playerName">اللاعب</div><div class="member">نفس حسابك في شيك شيك</div><div class="gameBtns"><button class="btn" disabled>إنشاء غرفة</button><button class="btn alt" disabled>دخول غرفة</button></div><div class="status">تم تركيب قسم ريمي — برمجة الغرف واللعب هي المرحلة التالية</div></section>
+<section class="panel"><h2>القواعد المثبتة</h2><div class="rules"><div class="rule">🂠 14 كرت لكل لاعب</div><div class="rule">🃏 جوكر أسود + أحمر</div><div class="rule">🔗 السيريل: 3 كروت أو أكثر</div><div class="rule">♣️ التشابه: 3 أو 4</div><div class="rule">✨ سيريل صافي لكشف جوكر الجولة</div><div class="rule">✋ الهاند من رمية لاعب فقط</div><div class="rule">🏆 الهاند الصحيح: −5</div><div class="rule">🃏 هاند جوكر: −10</div><div class="rule">⚠️ الهاند الغلط: +80</div><div class="rule">➕ صاحب الرمية المكملة: +10</div></div></section>
+</main><script>const n=localStorage.getItem('sheikh_name');if(n)document.getElementById('playerName').textContent=n;</script></body></html>

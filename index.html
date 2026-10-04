@@ -1484,679 +1484,7 @@ body:has(.accountPage) .wrap::before{background:linear-gradient(180deg,rgba(24,1
 
 <style id="computer-v3-rule-badge">
 .computerRuleBadge{position:fixed;top:132px;left:12px;z-index:9998;background:#17110ddd;color:#f7d98c;border:1px solid #d6a64a;border-radius:10px;padding:6px 9px;font-size:11px;font-weight:900}
-</style>
-<style id="result-real-cards-v1">
-.resultScreen .resultCards{
-  display:flex!important;flex-wrap:wrap!important;gap:7px!important;
-  justify-content:center!important;align-items:center!important;margin-top:10px!important
-}
-.resultScreen .resultRealCard{
-  width:58px!important;height:82px!important;border-radius:10px!important;
-  overflow:hidden!important;flex:0 0 auto!important;
-  box-shadow:0 4px 10px #0005!important
-}
-.resultScreen .resultRealCard img{
-  width:100%!important;height:100%!important;display:block!important;
-  object-fit:cover!important;border:0!important
-}
-.resultScreen .previousRoundStats{
-  margin:12px 0 14px!important;padding:12px!important;border-radius:14px!important;
-  background:rgba(255,244,205,.96)!important;color:#24180e!important;
-  border:1px solid #d6ae57!important
-}
-.resultScreen .previousRoundTitle{
-  font-weight:900!important;text-align:center!important;font-size:17px!important;margin-bottom:8px!important
-}
-.resultScreen .previousRoundRow{
-  display:flex!important;justify-content:space-between!important;align-items:center!important;
-  gap:10px!important;padding:6px 4px!important;border-top:1px solid rgba(120,82,25,.16)!important
-}
-@media(max-width:600px){
-  .resultScreen .resultRealCard{width:52px!important;height:74px!important}
-  .resultScreen .resultCards{gap:6px!important}
-}
-</style>
-
-
-<style id="random-rules-button-v1">
-.randomRulesBtn{margin-top:10px!important;width:100%!important;font-weight:900!important}
-</style>
-
-<style id="premium-full-ui-v1">
-:root{--cc-gold:#e7b84f;--cc-gold2:#ffe29a}
-body{background:#100a08!important;background-image:linear-gradient(#090504b8,#090504b8),url("bg-wide.PNG")!important;background-size:cover!important;background-attachment:fixed!important}
-#app{max-width:1540px!important;margin:auto!important}.premiumHome{direction:rtl;padding:14px 14px 50px;color:#fff}
-.premiumHero{display:grid;grid-template-columns:minmax(260px,1fr) minmax(360px,1.4fr) minmax(360px,1.3fr);gap:14px;align-items:center;padding:14px;border:1px solid #d9a63e88;border-radius:22px;background:linear-gradient(180deg,#140b08f2,#0b0706f2);box-shadow:0 18px 50px #0008}
-.premiumProfile{display:flex;gap:12px;align-items:center;padding:10px 14px;border:1px solid #d9a63e66;border-radius:16px;background:#0c0908cc}.premiumProfile>img{width:72px;height:72px;object-fit:cover;border-radius:16px;border:2px solid var(--cc-gold)}.premiumProfile>div{display:grid;gap:4px}.premiumProfile b{font-size:20px}.premiumProfile span{opacity:.82;font-size:13px}.premiumProfile em{display:flex;align-items:center;gap:5px;font-style:normal;color:var(--cc-gold2);font-size:12px}.premiumProfile em img{width:24px;height:24px}
-.premiumBrand{text-align:center;color:var(--cc-gold2)}.premiumBrand strong{display:block;font-size:50px;line-height:1;font-weight:1000;text-shadow:0 4px 20px #000}.premiumBrand b{display:block;font-size:20px;letter-spacing:4px;color:var(--cc-gold)}.premiumBrand small{display:block;margin-top:6px;color:#e8d7bf;font-weight:700}
-.premiumNav{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.premiumNav button{min-height:62px;border:1px solid #d4a33f66;border-radius:13px;background:#130d0bcc;color:#fff;font-size:20px;display:grid;place-items:center;gap:2px}.premiumNav span{font-size:11px}.premiumNav .logout{color:#ff9a9a}
-.premiumStatsStrip{display:grid;grid-template-columns:repeat(3,1fr);max-width:600px;margin:12px auto 18px;border:1px solid #c99b3e66;border-radius:15px;overflow:hidden;background:#0b0807dd}.premiumStatsStrip div{padding:10px;text-align:center;border-left:1px solid #c99b3e33}.premiumStatsStrip div:last-child{border:0}.premiumStatsStrip span{display:block;font-size:12px;opacity:.75}.premiumStatsStrip b{font-size:23px;color:var(--cc-gold2)}
-.premiumPlayGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.premiumPlayCard{min-height:300px;padding:22px 18px;border-radius:20px;border:2px solid #ffffff25;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:inset 0 0 50px #0003,0 14px 30px #0005}.premiumPlayCard h2{font-size:28px;margin:7px 0}.premiumPlayCard p{min-height:48px;margin:0 0 16px;color:#f5e8d8;line-height:1.7}.playIcon{font-size:52px}.createCard{background:linear-gradient(145deg,#00664b,#003c2e)}.joinCard{background:linear-gradient(145deg,#075f98,#07304f)}.randomCard{background:linear-gradient(145deg,#6827a0,#32115a)}.botCard{background:linear-gradient(145deg,#8d1b31,#421019)}
-.premiumAction,.premiumRules,.premiumJoin button{width:100%;min-height:52px;border-radius:12px;border:1px solid #ffe19c;background:linear-gradient(#ffd86a,#e8a52f);color:#241304;font-weight:900;font-size:17px;margin-top:auto}.premiumRules{margin-top:9px;background:#ffffff13;color:#fff;border-color:#ffffff55}.premiumJoin{width:100%;display:grid;grid-template-columns:1fr 100px;gap:8px;margin-top:auto}.premiumJoin input{min-width:0;text-align:center;font-size:18px;background:#071b2a;color:#fff;border:1px solid #3fb7ff;border-radius:12px}.premiumMiniRules{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}.premiumMiniRules span{padding:5px 9px;border-radius:20px;background:#0005;font-size:11px}
-.premiumCareer{margin-top:18px;padding:18px;border:1px solid #d3a24077;border-radius:20px;background:#130c09ef}.premiumSectionTitle{text-align:center}.premiumSectionTitle h2{margin:0;color:var(--cc-gold2)}
-.lobbyV2{max-width:1240px!important;margin:auto!important}.roomTopCard,.roomHostCard,.roomPresentCard,.hostSetupV2{border-color:#d8aa4f!important;background:linear-gradient(180deg,#1a100ded,#100a08ed)!important;box-shadow:0 12px 30px #0006!important}.newTable{box-shadow:inset 0 0 70px #0007,0 15px 40px #0007!important;border:2px solid var(--cc-gold)!important}.newSeatAvatar{border:3px solid var(--cc-gold)!important}
-.refGameShell{border-color:#d8aa4f!important;box-shadow:0 18px 55px #0008!important}.refBrand{color:var(--cc-gold2)!important}.refTitle{font-weight:1000!important;text-shadow:0 3px 14px #000!important}.refAvatar{overflow:hidden!important;border:2px solid var(--cc-gold)!important;background:#130c09!important}.refAvatar img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important}.refSeat.turn .refAvatar{box-shadow:0 0 0 4px #25e889,0 0 24px #25e889aa!important}.refTurnTimer{border:2px solid var(--cc-gold)!important;background:#160d09ee!important}.refTurnTimer b{color:var(--cc-gold2)!important}.refActions .btn{min-height:54px!important;font-weight:900!important;border-radius:12px!important}.refRightChat,.refLeftTop,.refLeftBottom,.refRightTop{backdrop-filter:blur(8px)}
-.resultScreen{max-width:900px!important;margin:18px auto!important;border:1px solid var(--cc-gold)!important;background:linear-gradient(180deg,#1b100ded,#0d0807f5)!important;box-shadow:0 18px 50px #0008!important}.resultScreen .winner{color:var(--cc-gold2)!important;font-size:30px!important}#sheet{border:1px solid #d7aa4e!important;box-shadow:0 24px 70px #000b!important}
-@media(max-width:980px){.premiumHero{grid-template-columns:1fr}.premiumBrand{order:-1}.premiumPlayGrid{grid-template-columns:1fr 1fr}.premiumBrand strong{font-size:44px}}
-@media(max-width:620px){body{background-image:linear-gradient(#090504b8,#090504b8),url("bg-mobile.PNG")!important}.premiumHome{padding:8px 8px 36px}.premiumHero{padding:10px;gap:10px}.premiumProfile>img{width:58px;height:58px}.premiumBrand strong{font-size:38px}.premiumNav{grid-template-columns:repeat(5,1fr);gap:4px}.premiumNav button{min-height:54px;font-size:18px;padding:5px}.premiumNav span{font-size:9px}.premiumPlayGrid{grid-template-columns:1fr}.premiumPlayCard{min-height:245px;padding:18px 15px}.premiumPlayCard h2{font-size:25px}.playIcon{font-size:43px}.premiumStatsStrip{margin:10px 0 14px}.premiumStatsStrip b{font-size:19px}}
-</style>
-
-<style id="responsive-all-devices-v2">
-/* ===== شيك شيك: Responsive لجميع الأجهزة ===== */
-html,body{max-width:100%;overflow-x:hidden}
-#app{width:100%;box-sizing:border-box}
-.premiumHome,.premiumHero,.premiumPlayGrid,.premiumPlayCard,.premiumStatsStrip{box-sizing:border-box}
-
-/* كمبيوتر وشاشات كبيرة */
-@media (min-width:1181px){
-  .premiumHome{max-width:1480px;margin:auto}
-  .premiumHero{
-    grid-template-columns:minmax(270px,.9fr) minmax(360px,1.2fr) minmax(430px,1.35fr)!important;
-    min-height:150px;padding:12px 18px!important
-  }
-  .premiumProfile>img{width:72px!important;height:72px!important}
-  .premiumBrand strong{font-size:48px!important}
-  .premiumNav{grid-template-columns:repeat(5,minmax(70px,1fr))!important}
-  .premiumNav button{min-height:64px!important}
-  .premiumStatsStrip{max-width:760px!important;margin:10px auto 14px!important}
-  .premiumPlayGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important}
-  .premiumPlayCard{min-height:270px!important;padding:18px 16px!important}
-}
-
-/* آيباد / تابلت */
-@media (min-width:700px) and (max-width:1180px){
-  .premiumHome{padding:10px!important}
-  .premiumHero{
-    grid-template-columns:minmax(210px,.9fr) minmax(250px,1.05fr) minmax(330px,1.35fr)!important;
-    gap:9px!important;padding:10px!important
-  }
-  .premiumProfile{padding:8px 10px!important}
-  .premiumProfile>img{width:58px!important;height:58px!important}
-  .premiumProfile b{font-size:17px!important}
-  .premiumBrand strong{font-size:38px!important}
-  .premiumBrand b{font-size:15px!important}
-  .premiumBrand small{font-size:11px!important}
-  .premiumNav{grid-template-columns:repeat(5,1fr)!important;gap:5px!important}
-  .premiumNav button{min-height:54px!important;padding:5px!important;font-size:17px!important}
-  .premiumStatsStrip{max-width:650px!important;margin:8px auto 12px!important}
-  .premiumPlayGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
-  .premiumPlayCard{min-height:235px!important;padding:14px 10px!important}
-  .premiumPlayCard h2{font-size:21px!important}
-  .premiumPlayCard p{font-size:12px!important;min-height:42px!important}
-  .playIcon{font-size:38px!important}
-  .premiumAction,.premiumRules,.premiumJoin button{min-height:44px!important;font-size:14px!important}
-}
-
-/* iPhone والجوال بالطول */
-@media (max-width:699px) and (orientation:portrait){
-  .premiumHome{padding:6px 7px 28px!important}
-  .premiumHero{display:grid!important;grid-template-columns:1fr!important;gap:7px!important;padding:8px!important}
-  .premiumBrand{order:-2!important}
-  .premiumBrand strong{font-size:30px!important;line-height:1!important}
-  .premiumBrand b{font-size:12px!important;letter-spacing:2px!important}
-  .premiumBrand small{font-size:10px!important;margin-top:3px!important}
-  .premiumProfile{order:-1!important;min-height:64px!important;padding:6px 8px!important}
-  .premiumProfile>img{width:52px!important;height:52px!important;border-radius:12px!important}
-  .premiumProfile b{font-size:16px!important}
-  .premiumProfile span,.premiumProfile em{font-size:10px!important}
-  .premiumNav{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important}
-  .premiumNav button{min-height:47px!important;padding:3px!important;font-size:16px!important;border-radius:10px!important}
-  .premiumNav span{font-size:8px!important}
-  .premiumStatsStrip{margin:7px 0 9px!important;border-radius:11px!important}
-  .premiumStatsStrip div{padding:6px 3px!important}
-  .premiumStatsStrip span{font-size:9px!important}
-  .premiumStatsStrip b{font-size:17px!important}
-  .premiumPlayGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
-  .premiumPlayCard{min-height:180px!important;padding:11px 8px!important;border-radius:15px!important}
-  .premiumPlayCard h2{font-size:17px!important;margin:3px 0!important}
-  .premiumPlayCard p{font-size:10px!important;line-height:1.45!important;min-height:30px!important;margin-bottom:7px!important}
-  .playIcon{font-size:30px!important}
-  .premiumMiniRules{gap:3px!important;margin-bottom:6px!important}
-  .premiumMiniRules span{font-size:8px!important;padding:3px 5px!important}
-  .premiumAction,.premiumRules,.premiumJoin button{min-height:39px!important;font-size:12px!important;border-radius:9px!important}
-  .premiumRules{margin-top:5px!important}
-  .premiumJoin{grid-template-columns:1fr!important;gap:5px!important}
-  .premiumJoin input{height:39px!important;font-size:12px!important}
-  .premiumCareer{padding:10px!important;margin-top:10px!important}
-}
-
-/* iPhone والجوال بالعرض */
-@media (max-height:540px) and (orientation:landscape){
-  body{background-attachment:scroll!important}
-  .premiumHome{padding:5px 7px 16px!important;max-width:100%!important}
-  .premiumHero{
-    display:grid!important;
-    grid-template-columns:minmax(190px,.85fr) minmax(210px,1fr) minmax(340px,1.45fr)!important;
-    gap:6px!important;padding:6px 8px!important;border-radius:14px!important
-  }
-  .premiumProfile{padding:5px 7px!important;min-height:58px!important}
-  .premiumProfile>img{width:48px!important;height:48px!important;border-radius:10px!important}
-  .premiumProfile b{font-size:14px!important}
-  .premiumProfile span,.premiumProfile em{font-size:9px!important}
-  .premiumBrand{order:initial!important}
-  .premiumBrand strong{font-size:28px!important}
-  .premiumBrand b{font-size:11px!important;letter-spacing:2px!important}
-  .premiumBrand small{font-size:8px!important;margin-top:1px!important}
-  .premiumNav{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px!important}
-  .premiumNav button{min-height:48px!important;padding:2px!important;font-size:15px!important;border-radius:9px!important}
-  .premiumNav span{font-size:8px!important}
-  .premiumStatsStrip{max-width:720px!important;margin:5px auto 7px!important}
-  .premiumStatsStrip div{padding:4px 3px!important}
-  .premiumStatsStrip span{font-size:8px!important}
-  .premiumStatsStrip b{font-size:15px!important}
-  .premiumPlayGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important}
-  .premiumPlayCard{min-height:155px!important;padding:8px 7px!important;border-radius:13px!important}
-  .premiumPlayCard h2{font-size:15px!important;margin:2px 0!important}
-  .premiumPlayCard p{font-size:8.5px!important;line-height:1.35!important;min-height:23px!important;margin:0 0 4px!important}
-  .playIcon{font-size:25px!important}
-  .premiumMiniRules{margin-bottom:4px!important;gap:3px!important}
-  .premiumMiniRules span{font-size:7px!important;padding:2px 4px!important}
-  .premiumAction,.premiumRules,.premiumJoin button{min-height:31px!important;font-size:10px!important;border-radius:7px!important}
-  .premiumRules{margin-top:3px!important}
-  .premiumJoin{grid-template-columns:1fr 58px!important;gap:3px!important}
-  .premiumJoin input{height:31px!important;font-size:10px!important}
-  .premiumCareer{margin-top:8px!important;padding:8px!important}
-}
-
-/* نظام الغرف: مرن على كل المقاسات */
-.lobbyV2,.newTable,.roomTopCard,.roomHostCard,.roomPresentCard,.hostSetupV2{max-width:100%;box-sizing:border-box}
-@media(max-width:699px){
-  .lobbyV2{padding:6px!important}
-  .roomTopCard,.roomHostCard,.roomPresentCard,.hostSetupV2{padding:9px!important;border-radius:14px!important}
-  .newTable{min-height:auto!important;border-radius:16px!important}
-}
-@media(max-height:540px) and (orientation:landscape){
-  .lobbyV2{padding:5px!important}
-  .roomTopCard,.roomHostCard,.roomPresentCard,.hostSetupV2{padding:6px!important}
-}
-
-/* طاولة اللعب: لا تتجاوز الشاشة */
-.refGameShell{width:100%!important;max-width:100%!important;box-sizing:border-box!important}
-.refTable,.refCenter,.refActions,.refMyCards{max-width:100%!important;box-sizing:border-box!important}
-@media(max-width:699px) and (orientation:portrait){
-  .refGameShell{padding:5px!important}
-  .refActions{gap:5px!important}
-  .refActions .btn{min-height:46px!important;font-size:12px!important}
-}
-@media(max-height:540px) and (orientation:landscape){
-  .refGameShell{padding:3px!important}
-  .refTurnTimer{transform:scale(.86);transform-origin:center top}
-  .refActions .btn{min-height:35px!important;font-size:10px!important}
-}
-
-/* النتائج والقواعد */
-.resultScreen{width:min(94vw,900px)!important;box-sizing:border-box!important}
-#sheet{max-width:min(94vw,920px)!important;max-height:90dvh!important;overflow:auto!important}
-@media(max-width:699px){
-  .resultScreen{width:96vw!important;margin:7px auto!important;padding:10px!important}
-  #sheet{width:96vw!important;max-width:96vw!important}
-}
-</style>
-
-
-<style id="room-random-polish-v3">
-/* بطاقة العشوائي والكمبيوتر تحدد النوع؛ النافذة تعرض الخيارات المطلوبة فقط */
-#randomMenuV2{direction:rtl}
-#randomMenuV2 label{display:block;text-align:right;font-weight:900;color:#8b2439;margin-top:12px}
-#randomMenuV2 select{width:100%;min-height:52px;margin-top:6px;border:2px solid #c89a3c;border-radius:14px;background:#fff;color:#17100d;font-weight:900;padding:8px 12px}
-#randomMenuV2 .randomRulesBtn{margin:14px 0 4px!important}
-#randomMenuV2 #rndStart{min-height:58px;font-size:18px;font-weight:950}
-#randomMenuV2 #rndBackHome{width:100%;min-height:52px;margin-top:12px;border:2px solid #9d7427;border-radius:14px;background:#fff;color:#3a2415;font-weight:900}
-
-/* غرفة أنظف: الطاولة تبقى كما هي، الأدوات حولها أخف */
-.roomHeadActions{display:flex;gap:6px;align-items:center}
-.chatToggleBtn{width:auto!important;padding:8px 12px!important;border-radius:10px!important;border:1px solid #9b6b29!important;background:#2b1912!important;color:#f5d98c!important;font-weight:900!important}
-.roomChatBody{max-height:420px;overflow:hidden;opacity:1;transition:max-height .22s ease,opacity .18s ease}
-.roomChatBody.isCollapsed{max-height:0!important;opacity:0!important;pointer-events:none}
-.compactRoomTools .roomMediaTools{margin-bottom:0!important}
-.roomTopCard{gap:8px!important}
-.hostSetupV2 .notice{margin-top:6px}
-.hostSetupActions .btn{min-height:48px!important}
-.roomPresentCard{margin-bottom:8px!important}
-
-/* الجوال بالطول */
-@media(max-width:699px) and (orientation:portrait){
- body:has(.lobbyV2),body:has(.premiumHome){overflow-y:auto!important;height:auto!important;min-height:100dvh!important}
- body:has(.lobbyV2) .wrap,body:has(.premiumHome) .wrap{height:auto!important;min-height:100dvh!important;overflow:visible!important}
- .lobbyV2{padding:7px 7px 26px!important}
- .roomTopCard{padding:8px!important}
- .roomQuickTools .toolBtn,.roomQuickTools .rulesIconBtn{width:40px!important;height:40px!important}
- .newTable{width:min(92vw,470px)!important}
- .hostSetupRow{gap:6px!important}
- .hostSetupRow select{min-height:43px!important;font-size:12px!important}
- .roomMediaTools{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important}
- .mediaPill{font-size:9px!important;padding:7px 2px!important}
- .roomHeadActions{gap:4px}
- .chatToggleBtn,.leaveCompact{padding:7px 9px!important;font-size:11px!important}
-}
-
-/* الهاتف بالعرض: الصفحة كاملة قابلة للتمرير ولا يوجد قص */
-@media(orientation:landscape) and (max-height:650px){
- html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
- body:has(.premiumHome),body:has(.lobbyV2){position:static!important;height:auto!important;min-height:100dvh!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important}
- body:has(.premiumHome) .wrap,body:has(.lobbyV2) .wrap{position:static!important;height:auto!important;min-height:100dvh!important;overflow:visible!important}
- body:has(.premiumHome) #app,body:has(.lobbyV2) #app{position:static!important;height:auto!important;min-height:100dvh!important;overflow:visible!important;padding-bottom:34px!important}
- .premiumHome{height:auto!important;min-height:100dvh!important;overflow:visible!important;padding-bottom:30px!important}
- .premiumPlayCard{height:auto!important;min-height:150px!important;overflow:visible!important}
- .lobbyV2{height:auto!important;min-height:100dvh!important;overflow:visible!important;padding-bottom:34px!important}
- .lobbyV2 .newTable{width:min(68vh,430px)!important}
- .lobbyV2 .roomTopCard{padding:6px 8px!important}
- .lobbyV2 .roomTicker{margin-bottom:4px!important}
- .lobbyV2 .hostSetupV2,.lobbyV2 .roomHostCard,.lobbyV2 .roomPresentCard,.lobbyV2 .roomChatCard{height:auto!important;overflow:visible!important}
- .lobbyV2 .roomChatBody:not(.isCollapsed){max-height:260px!important;overflow:auto!important}
-}
-
-/* آيباد/كمبيوتر: الغرفة تستفيد من العرض بدون تغيير منطقها */
-@media(min-width:900px){
- .lobbyV2{max-width:1180px!important}
- .lobbyV2 .roomTopCard{display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important}
- .lobbyV2 .roomCodeCompact{justify-self:start}
- .lobbyV2 .roomQuickTools{justify-self:end}
- .lobbyV2 .newTable{width:min(56vw,560px)!important}
- .lobbyV2 .hostSetupV2{max-width:920px!important;margin-left:auto!important;margin-right:auto!important}
- .lobbyV2 .roomHostCard,.lobbyV2 .roomPresentCard,.lobbyV2 .roomChatCard{max-width:920px!important;margin-left:auto!important;margin-right:auto!important}
-}
-</style>
-
-
-<style id="landscape-premium-final-v10">
-/* ===== شيك شيك: الترتيب النهائي للعب بالعرض ===== */
-@media (orientation:landscape) and (min-width:650px) and (max-height:520px){
-
-  body:has(.refGameShell),
-  body:has(.refGameShell) .wrap,
-  body:has(.refGameShell) #app{
-    width:100vw!important;height:100dvh!important;
-    margin:0!important;padding:0!important;overflow:hidden!important;
-  }
-  .refGameShell{position:fixed!important;inset:0!important;overflow:hidden!important}
-
-  /* العنوان في المنتصف بدون تغطية الطاولة */
-  .refBrand{
-    top:4px!important;left:50%!important;right:auto!important;
-    transform:translateX(-50%)!important;
-    min-width:300px!important;width:auto!important;height:48px!important;
-    z-index:55!important;pointer-events:none!important;
-  }
-  .refTitle{font-size:25px!important;padding:5px 30px!important}
-  .refFalcon{width:36px!important;height:36px!important}
-  .refUaeFlag{width:44px!important;height:25px!important}
-
-  /* اليسار: الجولة والنتيجة + المتفرجين */
-  .refLeftTop{
-    left:8px!important;top:8px!important;width:190px!important;
-    padding:7px!important;border-radius:13px!important;
-  }
-  .refRoundGrid{gap:5px!important}
-  .refStat{padding:4px!important;min-height:37px!important}
-  .refStat b{font-size:9px!important}.refStat strong{font-size:15px!important}
-  .refScoreList{margin-top:3px!important;gap:2px!important}
-  .refScoreRow{font-size:9px!important;padding:2px 4px!important}
-
-  .refLeftBottom{
-    left:8px!important;top:176px!important;width:190px!important;
-    max-height:115px!important;padding:7px!important;border-radius:13px!important;
-  }
-  .refSpectatorTitle{font-size:11px!important}
-  .refSpectatorRow{font-size:9px!important;padding:3px!important}
-
-  /* اليمين: الأدوات صغيرة فوق، والشات تحته */
-  .refRightTop{
-    right:8px!important;top:8px!important;width:218px!important;
-    padding:6px!important;border-radius:13px!important;
-  }
-  .refTopTools{
-    display:grid!important;grid-template-columns:repeat(3,1fr)!important;
-    gap:4px!important;margin:0!important;
-  }
-  .refTopTools button{
-    min-height:39px!important;padding:3px 1px!important;
-    font-size:15px!important;border-radius:9px!important;
-  }
-  .refTopTools small{display:block!important;font-size:7px!important;line-height:1!important}
-  .refRightTop .refRulesTitle,.refRightTop .small{display:none!important}
-  .refRightTop #withdrawRound{min-height:28px!important;margin-top:4px!important;font-size:8px!important;padding:3px!important}
-
-  .refRightChat{
-    right:8px!important;top:112px!important;bottom:8px!important;
-    width:218px!important;border-radius:13px!important;overflow:hidden!important;
-  }
-  .refRightChat>.panel{
-    height:100%!important;display:flex!important;flex-direction:column!important;
-    padding:7px!important;overflow:hidden!important;
-  }
-  .refRightChat>.panel>b{font-size:13px!important;color:#f6d77d!important}
-  .refRightChat .voiceBar{
-    display:grid!important;grid-template-columns:1fr 1fr!important;
-    gap:3px!important;margin:4px 0!important;flex:0 0 auto!important;
-  }
-  .refRightChat .voiceBar button{min-height:25px!important;font-size:7px!important;padding:3px 1px!important}
-  .refRightChat .voiceBar #voiceLeave{grid-column:1/-1!important}
-  .refRightChat .voiceState{grid-column:1/-1!important;font-size:7px!important}
-  .refRightChat .chat{
-    flex:1 1 auto!important;height:auto!important;min-height:58px!important;
-    overflow-y:auto!important;margin:3px 0!important;padding:5px!important;
-  }
-  .refRightChat .chat p,.refRightChat .chat b{font-size:9px!important;line-height:1.3!important}
-  .refRightChat .quickChat{display:none!important}
-  .refRightChat .row{display:flex!important;gap:3px!important;flex:0 0 auto!important}
-  .refRightChat #chatInput{display:block!important;min-width:0!important;font-size:9px!important;padding:6px!important}
-  .refRightChat #send{display:block!important;flex:0 0 42px!important;font-size:8px!important;padding:5px 2px!important}
-
-  /* الطاولة: أكبر مساحة ممكنة في الوسط */
-  .refTable{
-    left:207px!important;right:235px!important;
-    top:55px!important;bottom:125px!important;
-    width:auto!important;height:auto!important;
-    border-width:7px!important;border-radius:42px!important;
-    overflow:hidden!important;
-  }
-  .refTable:before{inset:15px!important;border-radius:32px!important}
-
-  /* الوقت صغير وواضح أعلى يسار الطاولة */
-  .refTurnTimer{
-    left:12px!important;right:auto!important;top:10px!important;
-    transform:none!important;min-width:76px!important;
-    padding:4px 8px!important;font-size:14px!important;z-index:80!important;
-  }
-  .refTurnTimer small{font-size:7px!important}
-
-  /* اللاعبين */
-  .refSeat{min-width:90px!important}
-  .refSeat .refAvatar{width:47px!important;height:47px!important;font-size:18px!important}
-  .refSeatLabel{font-size:9px!important;min-width:78px!important;padding:3px 6px!important}
-  .refSeatCards{height:24px!important}
-  .refSeatCards .cardBack{width:20px!important;height:29px!important;margin:0 -4px!important}
-  .refSeat.top{top:7px!important}
-  .refSeat.bottom{bottom:6px!important}
-  .refSeat.left{left:12px!important;top:49%!important}
-  .refSeat.right{right:12px!important;top:49%!important}
-
-  /* الرزمة والميدان في القلب */
-  .refCenterPiles{top:48%!important;gap:26px!important}
-  .refPile .cardBack,.refPile .cardFace{
-    width:69px!important;height:97px!important;border-radius:9px!important;
-  }
-  .refPileLabel,.pileCount{font-size:8px!important}
-  .refLastAction{
-    bottom:8px!important;max-width:60%!important;
-    font-size:8px!important;padding:3px 8px!important;
-  }
-
-  /* الأسفل: أوراق اللاعب في الوسط والأزرار بجانبها */
-  .refBottom{
-    left:207px!important;right:235px!important;bottom:3px!important;
-    height:119px!important;
-    display:grid!important;
-    grid-template-columns:108px minmax(300px,1fr) 190px!important;
-    gap:7px!important;align-items:end!important;
-    z-index:30!important;
-  }
-  .refIntro{
-    height:108px!important;padding:5px!important;border-radius:10px!important;
-  }
-  .refIntro b{font-size:9px!important}.refIntro strong{font-size:20px!important}
-  .refIntro .refWaiting{font-size:7px!important}
-
-  .refHandWrap{
-    padding:0 4px 3px!important;overflow:visible!important;
-    background:linear-gradient(180deg,transparent,#0e0806 72%)!important;
-  }
-  .refHandTitle{font-size:9px!important;margin:0 5px 2px!important}
-  .refHandWrap .hand{
-    display:flex!important;flex-wrap:nowrap!important;justify-content:center!important;
-    align-items:flex-end!important;gap:7px!important;overflow:visible!important;
-  }
-  .refHandWrap .slot{
-    width:70px!important;min-width:70px!important;min-height:101px!important;
-  }
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{
-    width:68px!important;height:97px!important;border-radius:9px!important;
-    box-shadow:0 3px 10px #0008!important;
-  }
-  .refHandWrap .slotNum{
-    top:-10px!important;min-width:21px!important;height:21px!important;
-    line-height:18px!important;font-size:10px!important;border-width:1px!important;
-  }
-  .refHandWrap .slot button{font-size:7px!important;padding:2px!important}
-
-  .refActions{
-    display:grid!important;grid-template-columns:1fr 1fr!important;
-    gap:5px!important;padding:0 0 4px!important;align-self:end!important;
-  }
-  .refActions .btn{
-    min-height:42px!important;font-size:9px!important;
-    padding:5px 3px!important;border-radius:9px!important;
-  }
-
-  /* الورقة المسحوبة لا تغطي أوراق اللاعب */
-  .refPendingPreview{
-    bottom:118px!important;padding:3px!important;
-    transform:translateX(-50%)!important;
-  }
-  .refPendingPreview .cardFace{width:58px!important;height:82px!important}
-  .refPendingLabel{font-size:7px!important}
-
-  /* قرار شيك/تمرير داخل مساحة الأزرار بدل تغطية الشاشة */
-  .decisionActions{
-    position:static!important;width:auto!important;
-    display:grid!important;grid-template-columns:1fr 1fr!important;
-    padding:0 0 4px!important;background:transparent!important;
-    border:0!important;box-shadow:none!important;
-  }
-  .decisionActions .decisionTitle{
-    grid-column:1/-1!important;font-size:8px!important;
-    line-height:1.2!important;padding:3px!important;
-  }
-  .decisionActions .decisionButtons{
-    grid-column:1/-1!important;display:grid!important;
-    grid-template-columns:1fr 1fr!important;gap:4px!important;
-  }
-
-  /* زر انسحاب مباراة الكمبيوتر */
-  .computerExitFixed{
-    left:10px!important;right:auto!important;top:auto!important;
-    bottom:8px!important;font-size:9px!important;padding:7px 10px!important;
-  }
-  .computerRuleBadge{
-    left:10px!important;right:auto!important;top:auto!important;
-    bottom:47px!important;font-size:8px!important;padding:5px 8px!important;
-  }
-}
-
-/* الأجهزة القصيرة جداً مثل بعض أجهزة iPhone بالعرض */
-@media (orientation:landscape) and (min-width:650px) and (max-height:400px){
-  .refTable{top:48px!important;bottom:108px!important}
-  .refBottom{height:104px!important}
-  .refHandWrap .slot{width:61px!important;min-width:61px!important;min-height:89px!important}
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:59px!important;height:85px!important}
-  .refIntro{height:96px!important}
-  .refActions .btn{min-height:34px!important;font-size:8px!important}
-  .refRightChat{top:102px!important}
-  .refCenterPiles{top:47%!important}
-}
-</style>
-
-
-<style id="mobile-room-game-repair-v1">
-/* ===== إصلاح الهاتف: الغرفة + اللعب + الشات ===== */
-html,body{max-width:100%;overflow-x:hidden}
-
-/* الغرفة: الشات يفتح فعلياً وتظهر خانة الكتابة */
-.lobbyV2 .roomChatBody:not(.isCollapsed){
-  display:block!important;max-height:none!important;height:auto!important;
-  overflow:visible!important;opacity:1!important;pointer-events:auto!important
-}
-.lobbyV2 .roomChatBody:not(.isCollapsed)>.panel{
-  display:flex!important;flex-direction:column!important;height:auto!important;
-  overflow:visible!important
-}
-.lobbyV2 .roomChatBody:not(.isCollapsed) .chat{
-  display:block!important;height:190px!important;min-height:150px!important;
-  max-height:190px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch
-}
-.lobbyV2 .roomChatBody:not(.isCollapsed) .quick{
-  display:flex!important;overflow-x:auto!important;gap:5px!important;padding:4px 0!important
-}
-.lobbyV2 .roomChatBody:not(.isCollapsed) .row{
-  display:grid!important;grid-template-columns:minmax(0,1fr) 72px!important;
-  gap:6px!important;visibility:visible!important;opacity:1!important
-}
-.lobbyV2 .roomChatBody:not(.isCollapsed) #chatInput,
-.lobbyV2 .roomChatBody:not(.isCollapsed) #send{
-  display:block!important;visibility:visible!important;opacity:1!important;
-  min-height:42px!important
-}
-
-/* الهاتف بالطول: لا قص ولا تداخل */
-@media (max-width:699px) and (orientation:portrait){
-  body:has(.lobbyV2),body:has(.refGameShell){overflow-y:auto!important;overflow-x:hidden!important}
-  body:has(.lobbyV2) #app,body:has(.refGameShell) #app{
-    position:relative!important;inset:auto!important;width:100%!important;height:auto!important;
-    min-height:100dvh!important;overflow:visible!important
-  }
-  .lobbyV2{position:relative!important;width:100%!important;height:auto!important;min-height:100dvh!important;overflow:visible!important}
-  .roomChatCard{overflow:visible!important;height:auto!important;max-height:none!important}
-  .roomHeadActions{flex-wrap:wrap!important}
-  .leaveCompact{white-space:nowrap!important}
-
-  /* اللعبة بالطول ترجع كتدفق طبيعي بدلاً من تخطيط التلفزيون */
-  .refGameShell{
-    position:relative!important;inset:auto!important;width:100%!important;height:auto!important;
-    min-height:100dvh!important;overflow:visible!important;padding:8px 10px 24px!important
-  }
-  .refBrand{position:relative!important;left:auto!important;right:auto!important;top:auto!important;transform:none!important;margin:0 auto 10px!important}
-  .refLeftTop,.refLeftBottom,.refRightTop,.refRightChat,.refTable,.refBottom{
-    position:relative!important;left:auto!important;right:auto!important;top:auto!important;
-    bottom:auto!important;width:100%!important;max-width:100%!important;height:auto!important;
-    margin:0 0 10px!important;transform:none!important
-  }
-  .refLeftTop{order:1!important}
-  .refLeftBottom{order:2!important;max-height:none!important}
-  .refTable{min-height:620px!important;overflow:hidden!important;border-radius:34px!important}
-  .refBottom{display:block!important}
-  .refIntro{height:auto!important;min-height:120px!important}
-  .refHandWrap{overflow:visible!important;padding:8px 0!important}
-  .refHandWrap .hand{display:flex!important;justify-content:center!important;gap:5px!important;overflow:visible!important}
-  .refHandWrap .slot{width:23%!important;min-width:0!important}
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:100%!important;height:auto!important;aspect-ratio:.70!important}
-  .refActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
-  .refActions .btn{min-height:58px!important}
-  .refRightTop{display:block!important}
-  .refRightTop #withdrawRound{
-    position:relative!important;top:auto!important;right:auto!important;left:auto!important;
-    width:100%!important;min-height:48px!important;margin:8px 0!important;font-size:14px!important;
-    display:block!important;visibility:visible!important
-  }
-  .refRightChat{overflow:visible!important;padding:0!important}
-  .refRightChat>.panel{display:flex!important;flex-direction:column!important;height:auto!important;overflow:visible!important}
-  .refRightChat .chat{display:block!important;height:220px!important;min-height:180px!important;max-height:220px!important;overflow-y:auto!important}
-  .refRightChat .quick{display:flex!important;overflow-x:auto!important;gap:5px!important}
-  .refRightChat .row{display:grid!important;grid-template-columns:minmax(0,1fr) 72px!important;gap:6px!important}
-  .refRightChat #chatInput,.refRightChat #send{
-    display:block!important;visibility:visible!important;opacity:1!important;min-height:44px!important
-  }
-}
-
-/* الهاتف بالعرض: ثلاثة أعمدة بدون تداخل */
-@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
-  body:has(.refGameShell),body:has(.refGameShell) #app{overflow:hidden!important}
-  .refGameShell{position:fixed!important;inset:0!important;overflow:hidden!important}
-  .refLeftTop{left:6px!important;top:6px!important;width:158px!important}
-  .refLeftBottom{left:6px!important;top:142px!important;width:158px!important;bottom:6px!important;max-height:none!important}
-  .refRightTop{right:6px!important;top:6px!important;width:210px!important}
-  .refRightChat{right:6px!important;top:116px!important;bottom:6px!important;width:210px!important}
-  .refTable{left:172px!important;right:224px!important;top:52px!important;bottom:116px!important}
-  .refBottom{left:172px!important;right:224px!important;bottom:4px!important;height:108px!important;grid-template-columns:105px minmax(260px,1fr) 165px!important}
-  .refBrand{top:3px!important}
-  .refRightTop #withdrawRound{
-    display:block!important;position:relative!important;right:auto!important;top:auto!important;
-    width:100%!important;margin-top:4px!important;min-height:28px!important
-  }
-  .refRightChat>.panel{height:100%!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
-  .refRightChat .chat{flex:1 1 auto!important;height:auto!important;min-height:55px!important;overflow-y:auto!important}
-  .refRightChat .row{display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;gap:3px!important}
-  .refRightChat #chatInput,.refRightChat #send{display:block!important;visibility:visible!important;opacity:1!important}
-  .refHandWrap .slot{width:62px!important;min-width:62px!important}
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:60px!important;height:86px!important}
-}
-</style>
-
-
-<style id="final-game-layout-v2">
-/* ===== شيك شيك: ترتيب نهائي واضح للهاتف ===== */
-#sheet{color:#2b211b!important}
-#sheet h1,#sheet h2,#sheet h3,#sheet h4,#sheet b,#sheet strong{color:#24170f!important}
-#sheet .notice{color:#2b211b!important;background:#fff8e8!important;border-color:#d8b35c!important}
-#sheet .btn.danger{color:#fff!important}
-#sheet .btn:not(.danger){color:#24170f!important}
-
-/* الهاتف بالطول: الطاولة أقصر، الجولة شريط، ثم الورقة المسحوبة/الأوراق/الأزرار */
-@media (max-width:699px) and (orientation:portrait){
-  .refGameShell{padding:6px 8px 18px!important}
-  .refBrand{margin:0 auto 5px!important}
-  .refLeftTop{margin:4px 4px 6px!important;padding:7px!important}
-  .refLeftTop .refStat{padding:5px!important}.refLeftTop .refStat strong{font-size:16px!important}
-  .refLeftBottom{display:none!important}
-  .refRightTop{margin:4px!important;padding:7px!important}
-  .refRightTop .refTopTools{grid-template-columns:repeat(3,1fr)!important;gap:5px!important}
-  .refRightTop .refTopTools button{padding:6px 3px!important;font-size:16px!important}
-  .refRightTop .refRulesTitle,.refRightTop>.small{display:none!important}
-  .refRightTop #withdrawRound{min-height:42px!important;margin:5px 0 0!important}
-
-  .refTable{height:470px!important;min-height:470px!important;margin:5px 3px 0!important;border-radius:28px!important}
-  .refTable:before{inset:5%!important}
-  .refSeat.top{top:10px!important}.refSeat.bottom{bottom:10px!important}
-  .refSeat.left{left:6px!important}.refSeat.right{right:6px!important}
-  .refSeat .refAvatar{width:52px!important;height:52px!important}
-  .refSeatLabel{font-size:10px!important;min-width:82px!important;padding:4px 7px!important}
-  .refSeatCards .cardBack{width:25px!important;height:36px!important}
-  .refCenterPiles{top:50%!important;gap:20px!important}
-  .refCenterPiles .cardBack,.refCenterPiles .cardFace{width:76px!important;height:108px!important}
-  .refTurnTimer{top:6px!important;font-size:18px!important;padding:5px 12px!important}
-  .refLastAction{bottom:3px!important;max-width:88%!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:10px!important;padding:4px 9px!important}
-
-  .refBottom{margin:0 3px 7px!important;display:flex!important;flex-direction:column!important;gap:6px!important;overflow:visible!important}
-  .refIntro{order:1!important;min-height:0!important;height:42px!important;margin:0!important;padding:4px 10px!important;border-radius:11px!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:8px!important}
-  .refIntro strong{font-size:17px!important}.refIntro .refWaiting{margin:0!important;font-size:10px!important}
-  .refHandWrap{order:2!important;width:100%!important;padding:118px 0 3px!important;position:relative!important;overflow:visible!important}
-  .refPendingPreview{top:4px!important;bottom:auto!important;left:50%!important;transform:translateX(-50%)!important;padding:5px 7px!important;gap:3px!important}
-  .refPendingPreview .refPendingLabel{font-size:11px!important}
-  .refPendingPreview .cardFace{width:66px!important;height:94px!important}
-  .refHandWrap .hand{gap:5px!important}.refHandWrap .slot{width:23%!important;min-width:0!important}
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:100%!important;height:auto!important;aspect-ratio:.70!important}
-  .refActions{order:3!important;width:100%!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;margin:0!important;padding:0!important}
-  .refActions .btn{min-height:50px!important;font-size:13px!important}
-  .refRightChat{margin:8px 3px 0!important}
-}
-
-/* الهاتف بالعرض: الوسط للعبة، الورقة المسحوبة لا تختفي، والأزرار ثابتة وواضحة */
-@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
-  .refLeftTop{left:5px!important;top:5px!important;width:145px!important;padding:6px!important}
-  .refLeftBottom{display:none!important}
-  .refRightTop{right:5px!important;top:5px!important;width:190px!important;padding:6px!important}
-  .refRightChat{right:5px!important;top:108px!important;bottom:5px!important;width:190px!important}
-  .refTable{left:158px!important;right:203px!important;top:46px!important;bottom:126px!important}
-  .refBottom{left:158px!important;right:203px!important;bottom:3px!important;height:119px!important;display:grid!important;grid-template-columns:minmax(0,1fr) 178px!important;gap:6px!important;overflow:visible!important}
-  .refBottom>.refIntro{display:none!important}
-  .refHandWrap{position:relative!important;padding:2px 4px 3px!important;overflow:visible!important}
-  .refHandWrap .hand{gap:5px!important;justify-content:flex-end!important}
-  .refHandWrap .slot{width:58px!important;min-width:58px!important}
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{width:56px!important;height:80px!important}
-  .refPendingPreview{left:12px!important;top:auto!important;bottom:3px!important;transform:none!important;padding:4px 6px!important}
-  .refPendingPreview .refPendingLabel{font-size:9px!important}
-  .refPendingPreview .cardFace{width:54px!important;height:76px!important}
-  .refActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important;padding:0 0 3px!important}
-  .refActions .btn{min-height:42px!important;font-size:10px!important;padding:5px 3px!important}
-  .refCenterPiles{gap:18px!important}.refCenterPiles .cardBack,.refCenterPiles .cardFace{width:64px!important;height:91px!important}
-  .refSeat.top{top:5px!important}.refSeat.bottom{bottom:4px!important}.refSeat.left{left:5px!important}.refSeat.right{right:5px!important}
-  .refSeat .refAvatar{width:44px!important;height:44px!important}.refSeatLabel{font-size:9px!important;min-width:82px!important}
-  .refTurnTimer{top:4px!important;padding:4px 9px!important;font-size:15px!important}
-  .computerExitFixed{left:6px!important;top:auto!important;bottom:5px!important}
-}
-</style>
-
-</head>
+</style></head>
 <body>
 <div class="wrap"><div class="stripe"></div><header><h1>شيك شيك</h1><p>الشيك • السكور • لعبة المجلس أونلاين</p></header><main id="app"><div class="panel" id="startupLoading" style="text-align:center;padding:28px 18px"><div style="font-size:22px;font-weight:900;margin-bottom:10px">جاري فتح شيك شيك...</div><div style="opacity:.82;font-size:15px">يتم تحميل حسابك والاتصال بالخادم…</div><div aria-hidden="true" style="margin:18px auto 0;width:34px;height:34px;border:4px solid rgba(255,255,255,.22);border-top-color:#e7b33c;border-radius:50%;animation:startupSpin .85s linear infinite"></div></div></main></div>
 <div id="modal" class="modal hidden"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div><div id="adminVoiceIndicator" role="status" aria-live="polite"><span class="adminVoicePulse"></span><span>🎙️ الإدارة تتحدث</span></div><div id="voiceAudios" style="display:none"></div><audio id="roomFunnyAudio" playsinline preload="auto" style="display:none"></audio>
@@ -2392,7 +1720,7 @@ function bindHomeStats(){
   for(const [userId,sessions] of Object.entries(all)){let hasSession=false,isActive=false;for(const x of Object.values(sessions||{})){if(!x)continue;hasSession=true;if(x.state==="room"||x.state==="game")isActive=true}if(hasSession)visitors++;if(isActive)activeUsers.add(userId)}
   visitorEl.textContent=String(visitors);activeEl.textContent=String(activeUsers.size);
  },()=>{visitorEl.textContent="—";activeEl.textContent="—"}));
- unsubHomeStats.push(onValue(ref(db,"usernames"),snap=>{memberEl.textContent=String(Object.keys(snap.val()||{}).length)},()=>{memberEl.textContent="—"}));
+ unsubHomeStats.push(onValue(ref(db,"system/memberCounter"),snap=>{const n=Number(snap.val());memberEl.textContent=Number.isFinite(n)&&n>=1001?String(n-1000):"—"},()=>{memberEl.textContent="—"}));
 }
 
 const FALLBACK_FUN_SOUNDS={
@@ -2681,72 +2009,6 @@ function closeModal(){modal.classList.add("hidden");sheet.innerHTML=""}
 function openModal(html){sheet.innerHTML=html;modal.classList.remove("hidden")}
 modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
 
-async function sendSupportMessage(){
- if(!auth.currentUser||auth.currentUser.isAnonymous){toast("سجل الدخول أولاً");return}
- let profile={};try{const s=await get(ref(db,`users/${auth.currentUser.uid}`));profile=s.val()||{}}catch{}
- const destinations=[
-  ["administration","🛡️ الإدارة"],
-  ["generalModerator","👑 المشرف العام"],
-  ["roomModerator","🚪 مشرف الغرف"],
-  ["memberModerator","👥 مشرف الأعضاء"],
-  ["complaintsModerator","⚠️ مشرف الشكاوى والمخالفات"]
- ];
- openModal(`<div style="color:#2b211b!important">
-  <h3 style="color:#6d2633!important;font-size:24px;margin:0 0 16px">✉️ مراسلة الإدارة</h3>
-  <label style="display:block;margin:10px 0 7px;font-weight:900;color:#5b452f!important;font-size:16px">إرسال إلى</label>
-  <select id="supportTarget" style="width:100%;box-sizing:border-box;border:2px solid #c99b35;border-radius:14px;padding:13px;font:inherit;background:#fff!important;color:#1f1814!important;font-weight:800">
-   ${destinations.map(([v,l])=>`<option value="${v}" style="color:#1f1814;background:#fff">${l}</option>`).join("")}
-  </select>
-  <label style="display:block;margin:15px 0 7px;font-weight:900;color:#5b452f!important;font-size:16px">محتوى الرسالة</label>
-  <textarea id="supportText" maxlength="500" placeholder="اكتب رسالتك هنا..." style="width:100%;min-height:150px;box-sizing:border-box;border:2px solid #c99b35;border-radius:14px;padding:13px;font:inherit;background:#fff!important;color:#1f1814!important;caret-color:#1f1814;opacity:1"></textarea>
-  <div style="display:grid;grid-template-columns:1.25fr .9fr;gap:10px;margin-top:14px">
-   <button id="supportSendBtn" class="btn" style="background:#d9a62f!important;color:#21170b!important;font-size:17px;min-height:54px">📨 إرسال الرسالة</button>
-   <button id="supportBackBtn" class="btn alt" style="background:#fff!important;color:#2b211b!important;border:2px solid #d7c5a5!important;font-size:17px;min-height:54px">↩️ رجوع</button>
-  </div>
- </div>`);
- const back=document.getElementById("supportBackBtn");if(back)back.onclick=closeModal;
- const b=document.getElementById("supportSendBtn");if(!b)return;
- b.onclick=async()=>{
-  const message=String(document.getElementById("supportText")?.value||"").trim().slice(0,500);
-  const target=String(document.getElementById("supportTarget")?.value||"administration");
-  const targetLabel=destinations.find(x=>x[0]===target)?.[1]?.replace(/^[^\s]+\s*/,"")||"الإدارة";
-  if(!message){toast("اكتب الرسالة أولاً");return}
-  b.disabled=true;b.textContent="جاري الإرسال...";
-  try{
-   const p=push(ref(db,`supportMessages/${auth.currentUser.uid}`));
-   await set(p,{uid:auth.currentUser.uid,name:profile.username||myName||"عضو",memberNo:profile.memberNo||profile.memberNumber||"",target,targetLabel,message,createdAt:Date.now(),status:"new",readByAdmin:false,reply:""});
-   closeModal();toast(`تم إرسال رسالتك إلى ${targetLabel} ✅`)
-  }catch(e){b.disabled=false;b.textContent="📨 إرسال الرسالة";toast("تعذر إرسال الرسالة — راجع صلاحيات قاعدة البيانات")}
- };
-}
-async function showSupportMessages(){
- if(!auth.currentUser||auth.currentUser.isAnonymous)return;
- try{
-  const snap=await get(ref(db,`supportMessages/${auth.currentUser.uid}`));
-  const all=snap.val()||{};
-  const rows=Object.values(all).sort((x,y)=>(Number(y?.createdAt)||0)-(Number(x?.createdAt)||0));
-  const statusText=m=>m.reply?"🟢 تم الرد":(m.readByAdmin?"🟡 قيد المراجعة":"🔴 جديدة");
-  let body="";
-  if(rows.length){
-   body=rows.map(m=>{
-    const replyHtml=m.reply
-     ? `<div style="margin-top:11px;padding:12px;border-radius:12px;background:#e4f1e8!important;border:1px solid #9cc6aa;color:#173c28!important;font-size:15px;line-height:1.7"><b style="color:#14532d!important">🛡️ رد الإدارة:</b><br><span style="color:#17251c!important;font-weight:800">${esc(m.reply)}</span></div>`
-     : `<small style="display:block;margin-top:9px;color:#6b5843!important;font-weight:750">بانتظار رد الإدارة</small>`;
-    return `<div style="padding:14px;margin:10px 0;border:2px solid #c79a3b;border-radius:16px;background:#fffaf0;color:#2b211b!important;box-shadow:0 2px 8px rgba(40,29,23,.06)">
-     <div style="font-size:13px;color:#5b4633!important;margin-bottom:9px;font-weight:750"><b style="color:#352519!important">إلى:</b> ${esc(m.targetLabel||"الإدارة")} • ${m.createdAt?new Date(Number(m.createdAt)).toLocaleString("ar-AE"):""}</div>
-     <div style="white-space:pre-wrap;color:#201812!important;font-size:16px;font-weight:800;line-height:1.8">${esc(m.message||"")}</div>
-     <div style="margin-top:10px;font-size:13px;color:#403225!important"><b style="color:#352519!important">الحالة:</b> <span style="font-weight:900">${statusText(m)}</span></div>
-     ${replyHtml}
-    </div>`;
-   }).join("");
-  }else{
-   body='<p style="color:#3a2819!important;text-align:center;font-weight:800">لا توجد رسائل حتى الآن.</p>';
-  }
-  openModal(`<div style="color:#2b211b!important"><h3 style="color:#3a2819!important;font-weight:950;text-align:center">📬 رسائلي مع الإدارة</h3>${body}<button id="supportMessagesBack" class="btn alt" style="margin-top:10px;width:100%;background:#fff!important;color:#21170b!important;border:2px solid #d7c5a5!important;font-size:17px">↩️ رجوع</button></div>`);
-  const back=document.getElementById("supportMessagesBack");if(back)back.onclick=closeModal;
- }catch(e){toast("تعذر تحميل الرسائل")}
-}
-
 let accountSetupInProgress=false;
 function normalizeUsername(v=""){return v.normalize("NFKC").trim().replace(/[\u064B-\u065F\u0670\u0640\s\u200B-\u200D\uFEFF]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").toLowerCase()}
 function authErrorText(e){const c=e?.code||"";if(c.includes("email-already-in-use"))return "البريد الإلكتروني مسجل مسبقاً";if(c.includes("invalid-email"))return "البريد الإلكتروني غير صحيح";if(c.includes("weak-password"))return "كلمة المرور ضعيفة — استخدم 6 أحرف أو أكثر";if(c.includes("invalid-credential")||c.includes("wrong-password")||c.includes("user-not-found"))return "البريد الإلكتروني أو كلمة المرور غير صحيحة";if(c.includes("too-many-requests"))return "محاولات كثيرة. حاول بعد قليل";if(c.includes("network-request-failed"))return "تعذر الاتصال بالإنترنت";return e?.message||"حدث خطأ غير متوقع"}
@@ -2876,14 +2138,14 @@ function saveCurrentRoom(){
 function removeSavedRoom(code){setSavedRooms(getSavedRooms().filter(x=>x.code!==code));home()}
 function savedRoomsHtml(){const a=getSavedRooms();return `<div class="panel homeRoomCard"><h3>⭐ الغرف المحفوظة <small style="opacity:.65">${a.length}/5</small></h3>${a.length?`<div style="display:grid;gap:8px">${a.map(x=>`<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px"><button class="btn alt" data-savedjoin="${esc(x.code)}" style="flex:1">🚪 ${esc(x.code)}</button><button class="btn danger" data-savedremove="${esc(x.code)}" title="حذف من المحفوظة">✕</button></div>`).join("")}</div>`:`<div class="small">ما عندك غرف محفوظة للحين.</div>`}</div>`}
 let randomQueueCancelToken=0;
-function randomPlaySetup(initialMode="online"){
- const bot=initialMode==="computer";
- const title=bot?"🤖 لعب ضد الكمبيوتر":"🎲 اللعب العشوائي";
- const startLabel=bot?"🤖 ابدأ ضد الكمبيوتر":"🔀 ابدأ اللعب العشوائي";
- openModal(`<div id="randomMenuV2" class="${bot?'computerMode':'onlineMode'}">
-   <h3>${title}</h3>
-   <div class="notice">${bot?'مباراة خاصة ضد الكمبيوتر — بدون متفرجين.':'غرف النظام العشوائية — بدون متفرجين.'} • حد الخروج <b>120</b> • الأقل مجموع يفوز.</div>
-   <input id="rndMode" type="hidden" value="${bot?'computer':'online'}">
+function randomPlaySetup(){
+ openModal(`<div id="randomMenuV2">
+   <h3>🎲 اللعب العشوائي</h3>
+   <div class="notice">غرف النظام فقط — بدون متفرجين • حد الخروج <b>120</b> • الأقل مجموع يفوز.</div>
+   <label>نوع اللعب
+     <select id="rndMode"><option value="online">👥 أونلاين</option><option value="computer">🤖 الكمبيوتر</option></select>
+   </label>
+   <div class="gap"></div>
    <label>عدد اللاعبين
      <select id="rndCount"><option value="2">2 لاعبين</option><option value="3">3 لاعبين</option><option value="4">4 لاعبين</option></select>
    </label>
@@ -2891,23 +2153,36 @@ function randomPlaySetup(initialMode="online"){
    <label>القانون
      <select id="rndRule"><option value="1">القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select>
    </label>
-   <button type="button" id="rndRulesOpen" class="btn alt randomRulesBtn">📖 قواعد اللعب — القانون 1 والقانون 2</button>
    <div class="gap"></div>
-   <button id="rndStart" class="btn ${bot?'alt':'green'}">${startLabel}</button>
+   <button id="rndStart" class="btn green">👥 ابدأ أونلاين</button>
    <button id="rndCancel" class="btn danger" style="display:none">✕ إلغاء البحث</button>
-   <div id="rndMsg" class="small">${bot?'🤖 اختر العدد والقانون ثم ابدأ المباراة مباشرة.':'👥 اختر العدد والقانون وسيبحث النظام عن لاعبين عشوائيين.'}</div>
+   <div id="rndMsg" class="small"></div>
    <button id="rndBackHome" type="button">↩️ الرجوع إلى الصفحة الرئيسية</button>
  </div>`);
- const mode=document.getElementById("rndMode"),startBtn=document.getElementById("rndStart"),cancel=document.getElementById("rndCancel"),msg=document.getElementById("rndMsg"),back=document.getElementById("rndBackHome"),rules=document.getElementById("rndRulesOpen");
- if(rules)rules.onclick=showRulesModal;
- startBtn.onclick=async()=>{
-   if(mode.value==="online")return joinRandomOnline();
-   startBtn.disabled=true;
-   try{await startRandomComputer();}
-   catch(e){console.warn("computer start",e);if(msg)msg.textContent="تعذر بدء مباراة الكمبيوتر: "+(e?.message||e);startBtn.disabled=false}
+ const mode=document.getElementById("rndMode"),start=document.getElementById("rndStart"),cancel=document.getElementById("rndCancel"),msg=document.getElementById("rndMsg"),back=document.getElementById("rndBackHome");
+ const sync=()=>{
+   const bot=mode.value==="computer";
+   start.textContent=bot?"🤖 ابدأ ضد الكمبيوتر":"👥 ابدأ أونلاين";
+   start.className=bot?"btn alt":"btn green";
+   if(msg)msg.textContent=bot?"🤖 اختر العدد والقانون ثم ابدأ المباراة مباشرة.":"";
  };
- cancel.onclick=()=>{randomQueueCancelToken++;cancel.disabled=true;if(msg)msg.textContent="جاري إلغاء البحث...";};
- back.onclick=()=>{randomQueueCancelToken++;closeModal();window.scrollTo({top:0,behavior:"smooth"});};
+ mode.onchange=sync;sync();
+ start.onclick=async()=>{
+   if(mode.value==="online")return joinRandomOnline();
+   start.disabled=true;
+   try{await startRandomComputer();}
+   catch(e){console.warn("computer start",e);if(msg)msg.textContent="تعذر بدء مباراة الكمبيوتر: "+(e?.message||e);start.disabled=false}
+ };
+ cancel.onclick=()=>{
+   randomQueueCancelToken++;
+   cancel.disabled=true;
+   if(msg)msg.textContent="جاري إلغاء البحث...";
+ };
+ back.onclick=()=>{
+   randomQueueCancelToken++;
+   closeModal();
+   window.scrollTo({top:0,behavior:"smooth"});
+ };
 }
 
 function isComputerBot(id){return String(id||"").startsWith("BOT_")}
@@ -2934,7 +2209,7 @@ async function startRandomComputer(){
  closeModal();roomCode=code;localStorage.setItem("sheikh_room",code);adminEntryMode="player";await startPresence("room",code).catch(()=>{});subscribe(code);ensureComputerBotHeartbeat();
 }
 let botWorkTimer=0,botWorkKey="";
-let botLastRunAt=0,botWorkInFlight=false,botWorkStartedAt=0;
+let botLastRunAt=0;
 function scheduleComputerBotWork(r=currentRoom){
  if(!r?.computerMatch||uid!==r.hostId||r.status!=="game")return;
  const g=r.game||{},turn=(g.turnOrder||[])[Number(g.turnIndex||0)]||"";
@@ -2944,106 +2219,32 @@ function scheduleComputerBotWork(r=currentRoom){
  if(key===botWorkKey && now-botLastRunAt<2000)return;
  botWorkKey=key;botLastRunAt=now;clearTimeout(botWorkTimer);
  botWorkTimer=setTimeout(async()=>{
-   if(botWorkInFlight)return;
-   botWorkInFlight=true;botWorkStartedAt=Date.now();
    try{await runComputerBotWork()}
    catch(e){
      console.warn("bot work",e);
      botWorkKey="";
      setTimeout(()=>scheduleComputerBotWork(currentRoom),450);
-   }finally{
-     botWorkInFlight=false;botWorkStartedAt=0;
    }
  },650+Math.floor(Math.random()*450));
 }
 let computerBotHeartbeat=0;
-let lastCardWatchBusy=false,lastCardWatchAt=0;
-async function hardLastCardWatch(){
- if(!roomCode||lastCardWatchBusy)return;
- if(Date.now()-lastCardWatchAt<1200)return;
- lastCardWatchAt=Date.now();lastCardWatchBusy=true;
- const unlock=setTimeout(()=>{lastCardWatchBusy=false;botWorkInFlight=false;botWorkKey=""},4500);
- try{
-  const snap=await get(ref(db,`rooms/${roomCode}/public`));
-  const r=snap.val()||{},g=r.game||{},o=Array.isArray(g.turnOrder)?g.turnOrder:[];
-  const botId=o[Number(g.turnIndex||0)]||"";
-  if(!r.computerMatch||uid!==r.hostId||r.status!=="game"||g.phase!=="playing"||!isComputerBot(botId))return;
-  if(Number(r.players?.[botId]?.cardCount||0)!==1)return;
-  if(Date.now()-Number(g.turnStartedAt||0)<2500)return;
-
-  const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${botId}`))).val()||{};
-  const cards=Array.isArray(hs.cards)?hs.cards.slice():[];
-  const live=cards.map((c,i)=>c?{c,i}:null).filter(Boolean);
-
-  if(live.length===1&&g.discard&&sameRank(live[0].c,g.discard)){
-   const last=live[0].c;cards[live[0].i]=null;
-   await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);
-   await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:0});
-   await runTransaction(ref(db,`rooms/${roomCode}/public/game`),x=>{
-    if(!x||x.phase!=="playing")return x;
-    const oo=Array.isArray(x.turnOrder)?x.turnOrder:[];
-    if((oo[Number(x.turnIndex||0)]||"")!==botId)return x;
-    const pile=Array.isArray(x.discardPile)?x.discardPile.slice():[];pile.push(last);
-    x.discard=last;x.discardPile=pile;x.discardSeq=Number(x.discardSeq||0)+1;
-    x.emptyWinner=botId;x.ending=true;x.phase="reveal";x.turnStartedAt=0;
-    x.hasDrawn=null;x.actionLockUid=null;x.decisionUid=null;x.decisionUntil=null;
-    x.lastAction=`${r.players?.[botId]?.name||"الكمبيوتر"} خلص أوراقه — انتهت الجولة`;
-    return x;
-   });
-   return;
-  }
-
-  if(!g.ending){await botCallCheck(botId,g)}
-  else{await botAdvanceTurn(botId)}
- }catch(e){console.warn("hard last-card watch",e)}
- finally{
-  clearTimeout(unlock);lastCardWatchBusy=false;
-  botWorkInFlight=false;botWorkKey="";
- }
-}
-
 function ensureComputerBotHeartbeat(){
  clearInterval(computerBotHeartbeat);
  computerBotHeartbeat=setInterval(()=>{
-   enforceZeroHandRoundEnd();
-   hardLastCardWatch();
    try{
      if(currentRoom?.computerMatch && roomCode && uid===currentRoom.hostId && currentRoom.status==="game"){
-       const g=currentRoom.game||{};
-       const order=Array.isArray(g.turnOrder)?g.turnOrder:[];
-       const botId=order[Number(g.turnIndex||0)]||"";
-       const started=Number(g.turnStartedAt||0);
-       // حماية من تعليق الكمبيوتر: الطبيعي أن يلعب خلال ثوانٍ.
-       // إذا ظل دوره أكثر من 8 ثوانٍ، أعد المحاولة فوراً؛
-       // وإذا تجاوز 12 ثانية، مرّر الدور حتى لا تتجمد المباراة عند 00:00.
-       if(isComputerBot(botId)&&g.phase==="playing"&&started>0){
-         const age=Date.now()-started;
-         // إذا علقت عملية Firebase/قوة للكمبيوتر أكثر من 12 ثانية نفك القفل ونعيد تقييم نفس الدور.
-         if(botWorkInFlight&&botWorkStartedAt&&Date.now()-botWorkStartedAt>12000){
-           console.warn("BOT watchdog released stuck work",{botId,turnSeq:g.turnSeq});
-           botWorkInFlight=false;botWorkStartedAt=0;botWorkKey="";
-         }
-         // لا نمرر الدور بالقوة والكمبيوتر ما زال ينفذ سحب/تبديل؛ هذا كان يسبب تعليقاً وتضارباً.
-         if(age>8000&&!botWorkInFlight)botWorkKey="";
-         if(age>18000&&!botWorkInFlight){
-           botWorkKey="";
-           scheduleComputerBotWork(currentRoom);
-           return;
-         }
-       }
        scheduleComputerBotWork(currentRoom);
      }
    }catch(e){console.warn("bot heartbeat",e)}
  },900);
 }
 async function botAdvanceTurn(botId){
- await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
-  if(!r||r.status!=="game")return r;
-  const g=r.game||{};
-  if(g.phase!=="playing")return r;
+ await runTransaction(ref(db,`rooms/${roomCode}/public/game`),g=>{
+  if(!g||g.phase!=="playing")return g;
   const o=Array.isArray(g.turnOrder)?g.turnOrder:[],cur=o[Number(g.turnIndex||0)]||"";
-  if(cur!==botId)return r;
+  if(cur!==botId)return g;
 
+  // بعد شيك: هذا الكمبيوتر يأخذ دوراً أخيراً واحداً فقط.
   if(g.ending){
    const remaining={...(g.finalRemaining||{})};
    if(remaining[botId])delete remaining[botId];
@@ -3051,30 +2252,22 @@ async function botAdvanceTurn(botId){
    if(Object.keys(remaining).length===0){
     g.phase="reveal";g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
     g.turnStartedAt=0;g.timeoutClaim=null;g.lastAction="انتهت الأدوار الأخيرة — كشف النتائج";
-    r.game=g;return r;
+    return g;
    }
   }
 
-  let idx=Number(g.turnIndex||0),tries=0,found=false;
+  let idx=Number(g.turnIndex||0),tries=0;
   do{
    idx=(idx+1)%o.length;tries++;
-   const next=o[idx],live=Number(r.players?.[next]?.cardCount||0)>0;
-   if(g.ending){
-    if(g.finalRemaining?.[next]&&live){found=true;break}
-   }else if(live){found=true;break}
+   const next=o[idx],live=Number(currentRoom?.players?.[next]?.cardCount||0)>0;
+   if(g.ending){if(g.finalRemaining?.[next]&&live)break}
+   else if(live)break;
   }while(tries<o.length);
-
-  if(!found){
-   g.phase="reveal";g.turnStartedAt=0;g.hasDrawn=null;g.actionLockUid=null;
-   g.decisionUid=null;g.decisionUntil=null;g.timeoutClaim=null;
-   g.lastAction="لا يوجد دور صالح — كشف النتائج";
-   r.game=g;return r;
-  }
 
   g.turnIndex=idx;g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
   g.turnStartedAt=Date.now();g.turnSeq=Number(g.turnSeq||0)+1;g.timeoutClaim=null;
-  g.lastAction=`انتقل الدور إلى ${r.players?.[o[idx]]?.name||"اللاعب التالي"}`;
-  r.game=g;return r;
+  g.lastAction=`انتقل الدور إلى ${currentRoom?.players?.[o[idx]]?.name||"اللاعب التالي"}`;
+  return g;
  });
 }
 async function botRevealAll(g){
@@ -3143,9 +2336,9 @@ async function botUseKing(botId,g,depth=0){
   const chosen=picks[specialIndex],other=picks[specialIndex?0:1];
   if(other)await returnCardToDeckTop(other);
   await botPutDiscard(chosen,`${botName} استخدم قوة ${chosen.r} من سحبة K`);
-  if(chosen.r==="J"){await botUseJack(botId,g);return true}
-  if(chosen.r==="Q"){await botUseQueen(botId);return true}
-  if(chosen.r==="K"){await botUseKing(botId,g,depth+1);return true}
+  if(chosen.r==="J")return botUseJack(botId,g);
+  if(chosen.r==="Q")return botUseQueen(botId);
+  if(chosen.r==="K")return botUseKing(botId,g,depth+1);
  }
 
  // وإلا يختار الأفضل من الورقتين ويبدله مع أعلى ورقة في يده، مثل قراره العادي.
@@ -3173,21 +2366,10 @@ async function botUseDrawnPower(botId,drawn,g){
  const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
  const botName=r.players?.[botId]?.name||"الكمبيوتر";
  await botPutDiscard(drawn,`${botName} استخدم قوة ${drawn.r}`);
- if(drawn.r==="J"){await botUseJack(botId,g);return true}
- if(drawn.r==="Q"){await botUseQueen(botId);return true}
- if(drawn.r==="K"){await botUseKing(botId,g);return true}
- return true;
-}
-
-async function botCallCheck(botId,g){
- const r=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{};
- if(g?.ending)return false;
- const order=Array.isArray(g?.turnOrder)?g.turnOrder:[];
- const remaining={};for(const id of order)if(id!==botId)remaining[id]=true;
- await update(ref(db,`rooms/${roomCode}/public/game`),{ending:true,checkCalledBy:botId,finalRemaining:remaining,decisionUntil:null,decisionUid:null,hasDrawn:null,actionLockUid:null,lastAction:`${r.players?.[botId]?.name||"الكمبيوتر"} قال شيك`});
- await sendSystem(`${r.players?.[botId]?.name||"الكمبيوتر"} قال شيك`);
- await botAdvanceTurn(botId);
- return true;
+ if(drawn.r==="J")return botUseJack(botId,g);
+ if(drawn.r==="Q")return botUseQueen(botId);
+ if(drawn.r==="K")return botUseKing(botId,g);
+ return false;
 }
 
 async function runComputerBotWork(){
@@ -3206,10 +2388,6 @@ async function runComputerBotWork(){
  if(g.decisionUid===botId){await botAdvanceTurn(botId);return}
 
  const href=ref(db,`rooms/${roomCode}/privateHands/${botId}`),hsnap=await get(href),hand=hsnap.val()||{},cards=(hand.cards||[]).slice(),discard=g.discard;
-
- // إذا بقيت للكمبيوتر ورقة واحدة وكانت جوكر، يحسم الجولة بشيك بدل أن يعلق أو يدور بلا قرار.
- const liveCards=cards.filter(Boolean);
- if(!g.ending&&liveCards.length===1&&liveCards[0]?.r==="JOKER"){await botCallCheck(botId,g);return}
 
  // أولاً: نفس رتبة الميدان — يرمي المطابقات. القوة لا تتفعل من اليد.
  if(discard){
@@ -3230,12 +2408,7 @@ async function runComputerBotWork(){
  // يسحب من الرزمة. J/Q/K تتفعل فقط من السحب وبحسب القانون المختار.
  const take=await takeDeckCards(1);if(!take.ok){await botAdvanceTurn(botId);return}
  const drawn=take.cards[0];
- if(await botUseDrawnPower(botId,drawn,g)){
-  // إذا بقيت ورقة واحدة بعد تنفيذ القوة، الكمبيوتر يقول شيك بدل ما يدخل في دورة لا تنتهي.
-  const afterPower=(await get(ref(db,`rooms/${roomCode}/privateHands/${botId}`))).val()||{};
-  if(!g.ending&&countCards(afterPower.cards||[])===1){await botCallCheck(botId,g);return}
-  await botAdvanceTurn(botId);return
- }
+ if(await botUseDrawnPower(botId,drawn,g)){await botAdvanceTurn(botId);return}
 
  // الأوراق العادية/الجوكر: يحتفظ بالأفضل ويستبدل أعلى كلفة، أو يرمي المسحوبة.
  let worst=-1,worstCost=-999;cards.forEach((c,i)=>{const v=botCardCost(c);if(c&&v>worstCost){worstCost=v;worst=i}});
@@ -3244,15 +2417,10 @@ async function runComputerBotWork(){
   const old=cards[worst];cards[worst]=drawn;
   await set(ref(db,`rooms/${roomCode}/privateHands/${botId}/cards`),cards);
   await update(ref(db,`rooms/${roomCode}/public/players/${botId}`),{cardCount:countCards(cards)});
-  await botPutDiscard(old,`${r.players?.[botId]?.name||"الكمبيوتر"} سحب ورقة واحتفظ بها وبدّل ورقة من يده`);
+  await botPutDiscard(old,`${r.players?.[botId]?.name||"الكمبيوتر"} بدّل ورقة`);
  }else{
-  await botPutDiscard(drawn,`${r.players?.[botId]?.name||"الكمبيوتر"} سحب ورقة ولم يحتفظ بها ورماها للميدان`);
+  await botPutDiscard(drawn,`${r.players?.[botId]?.name||"الكمبيوتر"} رمى ورقة`);
  }
-
- // حماية الورقة الأخيرة: إذا أنهى الكمبيوتر حركته وبقيت له ورقة واحدة،
- // يقول شيك فوراً. بهذا لا يظل يسحب/يبدل على نفس الورقة إلى ما لا نهاية.
- const finalHand=(await get(ref(db,`rooms/${roomCode}/privateHands/${botId}`))).val()||{};
- if(!g.ending&&countCards(finalHand.cards||[])===1){await botCallCheck(botId,g);return}
  await botAdvanceTurn(botId);
 }
 async function joinRandomOnline(){
@@ -3442,37 +2610,8 @@ async function home(msg=""){
  await loadMyAdminAccess();
  const memberNo=profile.memberNo||"—";
  const avatar=profile.avatarUrl||"icon-512.png";
- app.innerHTML=`<div class="premiumHome">
-<header class="premiumHero">
- <div class="premiumProfile"><img src="${esc(avatar)}" alt="الصورة الشخصية"><div><b>${esc(myName)}</b><span>🇦🇪 رقم العضوية: ${esc(String(memberNo))}</span>${(()=>{const r=rankForXp(profile.xp||0);return `<em><img src="${r.icon}" alt="">${r.name} • ${Number(profile.xp||0)} XP</em>`})()}</div></div>
- <div class="premiumBrand"><strong>شيك شيك</strong><b>CHECK CHECK</b><small>الشيك • السكور • لعبة المجلس أونلاين</small></div>
- <nav class="premiumNav">${myAdmin?`<button id="adminPanelBtn">⚙️<span>الإدارة</span></button>`:""}<button id="accountBtn">👤<span>حسابي</span></button><button id="contactAdminBtn">✉️<span>راسل الإدارة</span></button><button id="myAdminMessagesBtn">📬<span>رسائلي</span></button><button id="homeRulesBtn">📖<span>القواعد</span></button><button id="homeStatsJump">🏆<span>إحصائياتي</span></button><button id="logoutBtn" class="logout">↪️<span>خروج</span></button></nav>
-</header>
-<section class="premiumStatsStrip"><div><span>الزوار الآن</span><b id="statVisitors">—</b></div><div><span>الأعضاء</span><b id="statMembers">—</b></div><div><span>المتفاعلين الآن</span><b id="statActive">—</b></div></section>
-<section class="premiumPlayGrid">
- <article class="premiumPlayCard createCard"><div class="playIcon">👥</div><h2>إنشاء غرفة</h2><p>أنشئ مجلسك وحدد القانون والجولات وحد الخروج.</p><button id="create" class="premiumAction">إنشاء غرفة</button><div id="err" class="${msg&&msg.includes('بنجاح')?'ok':'err'}">${esc(msg)}</div></article>
- <article class="premiumPlayCard joinCard"><div class="playIcon">🚪</div><h2>الانضمام إلى غرفة</h2><p>ادخل كود الغرفة وانضم للربع مباشرة.</p><div class="premiumJoin"><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><button id="join">دخول</button></div></article>
- <article class="premiumPlayCard randomCard"><div class="playIcon">🔀</div><h2>اللعب العشوائي</h2><p>العب أونلاين مع لاعبين عشوائيين • 2–4 لاعبين.</p><div class="premiumMiniRules"><span>القانون 1 أو 2</span><span>حد الخروج 120</span></div><button id="randomPlay" class="premiumAction">🔀 ابدأ اللعب العشوائي</button><button id="randomRules" class="premiumRules">📖 قواعد اللعب</button></article>
- <article class="premiumPlayCard botCard"><div class="playIcon">🤖</div><h2>لعب ضد الكمبيوتر</h2><p>مباراة كاملة ضد 1–3 لاعبين كمبيوتر.</p><div class="premiumMiniRules"><span>القانون 1 أو 2</span><span>2–4 لاعبين</span></div><button id="computerPlay" class="premiumAction">▶ ابدأ اللعب</button><button id="computerRules" class="premiumRules">📖 قواعد اللعب</button></article>
-</section>
-${savedRoomsHtml()}
-<section id="premiumStatsBox" class="premiumCareer"><div class="premiumSectionTitle"><h2>🏅 إحصائياتك</h2><p>ملخص مستواك في شيك شيك</p></div>${careerStatsHtml(profile)}</section>
-</div>`;
- document.getElementById("create").onclick=createRoom;
- document.getElementById("join").onclick=joinRoom;
- document.getElementById("randomPlay").onclick=()=>randomPlaySetup("online");
- document.getElementById("computerPlay").onclick=()=>randomPlaySetup("computer");
- document.getElementById("randomRules").onclick=showRulesModal;
- document.getElementById("computerRules").onclick=showRulesModal;
- document.getElementById("homeRulesBtn").onclick=showRulesModal;
- const contactAdminBtn=document.getElementById("contactAdminBtn");if(contactAdminBtn)contactAdminBtn.onclick=sendSupportMessage;
- const myAdminMessagesBtn=document.getElementById("myAdminMessagesBtn");if(myAdminMessagesBtn)myAdminMessagesBtn.onclick=showSupportMessages;
- document.getElementById("homeStatsJump").onclick=()=>document.getElementById("premiumStatsBox")?.scrollIntoView({behavior:"smooth"});
- document.querySelectorAll("[data-savedjoin]").forEach(b=>b.onclick=()=>{document.getElementById("code").value=b.dataset.savedjoin;joinRoom()});
- document.querySelectorAll("[data-savedremove]").forEach(b=>b.onclick=()=>removeSavedRoom(b.dataset.savedremove));
- const ap=document.getElementById("adminPanelBtn");if(ap)ap.onclick=openAdminPanel;
- document.getElementById("accountBtn").onclick=()=>accountScreen();
- document.getElementById("logoutBtn").onclick=logoutPlayer;
+ app.innerHTML=`<div class="homePage"><section class="homeMember"><div class="homeIdentity"><div class="homeAvatar"><img src="${esc(avatar)}" alt="الصورة الشخصية"></div><div class="homeWho"><div class="homeHello">حيّاك الله</div><div class="homeName">${esc(myName)}</div><div class="homeMemberNo">رقم العضوية: <b>${esc(String(memberNo))}</b> • نورت مجلس شيك شيك</div>${(()=>{const r=rankForXp(profile.xp||0);return `<div class="homeRank"><img src="${r.icon}" alt="${r.name}"><span>${r.name} • ${Number(profile.xp||0)} XP</span></div>`})()}</div></div><div class="homeMemberActions">${myAdmin?`<button id="adminPanelBtn" style="border-color:#d8a83d">⚙️ لوحة التحكم</button>`:""}<button id="accountBtn">✏️ تعديل البيانات</button><button id="logoutBtn" class="logout">تسجيل الخروج</button></div></section><section class="homeRooms"><div class="panel homeRoomCard"><h3>إنشاء غرفة جديدة</h3><button id="create" class="btn">إنشاء غرفة</button><div id="err" class="${msg&&msg.includes('بنجاح')?'ok':'err'}">${esc(msg)}</div></div><div class="panel homeRoomCard"><h3>دخول غرفة موجودة</h3><div class="homeJoinRow"><input id="code" maxlength="5" value="${esc(roomCode)}" placeholder="كود الغرفة"><button id="join" class="btn alt">دخول</button></div></div>${savedRoomsHtml()}<div class="panel homeRoomCard"><h3>🃏 لعبة ريمي</h3><div class="small" style="margin-bottom:10px">الهاند الروسي • 14 كرت • السيريل والتشابه والجوكر</div><button id="ramiPlay" class="btn" style="background:#6d2633;color:#fff;border:1px solid #d0a13b">🃏 دخول ريمي</button></div><div class="panel homeRoomCard"><h3>🎲 اللعب العشوائي</h3><div class="small" style="margin-bottom:10px">غرف ينشئها النظام • 2–4 لاعبين • بدون متفرجين • حد الخروج 120</div><button id="randomPlay" class="btn green">🎲 عشوائية</button></div></section><section class="panel homeStatsBox"><div class="homeStatsHead"><h3>🏅 إحصائياتك</h3>${careerStatsHtml(profile)}</div><div class="homeStatsHead"><h3>📊 إحصائيات مجلس شيك شيك</h3><p>شوف حركة المجلس والربع الموجودين الآن</p></div><div class="homeStats"><div class="homeStat"><b id="statVisitors">—</b><span>الزوار الآن</span></div><div class="homeStat"><b id="statMembers">—</b><span>الأعضاء</span></div><div class="homeStat"><b id="statActive">—</b><span>المتفاعلين الآن</span></div></div></section></div>`;
+ document.getElementById("create").onclick=createRoom;document.getElementById("join").onclick=joinRoom;const ramiPlay=document.getElementById("ramiPlay");if(ramiPlay)ramiPlay.onclick=()=>{location.href="rami.html"};document.getElementById("randomPlay").onclick=randomPlaySetup;document.querySelectorAll("[data-savedjoin]").forEach(b=>b.onclick=()=>{document.getElementById("code").value=b.dataset.savedjoin;joinRoom()});document.querySelectorAll("[data-savedremove]").forEach(b=>b.onclick=()=>removeSavedRoom(b.dataset.savedremove));const ap=document.getElementById("adminPanelBtn");if(ap)ap.onclick=openAdminPanel;document.getElementById("accountBtn").onclick=()=>accountScreen();document.getElementById("logoutBtn").onclick=logoutPlayer;
  await startPresence("home","");bindHomeStats();
 }
 function cleanupSubs(){for(const f of [unsubRoom,unsubChat,unsubHand,unsubFunny])if(f)try{f()}catch{}unsubRoom=unsubChat=unsubHand=unsubFunny=null;clearInterval(turnCountdownTimer);turnCountdownTimer=null;stopLiveVoice(false)}
@@ -3579,7 +2718,6 @@ async function handleHostKickRequest(nextRoom){
  }finally{processingKickRequest=false}
 }
 function subscribe(c){
- ensureComputerBotHeartbeat();
  cleanupSubs();funnyEventPrimed=false;lastFunnyEventId="";funnySubscribeAt=Date.now();
  unsubRoom=onValue(ref(db,`rooms/${c}/public`),s=>{
   if(!s.exists()){home("الغرفة غير موجودة");return}
@@ -3860,7 +2998,7 @@ async function beginRound(order,roundNo,totalRounds,totals,settings={}){
    cumulativeScores:totals||{},ruleMode:inheritedRule,scoreLimit:inheritedLimit,
    eliminated:previousGame.eliminated||{},emptyWinner:"",swapRequest:null,jackSwap:null,
    turnStartedAt:0,turnSeq:0,timeoutClaim:null,timeoutMisses:{},
-   decisionUid:null,decisionUntil:null,hasDrawn:null,actionLockUid:null,lastAction:"",previousResults:(Number(roundNo)>1?(previousGame.results||previousGame.previousResults||null):null),results:null
+   decisionUid:null,decisionUntil:null,hasDrawn:null,actionLockUid:null,lastAction:"",results:null
  };
 
  // بعد نجاح privateHands ننشر الجولة في public بتحديث واحد داخل الغرفة.
@@ -4047,10 +3185,7 @@ async function autoGameWork(){
   const cards=myHand.cards||[];
   await set(ref(db,`rooms/${roomCode}/public/reveals/${uid}`),{name:myName,cards,score:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)});
  }
- if(g.phase==="reveal"){
-  setTimeout(forceComputerRevealCompletion,40);
-  setTimeout(maybeFinishReveal,120);
- }
+ if(g.phase==="reveal")setTimeout(maybeFinishReveal,80);
  scheduleRoundRecovery();
 }
 async function claimInitialHand(){
@@ -4149,24 +3284,7 @@ async function tryPlayHands(indices){
  await finishTurn();
 }
 async function putDiscard(card,log){const seq=(game().discardSeq||0)+1,pile=Array.isArray(game().discardPile)?game().discardPile.slice():[];pile.push(card);await update(ref(db,`rooms/${roomCode}/public/game`),{discard:card,discardPile:pile,discardSeq:seq,lastAction:log,hasDrawn:null,actionSeq:(game().actionSeq||0)+1})}
-async function checkEmptyAndEnd(cards){
- if(countCards(cards)!==0)return false;
- await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
-  if(!r||r.status!=="game")return r;
-  const g=r.game||{};
-  if(g.phase!=="playing"&&g.phase!=="reveal")return r;
-  if(!r.players)r.players={};
-  if(!r.players[uid])r.players[uid]={name:myName||"لاعب"};
-  r.players[uid].cardCount=0;
-  g.phase="reveal";g.emptyWinner=uid;g.ending=true;
-  g.hasDrawn=null;g.actionLockUid=null;g.decisionUid=null;g.decisionUntil=null;
-  g.turnStartedAt=0;g.timeoutClaim=null;g.finalRemaining={};
-  g.lastAction=`${myName} خلص أوراقه — انتهت الجولة`;
-  r.game=g;return r;
- });
- await sendSystem(`${myName} خلص أوراقه! نتيجته 0 وانتهت الجولة`);
- sfx("win");setTimeout(forceComputerRevealCompletion,80);return true
-}
+async function checkEmptyAndEnd(cards){if(countCards(cards)!==0)return false;await update(ref(db,`rooms/${roomCode}/public/game`),{phase:"reveal",emptyWinner:uid,ending:true,hasDrawn:null,lastAction:`${myName} خلص أوراقه — انتهت الجولة`});await sendSystem(`${myName} خلص أوراقه! نتيجته 0 وانتهت الجولة`);sfx("win");return true}
 async function discardAndFinish(card,log){await putDiscard(card,log);await finishTurn()}
 
 function chooseClear(n,title){const cards=myHand?.cards||[];openModal(`<h3>${title}</h3><div class="notice">اختر ${n} ${n===1?'ورقة':'ورقتين'} من أوراقك للمسح.</div><div class="choiceGrid">${cards.map((c,i)=>c?`<button class="btn alt" data-clear="${i}">الورقة ${i+1}</button>`:`<button disabled>فارغة</button>`).join("")}</div><div class="gap"></div><button id="cancelPower" class="btn danger">إلغاء القوة وإنهاء الدور</button>`);let chosen=[];sheet.querySelectorAll("[data-clear]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.clear;if(chosen.includes(i))return;chosen.push(i);b.disabled=true;b.textContent="تم الاختيار";if(chosen.length>=n){const cs=(myHand.cards||[]).slice();for(const k of chosen)cs[k]=null;await set(ref(db,`rooms/${roomCode}/privateHands/${uid}/cards`),cs);await update(ref(db,`rooms/${roomCode}/public/players/${uid}`),{cardCount:countCards(cs)});closeModal();await sendSystem(`${myName} استخدم قوة الجوكر`);if(await checkEmptyAndEnd(cs))return;await finishTurn()}});document.getElementById("cancelPower").onclick=async()=>{closeModal();await finishTurn()}}
@@ -4264,10 +3382,6 @@ function chooseJack(){
  sheet.querySelectorAll("[data-jp1]").forEach(b=>b.onclick=()=>chooseJackSlot1(b.dataset.jp1,ps));
 }
 function jackSlotsFor(playerUid,attr){
- // إذا اختار اللاعب نفسه، اعرض فقط الخانات التي فيها ورقة فعلاً.
- if(playerUid===uid&&Array.isArray(myHand?.cards)){
-  return myHand.cards.map((c,i)=>c?`<button class="btn alt" ${attr}="${i}">الورقة ${i+1}</button>`:"").join("");
- }
  const n=Math.max(1,currentRoom.players?.[playerUid]?.cardCount||4);
  return Array.from({length:n},(_,i)=>`<button class="btn alt" ${attr}="${i}">الورقة ${i+1}</button>`).join("");
 }
@@ -4341,35 +3455,7 @@ async function finishTurn(){
  // بعد إنهاء اللعب: 5 ثوانٍ فقط لشيك أو تمرير.
  await update(ref(db,`rooms/${roomCode}/public/game`),{decisionUid:uid,decisionUntil:Date.now()+5000,hasDrawn:null,actionLockUid:uid,lastAction:`${myName} أنهى لعبه — عنده 5 ثواني: شيك أو تمرير`});
 }
-let zeroHandGuardBusy=false;
-async function enforceZeroHandRoundEnd(){
- if(zeroHandGuardBusy||!roomCode||!currentRoom||uid!==currentRoom.hostId)return false;
- const g=currentRoom.game||{};
- if(currentRoom.status!=="game"||g.phase!=="playing")return false;
- const order=Array.isArray(g.turnOrder)?g.turnOrder:[];
- if(!order.some(id=>Number(currentRoom.players?.[id]?.cardCount)===0))return false;
- zeroHandGuardBusy=true;
- try{
-  const tx=await runTransaction(ref(db,`rooms/${roomCode}/public`),r=>{
-   if(!r||r.status!=="game"||r.game?.phase!=="playing")return r;
-   const o=Array.isArray(r.game.turnOrder)?r.game.turnOrder:[];
-   const w=o.find(id=>Number(r.players?.[id]?.cardCount)===0);
-   if(!w)return r;
-   const gg=r.game;
-   gg.phase="reveal";gg.emptyWinner=w;gg.ending=true;gg.finalRemaining={};
-   gg.hasDrawn=null;gg.actionLockUid=null;gg.decisionUid=null;gg.decisionUntil=null;
-   gg.turnStartedAt=0;gg.timeoutClaim=null;
-   gg.lastAction=`${r.players?.[w]?.name||"اللاعب"} خلص أوراقه — انتهت الجولة`;
-   r.game=gg;return r;
-  });
-  if(tx.committed)setTimeout(forceComputerRevealCompletion,80);
-  return !!tx.committed;
- }catch(e){console.warn("zero-hand guard",e);return false}
- finally{zeroHandGuardBusy=false}
-}
-
 async function advanceTurnNow(fromCheck=false){
- if(await enforceZeroHandRoundEnd())return;
  const snap=await get(ref(db,`rooms/${roomCode}/public/game`));
  const g=snap.val()||game(),order=Array.isArray(g.turnOrder)?g.turnOrder.filter(Boolean):[];
  if(!order.length)return;
@@ -4476,29 +3562,6 @@ async function handleTurnTimeout(){
  }catch(e){console.warn("turn timeout",e)}finally{handlingTurnTimeout=false}
 }
 
-let revealWatchBusy=false;
-async function forceComputerRevealCompletion(){
- if(revealWatchBusy||!roomCode)return;
- revealWatchBusy=true;
- try{
-  const pub=(await get(ref(db,`rooms/${roomCode}/public`))).val()||{},g=pub.game||{};
-  if(pub.status!=="game"||g.phase!=="reveal"||!pub.computerMatch||uid!==pub.hostId)return;
-  const order=Array.isArray(g.turnOrder)?g.turnOrder:[],rev=pub.reveals||{},players=pub.players||{};
-  for(const id of order){
-   if(rev[id]||(id!==uid&&!isComputerBot(id)))continue;
-   const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
-   const cards=Array.isArray(hs.cards)?hs.cards:[];
-   const empty=(id===g.emptyWinner)||Number(players?.[id]?.cardCount||0)===0;
-   await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),{
-    name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),
-    cards,score:empty?0:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)
-   });
-  }
-  setTimeout(()=>maybeFinishReveal(),100);
- }catch(e){console.warn("force reveal completion",e)}
- finally{revealWatchBusy=false}
-}
-
 async function maybeFinishReveal(){
  if(revealFinalizing||game().phase!=="reveal"||!roomCode)return;
  revealFinalizing=true;
@@ -4513,22 +3576,6 @@ async function maybeFinishReveal(){
   const rev=revealSnap.val()||{},players=playersSnap.val()||{};
   const order=(Array.isArray(g.turnOrder)?g.turnOrder:[]).filter(id=>players?.[id]?.role!=="spectator");
   if(!order.length)return;
-
-  // مباراة الكمبيوتر يديرها المضيف: لا ننتظر كشفاً قد لا يصل من BOT أو من جهاز المضيف بعد تبدل الحالة.
-  if(currentRoom?.computerMatch && uid===currentRoom.hostId){
-   const missingNow=order.filter(id=>!rev[id]);
-   for(const id of missingNow){
-    if(id!==uid&&!isComputerBot(id))continue;
-    const hs=(await get(ref(db,`rooms/${roomCode}/privateHands/${id}`))).val()||{};
-    const cards=Array.isArray(hs.cards)?hs.cards:[];
-    const isEmptyWinner=(id===g.emptyWinner)||Number(players?.[id]?.cardCount||0)===0;
-    if(!cards.length&&!isEmptyWinner)continue;
-    const payload={name:players?.[id]?.name||(id===uid?myName:"الكمبيوتر"),cards,score:isEmptyWinner?0:scoreHand(cards),submittedAt:Date.now(),roundNo:Number(g.roundNo||1)};
-    await set(ref(db,`rooms/${roomCode}/public/reveals/${id}`),payload);
-    rev[id]=payload;
-   }
-  }
-
   const missing=order.filter(id=>!rev[id]);
   if(missing.length)return;
   const scores={},totals={...(g.cumulativeScores||{})};
@@ -4674,7 +3721,7 @@ function renderLobby(){
   ${currentRoom.systemRandom?`<section class="hostSetupV2"><div class="hostSetupTitle">🎲 غرفة نظام عشوائية</div><div class="notice">بانتظار اكتمال ${Number(currentRoom.targetPlayers||2)} لاعبين • القانون ${Number(currentRoom.ruleMode||1)} • حد الخروج 120 • تبدأ تلقائياً عند اكتمال العدد • بدون متفرجين</div></section>`:(host?`<section class="hostSetupV2"><div class="hostSetupTitle">👑 إعداد المباراة</div><div class="hostSetupRow"><label>عدد اللاعبين<select id="playerCount"><option value="2">2</option><option value="3" ${ps.length>=3?'selected':''}>3</option><option value="4" ${ps.length>=4?'selected':''}>4</option></select></label><label>القانون<select id="ruleMode"><option value="1" selected>القانون 1 — القوة للأحمر فقط</option><option value="2">القانون 2 — القوة للأشكال الأربعة</option></select></label><label>الجولات<select id="roundCount">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${i===2?'selected':''}>${i+1}</option>`).join('')}<option value="open">مفتوحة</option></select></label><label>حد الخروج<select id="scoreLimit"><option value="50">50</option><option value="75">75</option><option value="100" selected>100</option><option value="125">125</option><option value="150">150</option><option value="200">200</option></select></label></div><div class="notice small">إذا وصل اللاعب إلى حد الخروج أو تجاوزه، يخرج من المباراة ويكمل الباقون.</div><div class="hostSetupActions"><button id="start" class="btn green" ${ps.length<2?'disabled':''}>▶ ابدأ المباراة</button><button id="transferHost" class="btn alt" ${ps.length<2?'disabled':''}>👑 تسليم المضيف</button></div></section>`:'')}
   <section class="roomHostCard"><div class="roomSectionHead"><h3>👑 المضيف</h3>${canManageHost&&ps.length>1?`<button id="transferHostCard" class="hostTransferMini">نقل المضيفية</button>`:''}</div><div class="roomPerson hostOnly"><img src="${esc(avatarOf(hostP))}" alt=""><div><b>${esc(hostP.name||'المضيف')}</b><small>${host?'أنت المضيف':'صاحب الغرفة'} • عند خروجه تنتقل للأقدم تلقائيًا</small></div></div></section>
   <section class="roomPresentCard"><div class="roomSectionHead"><h3>👥 المتواجدون في الغرفة</h3><span>${ps.length} / ${currentRoom.systemRandom?Math.max(2,Math.min(4,Number(currentRoom.targetPlayers||2))):8}</span></div><div class="roomPeopleGrid">${people||'<div class="small">لا يوجد أعضاء</div>'}</div></section>
-  <section class="roomChatCard compactRoomTools"><div class="roomSectionHead"><h3>💬 الشات والصوت</h3><div class="roomHeadActions"><button id="toggleRoomChat" class="chatToggleBtn">إخفاء الشات</button><button id="leave" class="leaveCompact">🚪 خروج / انسحاب</button></div></div><div class="roomMediaTools"><button id="voiceTop" class="mediaPill">🎙️ المايك</button><button id="sfxTop" class="mediaPill">🔊 الصوت</button><button id="funTop" class="mediaPill">😂 التأثيرات</button><button id="radioTop" class="mediaPill">📻 الإذاعة</button></div><div id="roomChatBody" class="roomChatBody">${chatPanel()}</div></section>
+  <section class="roomChatCard"><div class="roomSectionHead"><h3>💬 شات الغرفة</h3><button id="leave" class="leaveCompact">خروج</button></div><div class="roomMediaTools"><button id="voiceTop" class="mediaPill">🎙️ المايك</button><button id="sfxTop" class="mediaPill">🔊 الصوت</button><button id="funTop" class="mediaPill">😂 التأثيرات</button><button id="radioTop" class="mediaPill">📻 الإذاعة</button></div>${chatPanel()}</section>
  </div>`;
  wireCommon();
  const saveBtn=document.getElementById("saveRoomBtn");if(saveBtn)saveBtn.onclick=saveCurrentRoom;
@@ -4683,7 +3730,6 @@ function renderLobby(){
   document.getElementById('playerCount')?.addEventListener('change',syncCount);document.querySelectorAll('[data-active]').forEach(b=>b.addEventListener('change',()=>{const checked=[...document.querySelectorAll('[data-active]:checked')];if(checked.length>4){b.checked=false;toast('الحد الأعلى 4 لاعبين')}if(checked.length<2){b.checked=true;toast('لازم لاعبين على الأقل')}const w=document.querySelector(`[data-seatwrap="${b.dataset.active}"]`);if(w){w.classList.toggle('active',b.checked);const st=w.querySelector('.newSeatState');if(st)st.textContent=b.checked?'مختار للطاولة':'متفرج'}}));syncCount();
   const st=document.getElementById('start');if(st)st.onclick=startGame;const th=document.getElementById('transferHost');if(th)th.onclick=showHostTransfer;document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kickPlayer(b.dataset.kick)});
  }
- const chatToggle=document.getElementById('toggleRoomChat'),chatBody=document.getElementById('roomChatBody');if(chatToggle&&chatBody)chatToggle.onclick=()=>{const closed=chatBody.classList.toggle('isCollapsed');chatToggle.textContent=closed?'فتح الشات':'إخفاء الشات'};
  const thc=document.getElementById('transferHostCard');if(thc)thc.onclick=showHostTransfer;
  const sx=document.getElementById('sfxTop');if(sx)sx.onclick=async()=>{if(sfxMuted){sfxMuted=false;localStorage.setItem('sheikh_sfx_muted','0');updateSfxUi()}await unlockAudio();sfx('correct');toast('اختبار الصوت 🔊')};const vt=document.getElementById('voiceTop');if(vt)vt.onclick=()=>voiceActive?stopLiveVoice(true):startLiveVoice();const ft=document.getElementById('funTop');if(ft)ft.onclick=showSoundBoard;const rt=document.getElementById('radioTop');if(rt)rt.onclick=showRadioPanel;const hp=document.getElementById('roomHelp');if(hp)hp.onclick=()=>openModal(`<h3>ℹ️ تعليمات الغرفة</h3><div class="notice" style="line-height:1.9;text-align:right">المضيف يختار من 2 إلى 4 لاعبين للطاولة، والباقي يبقون متفرجين. بداية كل جولة تُختار عشوائيًا من اللاعبين المشاركين، وليست مرتبطة بالمضيف. ويمكن نقل المضيفية لعضو آخر، وعند خروج المضيف تنتقل تلقائيًا للأقدم.</div><button id="closeRoomHelp" class="btn alt">إغلاق</button>`),setTimeout(()=>{const b=document.getElementById('closeRoomHelp');if(b)b.onclick=closeModal},0);
 }
@@ -4697,13 +3743,12 @@ function renderGame(){
  }
  if(g.phase==="reveal"){
   const rev=currentRoom.reveals||{},done=active.filter(id=>rev[id]).length;
-  if(currentRoom.computerMatch&&uid===currentRoom.hostId)setTimeout(forceComputerRevealCompletion,80);
   app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><div class="refMemorizeOverlay"><div class="refMemorizeBox"><h2>🃏 كشف الأوراق</h2><p>تم استلام ${done} من ${active.length} لاعبين.</p>${myHand?`<div class="refCountdown" style="font-size:34px">${scoreHand(myHand.cards||[])}</div><p>سكورك في الجولة</p>`:""}</div></div></div>${chatPanel()}`;wireCommon();setTimeout(maybeFinishReveal,250);return;
  }
  const otherIds=active.filter(id=>id!==uid),positions=["top","left","right"],completedRounds=Math.max(0,Number(g.roundNo||1)-1),scores=active.map(id=>`<div class="refScoreRow"><span>${esc(currentRoom.players?.[id]?.name||"لاعب")}</span><b>${Number(totals[id]||0)} نقطة</b></div>`).join("");
  const spectators=playerEntries().filter(([id])=>!active.includes(id));
- const otherSeats=otherIds.map((id,i)=>{const p=currentRoom.players?.[id]||{},n=Math.max(0,p.cardCount||0),backs=Array.from({length:Math.min(n,5)},()=>`<span class="cardBack"></span>`).join("");return `<div class="refSeat ${positions[i]||"top"} ${id===tuid?'turn':''}"><div class="refSeatCards">${backs}</div><div class="refAvatar"><img src="${esc(p.avatarUrl||"icon-512.png")}" alt=""></div><div class="refSeatLabel"><b>${esc(p.name||"لاعب")}${rankInline(p.xp||0,false)}</b>${n} ورقة${canKick&&id!==uid?`<span class="hostSeatActions"><button class="roundOutMini" data-round-out="${id}" title="إخراج من الجولة فقط">🚪</button><button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button></span>`:""}</div></div>`}).join("");
- const mySeat=isActivePlayer()?`<div class="refSeat bottom ${uid===tuid?'turn':''}"><div class="refAvatar"><img src="${esc(currentRoom.players?.[uid]?.avatarUrl||"icon-512.png")}" alt=""></div><div class="refSeatLabel"><b>${esc(myName)}</b>${countCards(myHand?.cards)} ورقة</div></div>`:"";
+ const otherSeats=otherIds.map((id,i)=>{const p=currentRoom.players?.[id]||{},n=Math.max(0,p.cardCount||0),backs=Array.from({length:Math.min(n,5)},()=>`<span class="cardBack"></span>`).join("");return `<div class="refSeat ${positions[i]||"top"} ${id===tuid?'turn':''}"><div class="refSeatCards">${backs}</div><div class="refAvatar">${esc((p.name||"ل").trim().charAt(0)||"ل")}</div><div class="refSeatLabel"><b>${esc(p.name||"لاعب")}${rankInline(p.xp||0,false)}</b>${n} ورقة${canKick&&id!==uid?`<span class="hostSeatActions"><button class="roundOutMini" data-round-out="${id}" title="إخراج من الجولة فقط">🚪</button><button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button></span>`:""}</div></div>`}).join("");
+ const mySeat=isActivePlayer()?`<div class="refSeat bottom ${uid===tuid?'turn':''}"><div class="refAvatar">${esc((myName||"أ").trim().charAt(0)||"أ")}</div><div class="refSeatLabel"><b>${esc(myName)}</b>${countCards(myHand?.cards)} ورقة</div></div>`:"";
  const pending=myHand?.pending,turn=isMyTurn(),memorizing=g.phase==="memorize",powerLocked=turn&&powerFlowLocked(),deciding=turn&&g.decisionUid===uid&&Number(g.decisionUntil||0)>Date.now(),actionLocked=turn&&(g.actionLockUid===uid||g.hasDrawn===uid);
  const controls=powerLocked?`<div class="refActions"><div class="notice" style="width:100%;text-align:center">⚡ القوة قيد التنفيذ — الحركات العادية مقفلة حتى تنتهي القوة بالكامل.</div></div>`:deciding&&countCards(myHand?.cards)>0?`<div class="refActions decisionActions compactDecision"><div class="decisionTitle">انتهى دورك — اختر: <b>شيك</b> أو <b>تمرير</b> خلال <b>${Math.max(0,Math.ceil((Number(g.decisionUntil||0)-Date.now())/1000))}</b> ثوانٍ</div><div class="decisionButtons"><button id="check" class="btn green" ${!g.ending?'':'disabled'}>✓ شيك</button><button id="passTurn" class="btn alt">تمرير الدور ▶</button></div></div>`:pending?`<div class="refActions">${myHand?.pendingSource==="deck"&&powerEnabled(pending,"J")?`<button id="useJack" class="btn blue">J تبديل</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"Q")?`<button id="useQ" class="btn blue">Q كشف</button>`:""}${myHand?.pendingSource==="deck"&&powerEnabled(pending,"K")?`<button id="useK" class="btn blue">K سحب 2</button>`:""}${myHand?.pendingSource!=="field"?`<button id="throw" class="btn danger">رمي الورقة</button>`:""}</div>`:actionLocked?`<div class="refActions"><div class="notice" style="width:100%;text-align:center">🔒 الحركة الحالية لم تنتهِ — السحب والرمي وأخذ الميدان مقفلة.</div></div>`:`<div class="refActions"><button id="check" class="btn green" ${turn&&!g.ending&&!memorizing?'':'disabled'}>✓ شيك</button><button id="playHand" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>رمي ورقة</button><button id="takeField" class="btn alt" ${turn&&g.discard&&!memorizing?'':'disabled'}>أخذ الميدان</button><button id="draw" class="btn danger" ${turn&&!memorizing?'':'disabled'}>سحب ورقة</button></div>`;
  const memorizeState=gameFlowUI.syncMemorize({phase:g.phase,myHand,memorizeUntil:g.memorizeUntil});
@@ -4714,7 +3759,7 @@ function renderGame(){
  const introPanel=introActive?`<div class="refIntro"><b>${globalCount>0?"👁️ احفظ الورقتين 1 و2":"جارٍ بدء اللعب..."}</b><strong id="introCount">${globalCount}</strong><div class="refWaiting">${globalCount>0?"ثانية — الإغلاق تلقائي":""}</div></div>`:`<div class="refIntro"><b>${isActivePlayer()?`الجولة ${g.roundNo||1}`:"👀 متفرج"}</b><strong>${isActivePlayer()?`${g.roundNo||1}/${roundsLabel(g)}`:""}</strong></div>`;
  const pendingPreview=pending?`<div class="refPendingPreview"><div class="refPendingLabel">${myHand?.pendingSource==="deck"?"الورقة المسحوبة":"ورقة الميدان"}</div><div class="cardFace ${cardClass(pending)}">${cardFaceHtml(pending)}</div></div>`:"";
  const handHtml=isActivePlayer()?`<div class="refHandWrap"><div class="refHandTitle"><b>أوراقك</b><span>${countCards(myHand?.cards)} ورقة</span></div>${pendingPreview}<div class="hand">${renderHandSlots()}</div></div>`:`<div class="refHandWrap"><div class="refHandTitle"><b>وضع المتفرج</b><span>الأوراق مخفية حتى نهاية الجولة</span></div></div>`;
- const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile" id="ccDiscardDrop">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
+ const table=`<div class="refTable"><div id="turnTimer" class="refTurnTimer ${turnSecondsLeft()<=10&&g.phase==="playing"?"warn":""}"><small>${g.phase==="playing"?`وقت ${esc(tname||"اللاعب")}`:"الوقت"}</small><b>${formatTurnTime(turnSecondsLeft())}</b></div>${otherSeats}${mySeat}<div class="refCenterPiles"><div class="refPile"><div class="cardBack"></div><div class="refPileLabel">${Array.isArray(g.deck)?g.deck.length:0}<br>رزمة الورق</div></div><div class="refPile">${g.discard?`<div class="cardFace ${cardClass(g.discard)}">${cardFaceHtml(g.discard)}</div>`:`<div class="cardFace">—</div>`}<div class="refPileLabel">ورقة اللعب الأخيرة</div></div></div><div class="refLastAction">${memorizing?"مرحلة حفظ أول ورقتين":(g.ending?"⚠️ شيك — الأدوار الأخيرة":(g.lastAction?esc(g.lastAction):`الدور: ${esc(tname)}`))}</div></div>`;
  app.innerHTML=`<div class="refGameShell"><div class="refBrand"><span class="refUaeFlag left"></span><span class="refFalcon" aria-hidden="true"></span><div class="refTitle">شيك شيك</div><span class="refUaeFlag right"></span></div><aside class="refLeftTop"><div class="refRoundGrid"><div class="refStat"><b>الجولة</b><strong>${g.roundNo||1}/${roundsLabel(g)}</strong></div><div class="refStat"><b>الدور</b><strong>${memorizing?"حفظ":esc(tname||"—")}</strong></div></div><div class="small center" style="margin:4px 0 6px">الجولات المكتملة: <b>${completedRounds}</b> • الكلي</div><div class="refScoreList">${scores}</div></aside><aside class="refLeftBottom"><div class="refSpectatorTitle">المتفرجين (${spectators.length})</div>${spectators.length?spectators.map(([id,p])=>`<div class="refSpectatorRow">👀 <span>${esc(p.name||"متفرج")}</span>${canKick&&id!==uid?`<button class="kickGameMini" data-kick-game="${id}" title="طرد من الغرفة">✕</button>`:""}</div>`).join(""):`<div class="small">لا يوجد متفرجون</div>`}</aside><aside class="refRightTop"><div class="refTopTools">${adminRoomButtonHtml()}${rulesButtonHtml()}<button id="refSfx">🔊<small>الصوت</small></button><button id="refVoice">🎙️<small>المايك</small></button><button id="refFunSounds">😂<small>التأثيرات</small></button><button id="refRadio">📻<small>الإذاعة</small></button></div><div class="refRulesTitle">📖 القواعد</div><div class="small center">اضغط «القواعد» لعرضها كاملة.</div>${isActivePlayer()&&["memorize","playing"].includes(g.phase)?`<button id="withdrawRound" class="btn danger" style="margin-top:8px;width:100%">🚪 انسحاب من الجولة</button>`:""}</aside>${table}<div class="refBottom">${introPanel}${handHtml}${controls}</div><aside class="refRightChat">${chatPanel()}</aside>${currentRoom?.computerMatch&&isActivePlayer()?`<button id="computerExitFixed" class="computerExitFixed">🚪 انسحاب</button><div class="computerRuleBadge">🤖 القانون ${ruleMode()}</div>`:""}</div>`;
  wireCommon();
  try{
@@ -4751,11 +3796,8 @@ function renderResults(){
  const g=game(),r=g.results||{},arr=Object.entries(r).sort((a,b)=>a[1].score-b[1].score),totals=g.cumulativeScores||{},limit=scoreLimit(g),eligibleIds=Object.keys(currentRoom.players||{}).filter(id=>Number(totals[id]||0)<limit),fixedDone=Number(g.totalRounds||0)>0&&Number(g.roundNo||1)>=Number(g.totalRounds||0),final=fixedDone||eligibleIds.length<2,totalArr=Object.entries(totals).filter(([id])=>currentRoom.players?.[id]).sort((a,b)=>Number(a[1])-Number(b[1]));
  const lowestTotal=totalArr.length?Number(totalArr[0][1]):null,leaders=totalArr.filter(([,v])=>Number(v)===lowestTotal).map(([id])=>id);
  const roundBest=arr.length?arr[0][1].score:null,roundWinners=arr.filter(([,x])=>x.score===roundBest).map(([,x])=>x.name);
- const resultCardHtml=c=>{if(!c)return"";return `<div class="resultRealCard"><img src="${cardImageFile(c)}" alt="${esc(cardLabel(c)||"ورقة لعب")}" draggable="false"></div>`};
+ const resultCardHtml=c=>{if(!c)return'';if(c.r==='JOKER'){const colored=c.color==='color';return `<div class="resultMiniCard joker ${colored?'colored':''}"><div class="rmCorner">J</div><div class="rmJokerStar">${colored?'★':'★'}</div><div class="rmJokerText">JOKER</div></div>`}const sym={H:'♥',D:'♦',S:'♠',C:'♣'}[c.s]||'';const cls=(c.s==='H'||c.s==='D')?'red':'black';const court=['J','Q','K'].includes(c.r);return `<div class="resultMiniCard ${cls} ${court?'court':''}"><div class="rmCorner"><b>${c.r}</b><span>${sym}</span></div>${court?`<div class="rmCourtArt"><b>${c.r}</b><span>${sym}</span></div>`:`<div class="rmCenter"><b>${c.r}</b><span>${sym}</span></div>`}</div>`};
  const cardsHtml=cards=>(cards||[]).filter(Boolean).map(resultCardHtml).join("")||'<span class="small">بدون أوراق</span>';
- const prev=g.previousResults||null;
- const prevArr=prev?Object.entries(prev).sort((a,b)=>Number(a[1]?.score||0)-Number(b[1]?.score||0)):[];
- const previousStatsHtml=prevArr.length?`<div class="previousRoundStats"><div class="previousRoundTitle">📊 إحصائية الجولة السابقة</div>${prevArr.map(([id,x])=>`<div class="previousRoundRow"><span>${esc(x.name||currentRoom.players?.[id]?.name||"لاعب")}</span><b>${Number(x.score||0)} نقطة</b></div>`).join("")}</div>`:"";
  const host=uid===currentRoom.hostId,canKick=host||adminHasPerm("kickPlayers");
  const computerMatch=!!currentRoom?.computerMatch;
  const activePicker=`<div class="gap"></div><div class="notice">👑 اختر من اللاعبين المستمرين للجولة التالية. من وصل ${limit} نقطة يخرج تلقائياً.</div>${playerEntries().map(([id,p])=>{const out=Number(totals[id]||0)>=limit;return `<label class="playerPick ${out?'disabled':''}"><input type="checkbox" data-nextactive="${id}" ${!out&&(g.turnOrder||[]).includes(id)?"checked":""} ${out?"disabled":""} style="width:auto;margin-left:8px">${esc(p.name)} ${out?`— 🚫 خرج (${Number(totals[id]||0)})`:""}</label>`}).join("")}<button id="nextRound" class="btn green">ابدأ الجولة التالية</button>`;
@@ -4763,7 +3805,7 @@ function renderResults(){
   ?(host&&!final?activePicker:"")
   :(host&&!final?`${activePicker}<div class="gap"></div><button id="backRoom" class="btn alt">↩️ العودة إلى الغرفة</button>`:(host&&final?`<div class="gap"></div><button id="backRoom" class="btn green">↩️ العودة إلى الغرفة</button>`:(!host?`<div class="notice center">بانتظار المضيف ${final?'للعودة إلى الغرفة':'لبدء الجولة التالية'}</div>`:"")));
  const leaveLabel=computerMatch?"خروج إلى الصفحة الرئيسية":"خروج";
- app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${roundsLabel(g)} • القانون ${ruleMode()} • حد الخروج ${limit}</div>${previousStatsHtml}${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — نقاط الجولة: <b>${x.score}</b> • الكلي: <b>${totals[id]||0}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="resultCards">${cardsHtml(x.cards)}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div><button id="leave" class="btn danger">${leaveLabel}</button></div>${chatPanel()}`;
+ app.innerHTML=`<div class="panel resultScreen"><div class="winner">${arr.length?`🏆 نتيجة الجولة: ${esc(roundWinners.join(" و "))}`:"جاري تجهيز النتيجة..."}</div><div class="small center">الجولة ${g.roundNo||1} من ${roundsLabel(g)} • القانون ${ruleMode()} • حد الخروج ${limit}</div>${arr.map(([id,x])=>`<div class="playerPick"><b>${esc(x.name)}</b> — نقاط الجولة: <b>${x.score}</b> • الكلي: <b>${totals[id]||0}</b>${leaders.includes(id)?'<span class="totalLeader" title="أقل كلي">⭐</span>':''}<div class="resultCards">${cardsHtml(x.cards)}</div></div>`).join("")}${final&&totalArr.length?`<div class="notice good center"><b>🏆 بطل المباراة: ${esc(currentRoom.players?.[totalArr[0][0]]?.name||"")}</b><br>أقل كلي: ${totalArr[0][1]}</div>`:""}${nextBlock}<div class="gap"></div><button id="leave" class="btn danger">${leaveLabel}</button></div>${chatPanel()}`;
  wireCommon();
  if(uid===currentRoom.hostId)setTimeout(async()=>{try{await commitRoundCareerStats(g);if(final&&!g.careerStatsCommittedAt)await commitMatchCareerStats(g)}catch(e){console.warn("career stats",e)}},80);
  const br=document.getElementById("backRoom");if(br)br.onclick=resetToLobby;
@@ -4961,284 +4003,7 @@ let authBooted=false;onAuthStateChanged(auth,async u=>{if(accountSetupInProgress
   .rulesPanel{right:5px!important;top:5px!important;width:194px!important;padding:5px 7px!important}.rulesPanel b{font-size:11px!important}.rulesPanel li{font-size:8px!important;line-height:1.25!important}
   #app>.panel:has(#chatBox){right:5px!important;top:134px!important;bottom:5px!important;width:194px!important;padding:6px!important}#app>.panel:has(#chatBox)>b{font-size:12px!important}.voiceBar{gap:3px!important}.voiceBar button{font-size:8px!important;padding:4px 2px!important}.chat{min-height:55px!important;padding:4px!important}.chat p,.chat b{font-size:10px!important;line-height:1.3!important}.row #chatInput{font-size:9px!important;padding:5px!important}.row #send{flex-basis:44px!important;font-size:8px!important;padding:5px 2px!important}
 }
-
-/* ===== Check Check Interactive Cards v1 ===== */
 </style>
 
-
-<!-- SAFARI / PWA LANDSCAPE RESPONSIVE FIX -->
-<style id="safari-landscape-responsive-fix">
-html,body{min-height:100%;} body{min-height:100dvh;overflow-x:hidden;}
-@media (orientation:landscape) and (max-height:650px){
- html,body{height:auto!important;min-height:100dvh!important;overflow-y:auto!important;}
- #app,.app,main,.page,.screen,.view,.game-page,.game-screen,.room-page,.room-screen{
-   min-height:100dvh!important;height:auto!important;max-height:none!important;
- }
- .game-layout,.gameLayout,.game-wrap,.gameWrap,.game-shell,.gameShell,.game-grid,.gameGrid{
-   min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
-   height:auto!important;max-height:none!important;
- }
- .table,.game-table,.gameTable,.arena,.board,.game-board,.gameBoard{max-height:min(58dvh,430px)!important;}
- .my-hand,.myHand,.hand,.player-hand,.playerHand,.hand-area,.handArea,.cards-row,.cardsRow{
-   position:relative!important;z-index:20!important;margin-bottom:8px!important;
- }
- .actions,.game-actions,.gameActions,.action-buttons,.actionButtons,.controls,.game-controls,.gameControls{
-   position:relative!important;z-index:15!important;
- }
- .chat,.room-chat,.roomChat,.chat-panel,.chatPanel,.game-chat,.gameChat{
-   min-height:0!important;max-height:calc(100dvh - 28px)!important;overflow:hidden!important;
- }
- .chat-messages,.chatMessages,.messages,.messages-list,.messagesList{
-   min-height:90px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;
- }
- .chat-input,.chatInput,.chat-compose,.chatCompose,.message-input,.messageInput,.chat-form,.chatForm{
-   position:relative!important;bottom:auto!important;z-index:30!important;flex-shrink:0!important;
-   padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
- }
- input,textarea,select,button{max-width:100%;}
-}
-@media (orientation:landscape) and (max-height:480px){
- .table,.game-table,.gameTable,.arena,.board,.game-board,.gameBoard{max-height:52dvh!important;}
- .card,.playing-card,.playingCard{max-height:29dvh!important;}
- .chat-messages,.chatMessages,.messages,.messages-list,.messagesList{min-height:72px!important;}
-}
-@media (orientation:portrait){
- html,body{min-height:100dvh!important;height:auto!important;overflow-y:auto!important;}
-}
-@media (display-mode:standalone){
- body{min-height:100dvh!important;padding-bottom:env(safe-area-inset-bottom);}
-}
-</style>
-<script id="safari-visual-viewport-fix">
-(()=>{const r=document.documentElement;
-function s(){const v=window.visualViewport,h=v?v.height:innerHeight,w=v?v.width:innerWidth;
-r.style.setProperty('--vvh',h+'px');r.style.setProperty('--vvw',w+'px');r.style.setProperty('--app-dvh',(h*.01)+'px');}
-s();addEventListener('resize',s,{passive:true});addEventListener('orientationchange',()=>setTimeout(s,120),{passive:true});
-if(window.visualViewport){visualViewport.addEventListener('resize',s,{passive:true});visualViewport.addEventListener('scroll',s,{passive:true});}})();
-</script>
-
-<style id="final-card-layout-fix-20260920">
-/* ===== ترتيب الأوراق النهائي: وضوح الطولي + منع التداخل بالعرض ===== */
-
-/* أوراق الخصوم: مروحة واضحة، يظهر جزء مستقل من كل ورقة */
-.refSeatCards{
-  display:flex!important;
-  justify-content:center!important;
-  align-items:flex-end!important;
-  width:92px!important;
-  height:38px!important;
-  overflow:visible!important;
-  direction:ltr!important;
-}
-.refSeatCards .cardBack{
-  flex:0 0 auto!important;
-  width:25px!important;
-  height:36px!important;
-  margin:0 -3px!important;
-  border-radius:4px!important;
-  box-shadow:0 2px 5px #0009!important;
-}
-
-/* الهاتف بالطول */
-@media (max-width:699px) and (orientation:portrait){
-  .refTable{min-height:650px!important;}
-  .refSeat{min-width:108px!important;}
-  .refSeatCards{width:104px!important;height:43px!important;}
-  .refSeatCards .cardBack{width:29px!important;height:41px!important;margin:0 -3px!important;}
-
-  /* اليد: أربع أوراق متساوية بدون تداخل */
-  .refHandWrap{padding:10px 6px 12px!important;overflow:visible!important;}
-  .refHandWrap .hand{
-    display:grid!important;
-    grid-template-columns:repeat(4,minmax(0,1fr))!important;
-    gap:7px!important;
-    width:100%!important;
-    overflow:visible!important;
-    align-items:end!important;
-  }
-  .refHandWrap .slot{
-    width:100%!important;min-width:0!important;min-height:0!important;margin:0!important;
-  }
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{
-    width:100%!important;height:auto!important;aspect-ratio:0.70!important;
-    max-width:86px!important;margin:0 auto!important;
-  }
-  .refHandWrap .slot button{
-    position:relative!important;left:auto!important;bottom:auto!important;
-    width:100%!important;margin-top:5px!important;font-size:10px!important;padding:6px 2px!important;
-  }
-}
-
-/* الهاتف بالعرض: اليد كاملة داخل العمود الأوسط */
-@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
-  .refBottom{
-    grid-template-columns:88px minmax(220px,1fr) 142px!important;
-    gap:5px!important;
-  }
-  .refHandWrap{min-width:0!important;overflow:hidden!important;padding:0 2px 4px!important;}
-  .refHandWrap .hand{
-    display:grid!important;
-    grid-template-columns:repeat(4,minmax(0,1fr))!important;
-    gap:4px!important;
-    width:100%!important;
-    overflow:visible!important;
-    align-items:end!important;
-  }
-  .refHandWrap .slot{
-    width:100%!important;min-width:0!important;min-height:86px!important;margin:0!important;
-  }
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{
-    width:100%!important;height:auto!important;aspect-ratio:0.70!important;
-    max-width:54px!important;margin:0 auto!important;
-  }
-  .refHandWrap .slotNum{top:-10px!important;}
-  .refHandWrap .slot button{
-    position:relative!important;left:auto!important;bottom:auto!important;
-    width:100%!important;margin-top:2px!important;padding:3px 1px!important;font-size:7px!important;
-    white-space:nowrap!important;
-  }
-  .refSeatCards{width:82px!important;height:34px!important;}
-  .refSeatCards .cardBack{width:23px!important;height:33px!important;margin:0 -3px!important;}
-}
-
-/* الشاشات القصيرة جداً بالعرض */
-@media (orientation:landscape) and (min-width:650px) and (max-height:400px){
-  .refBottom{grid-template-columns:76px minmax(200px,1fr) 125px!important;}
-  .refHandWrap .slot{min-height:76px!important;}
-  .refHandWrap .slot .cardFace,.refHandWrap .slot .cardBack{max-width:47px!important;}
-  .refHandWrap .slot button{font-size:6.5px!important;padding:2px 0!important;}
-}
-</style>
-
-
-<style id="layout-final-20260920">
-/* ============================================================
-   التخطيط النهائي — آخر طبقة تلغي كل التعديلات المتراكمة
-   القاعدة: لا شي يتراكب. كل عنصر له مكان واضح.
-   ============================================================ */
-body:has(.refGameShell) header,body:has(.refGameShell) .stripe{display:none!important}
-@keyframes turnPulseFixed{from{transform:scale(1)}to{transform:scale(1.07)}}
-html body .refGameShell .refTurnTimer.warn{animation-name:turnPulseFixed!important}
-html body .refGameShell .refTurnTimer{pointer-events:none}
-
-/* ---------- الجوال بالطول ---------- */
-@media (max-width:699px) and (orientation:portrait){
-  html body .refGameShell .refTurnTimer{position:absolute!important;left:10px!important;right:auto!important;top:10px!important;bottom:auto!important;width:auto!important;height:auto!important;min-width:0!important;transform:none!important;padding:4px 10px!important;font-size:16px!important;border-radius:14px!important;z-index:30!important}
-  html body .refGameShell .refTurnTimer b{font-size:18px!important}
-  html body .refGameShell .refSeat.top{top:10px!important;bottom:auto!important;left:50%!important;transform:translateX(-50%)!important}
-  html body .refGameShell .refSeat.bottom{bottom:10px!important;top:auto!important;left:50%!important;transform:translateX(-50%)!important}
-  html body .refGameShell .refSeat.left{left:6px!important;top:50%!important;transform:translateY(-50%)!important}
-  html body .refGameShell .refSeat.right{right:6px!important;left:auto!important;top:50%!important;transform:translateY(-50%)!important}
-  html body .refGameShell .refLastAction{top:auto!important;bottom:108px!important;left:50%!important;transform:translateX(-50%)!important;max-width:90%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:11px!important;padding:4px 10px!important;z-index:8!important}
-  /* الورقة المسحوبة: تنزل في مكانها بين العنوان والأوراق وما تغطي شي */
-  html body .refGameShell .refHandWrap{padding:0 0 4px!important}
-  html body .refGameShell .refPendingPreview{position:static!important;transform:none!important;margin:0 auto 8px!important;width:max-content!important;padding:5px 9px!important;flex-direction:row!important;align-items:center!important;gap:10px!important}
-  html body .refGameShell .refPendingPreview .refPendingLabel{font-size:13px!important}
-  html body .refGameShell .refPendingPreview .cardFace{width:56px!important;height:80px!important}
-  /* زر الانسحاب موجود أصلاً في لوحة الأدوات بالأعلى، فنشيل النسخة العائمة اللي كانت تغطي الأوراق */
-  body:has(.refRightTop #withdrawRound) .refGameShell .computerExitFixed{display:none!important}
-  html body .refGameShell .computerExitFixed{position:static!important;display:block;margin:8px auto 0!important;width:max-content!important}
-  html body .refGameShell .computerRuleBadge{position:static!important;margin:8px auto 10px!important;width:max-content!important}
-}
-
-/* ---------- بالعرض (جوال + آيباد + كمبيوتر): نفس القواعد بمقاسات تتغير حسب الشاشة ---------- */
-@media (orientation:landscape) and (min-width:650px){
-  html body .refGameShell{--ch:clamp(82px,13vh,118px);--lw:clamp(170px,17vw,240px);--rw:clamp(190px,21vw,290px);--tt:76px;--ph:clamp(90px,17vh,150px);--av:clamp(50px,8vh,72px);--fs:clamp(11px,1.6vh,14px);--toolh:auto;--chatTop:150px;--actw:clamp(150px,20vw,220px);--pw:clamp(84px,9vw,110px);--tfs:clamp(17px,2.6vh,24px)}
-}
-@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
-  html body .refGameShell{--ch:clamp(58px,18vh,80px);--lw:clamp(112px,17vw,146px);--rw:clamp(142px,22vw,190px);--tt:44px;--ph:clamp(54px,17vh,80px);--av:34px;--fs:10px;--toolh:33px;--chatTop:118px;--actw:clamp(100px,24vw,172px);--pw:68px;--tfs:14px}
-}
-@media (orientation:landscape) and (min-width:650px){
-  /* الشاشة كلها للعبة (كانت تشتغل من 700 وفوق فقط، فالجوالات الصغيرة 650-699 كانت تنكسر) */
-  html:has(.refGameShell),body:has(.refGameShell){width:100%!important;height:100%!important;margin:0!important;overflow:hidden!important}
-  body:has(.refGameShell) .wrap{width:100vw!important;max-width:none!important;height:100dvh!important;margin:0!important;padding:0!important}
-  body:has(.refGameShell) #app{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:auto!important;padding:0!important;margin:0!important}
-  html body .refGameShell{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important;--cw:calc(var(--ch)*.7);--bh:calc(var(--ch) + 40px)}
-  html body .refGameShell{padding:0!important}
-  html body .refGameShell .refLeftTop,html body .refGameShell .refLeftBottom,html body .refGameShell .refRightTop,html body .refGameShell .refRightChat,html body .refGameShell .refTable,html body .refGameShell .refBottom{position:absolute!important;margin:0!important;min-height:0!important}
-  html body .refGameShell .refLeftTop,html body .refGameShell .refRightTop,html body .refGameShell .refTable{height:auto!important}
-  html body .refGameShell .refRightTop{display:block!important}
-  /* الأعمدة الجانبية */
-  html body .refGameShell .refLeftTop{left:5px!important;top:5px!important;width:var(--lw)!important;padding:6px!important}
-  html body .refGameShell .refLeftBottom{left:5px!important;top:auto!important;bottom:60px!important;width:var(--lw)!important;max-height:26vh!important}
-  html body .refGameShell .refRightTop{right:5px!important;left:auto!important;top:5px!important;width:var(--rw)!important;padding:5px!important}
-  html body .refGameShell .refRightTop .refTopTools{gap:4px!important;margin-bottom:4px!important}
-  html body .refGameShell .refRightTop .refTopTools button{height:var(--toolh)!important;padding:3px 2px!important;font-size:14px!important;line-height:1.1!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important}
-  html body .refGameShell .refRightTop .refTopTools small{font-size:8px!important;margin-top:1px!important}
-  html body .refGameShell .refRightTop .refRulesTitle,html body .refGameShell .refRightTop>.small{display:none!important}
-  html body .refGameShell .refRightTop #withdrawRound{margin-top:2px!important;min-height:24px!important;padding:3px!important;font-size:11px!important}
-  html body .refGameShell .refRightChat{right:5px!important;left:auto!important;top:var(--chatTop)!important;bottom:5px!important;width:var(--rw)!important}
-  html body .refGameShell .refRightChat .row .btn{flex:0 0 58px!important;font-size:11px!important;padding:6px 4px!important}
-  /* الطاولة */
-  html body .refGameShell .refTable{left:calc(var(--lw) + 13px)!important;right:calc(var(--rw) + 13px)!important;top:var(--tt)!important;bottom:calc(var(--bh) + 8px)!important}
-  html body .refGameShell .refTurnTimer{position:absolute!important;left:8px!important;right:auto!important;top:6px!important;bottom:auto!important;width:auto!important;height:auto!important;min-width:0!important;transform:none!important;padding:3px 9px!important;font-size:var(--tfs)!important;border-radius:11px!important;border-width:1.5px!important;z-index:30!important}
-  html body .refGameShell .refTurnTimer small{font-size:max(8px,calc(var(--tfs)*.55))!important}
-  html body .refGameShell .refTurnTimer b{font-size:var(--tfs)!important}
-  html body .refGameShell .refSeat{min-width:0!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:6px!important;top:auto;bottom:auto}
-  html body .refGameShell .refSeatCards{display:none!important}
-  html body .refGameShell .refSeat .refAvatar{width:var(--av)!important;height:var(--av)!important;border-width:2px!important;margin:0!important;flex:0 0 auto!important}
-  html body .refGameShell .refSeatLabel{min-width:0!important;font-size:var(--fs)!important;line-height:1.25!important;padding:3px 8px!important;white-space:nowrap!important}
-  html body .refGameShell .refSeat.top{top:6px!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important}
-  html body .refGameShell .refSeat.bottom{bottom:6px!important;top:auto!important;left:8px!important;right:auto!important;transform:none!important}
-  html body .refGameShell .refSeat.left{left:6px!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;flex-direction:column!important;gap:3px!important}
-  html body .refGameShell .refSeat.right{right:6px!important;left:auto!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;flex-direction:column!important;gap:3px!important}
-  html body .refGameShell .hostSeatActions{display:inline-flex!important;gap:3px!important;margin-inline-start:4px!important;vertical-align:middle!important}
-  html body .refGameShell .hostSeatActions button{position:static!important;width:18px!important;height:18px!important;min-width:0!important;padding:0!important;font-size:10px!important;line-height:1!important;border-radius:50%!important}
-  html body .refGameShell .refCenterPiles{left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;gap:16px!important}
-  html body .refGameShell .refCenterPiles .cardBack,html body .refGameShell .refCenterPiles .cardFace{width:calc(var(--ph)*.7)!important;height:var(--ph)!important}
-  html body .refGameShell .refPileLabel{font-size:max(9px,calc(var(--fs)*.9))!important;margin-top:3px!important;line-height:1.2!important}
-  html body .refGameShell .refLastAction{top:auto!important;bottom:6px!important;left:50%!important;transform:translateX(-50%)!important;max-width:38%!important;font-size:max(9px,calc(var(--fs)*.9))!important;padding:3px 8px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-  /* الأوراق والأزرار */
-  html body .refGameShell .refBottom{left:calc(var(--lw) + 13px)!important;right:calc(var(--rw) + 13px)!important;bottom:4px!important;height:var(--bh)!important;display:flex!important;flex-direction:row!important;align-items:flex-end!important;gap:6px!important;overflow:visible!important}
-  html body .refGameShell .refBottom>.refIntro{display:none!important}
-  html body .refGameShell .refHandWrap{position:relative!important;flex:1 1 0!important;min-width:0!important;padding:0 4px 2px calc(var(--pw) + 4px)!important;overflow:visible!important;align-self:flex-end!important}
-  html body .refGameShell .refHandTitle{display:none!important}
-  html body .refGameShell .refHandWrap .hand{display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;gap:4px!important}
-  html body .refGameShell .refHandWrap .slot{flex:1 1 0!important;width:auto!important;max-width:var(--cw)!important;min-width:0!important;min-height:0!important}
-  html body .refGameShell .refHandWrap .slot .cardFace,html body .refGameShell .refHandWrap .slot .cardBack{width:100%!important;height:auto!important;max-width:none!important;aspect-ratio:.7!important;margin:0!important}
-  /* أزرار «بدّل بهذي» كانت مخفية بقاعدة قديمة — هذا سبب ما تقدر تبدّل بالعرض */
-  html body .refGameShell .refHandWrap .slot button{display:block!important;position:relative!important;left:auto!important;bottom:auto!important;min-height:22px!important;padding:2px 1px!important;font-size:clamp(7px,1.15vw,9px)!important;margin-top:3px!important;width:100%!important;white-space:nowrap!important}
-  /* الورقة المسحوبة: مكان محجوز على يسار الأوراق، ما تغطي شي */
-  html body .refGameShell .refPendingPreview{position:absolute!important;left:4px!important;right:auto!important;top:auto!important;bottom:2px!important;transform:none!important;padding:3px 5px!important;gap:2px!important;z-index:40!important}
-  html body .refGameShell .refPendingPreview .refPendingLabel{font-size:8px!important;white-space:nowrap!important}
-  html body .refGameShell .refPendingPreview .cardFace{width:calc(var(--ch)*.62)!important;height:calc(var(--ch)*.88)!important}
-  html body .refGameShell .refActions{flex:0 0 var(--actw)!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important;padding:0 0 3px!important;align-self:flex-end!important}
-  html body .refGameShell .refActions .btn{min-height:38px!important;font-size:10px!important;padding:4px 2px!important}
-  html body .refGameShell .refActions .notice,html body .refGameShell .refActions .decisionTitle,html body .refGameShell .refActions .decisionButtons{grid-column:1/-1!important}
-  html body .refGameShell .refActions .decisionButtons{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5px!important}
-  html body .refGameShell .computerExitFixed{position:fixed!important;left:6px!important;top:auto!important;bottom:5px!important;z-index:60!important}
-  html body .refGameShell .computerRuleBadge{position:fixed!important;left:6px!important;top:auto!important;bottom:44px!important;z-index:60!important}
-}
-
-</style>
-
-<!-- ===== تطبيق: تسجيل الـ Service Worker + زر التثبيت ===== -->
-<button id="installAppBtn" type="button" style="display:none;position:fixed;bottom:14px;left:14px;z-index:20;border:0;border-radius:999px;padding:11px 18px;font:inherit;font-weight:800;background:#d0a13b;color:#201912;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer">📲 ثبّت التطبيق</button>
-<script>
-(function(){
-  if("serviceWorker" in navigator){
-    window.addEventListener("load",function(){
-      navigator.serviceWorker.register("sw.js").catch(function(){});
-    });
-  }
-  var btn=document.getElementById("installAppBtn"),deferred=null;
-  var standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-  var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  if(standalone||!btn||window.Capacitor) return;
-  window.addEventListener("beforeinstallprompt",function(e){
-    e.preventDefault();deferred=e;btn.style.display="block";
-  });
-  window.addEventListener("appinstalled",function(){btn.style.display="none";deferred=null;});
-  if(isIOS) btn.style.display="block";
-  btn.addEventListener("click",function(){
-    if(deferred){
-      deferred.prompt();
-      deferred.userChoice.finally(function(){deferred=null;btn.style.display="none";});
-    }else if(isIOS){
-      alert("للتثبيت على الآيفون: اضغط زر المشاركة (Share) ثم «إضافة إلى الشاشة الرئيسية».");
-    }
-  });
-})();
-</script>
 </body>
 </html>
