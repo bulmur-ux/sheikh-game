@@ -298,6 +298,9 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
  .myCard,.myCard.newDraw{width:44px!important;height:64px!important;flex-basis:44px!important}
 }
 
+/* Stage 19 — easy throw interaction */
+.myCard.selected{transform:translateY(-9px)!important;outline:3px solid #ffd85f!important;outline-offset:1px!important;z-index:50!important}
+.handRow{margin-bottom:2px!important}
 </style>
 </head>
 <body><main class="wrap">
@@ -650,8 +653,16 @@ function renderHand(){
      if(dragMoved){dragMoved=false;return}
      const gg=currentRoom?.game||{};
      if(gg.phase==="discard"&&gg.turnUid===uid){
-       selected=(selected===i?-1:i);multiSelected.clear();renderHand();
-       $("gameHint").textContent=selected>=0?"الورقة محددة — اضغط «الرمية» في الميدان لرميها.":"اختر ورقة، ثم اضغط الرمية في الميدان.";
+       const now=Date.now();
+       if(lastDiscardTap===i && now-lastDiscardTapAt<1900){
+         selected=i;lastDiscardTap=-1;lastDiscardTapAt=0;
+         throwSelected();return;
+       }
+       selected=i;multiSelected.clear();lastDiscardTap=i;lastDiscardTapAt=now;
+       renderHand();
+       $("discardPile").disabled=false;
+       $("discardPile").classList.add("ready");
+       $("gameHint").textContent="الورقة محددة — اضغطها مرة ثانية أو اضغط الميدان لرميها.";
        return;
      }
      selected=-1;multiSelected.has(i)?multiSelected.delete(i):multiSelected.add(i);renderHand();refreshRevealButton();
@@ -725,7 +736,13 @@ async function leave(){if(!room)return leaveLocal();const c=room;try{const s=awa
 function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();handUnsub=null}room="";currentRoom=null;pendingDrawId=null;localStorage.removeItem("rami_room");$("gameBox").style.display="none";$("roomBox").style.display="none";$("entryBox").style.display="block";$("brand").style.display="block";$("rulesBox").style.display="block";say("")}
 $("createRoom").onclick=createRoom;$("showJoin").onclick=()=>{$("joinRow").style.display=$("joinRow").style.display==="none"?"grid":"none";say("")};$("joinRoom").onclick=joinRoom;$("roomInput").onkeydown=e=>{if(e.key==="Enter")joinRoom()};$("copyCode").onclick=async()=>{try{await navigator.clipboard.writeText(room);$("roomStatus").textContent="تم نسخ كود الغرفة ✅"}catch{}};$("leaveRoom").onclick=leave;$("startGame").onclick=startGame;$("exitGame").onclick=()=>showGame(false);$("drawStock").onclick=drawStock;$("takeDiscard").onclick=takeDiscard;
 $("stockPile").onclick=()=>{if(!$("drawStock").disabled)drawStock()};
-$("discardPile").onclick=()=>{const g=currentRoom?.game||{};if(g.turnUid!==uid)return;if(g.phase==="draw"&&!$("takeDiscard").disabled){takeDiscard();return}if(g.phase==="discard"&&selected>=0)throwSelected()};$("throwCard").onclick=throwSelected;$("sortSuit").onclick=()=>applySmartArrange(true);$("sortRank").onclick=()=>sortHand("rank");$("revealJoker").onclick=revealRoundJoker;
+$("discardPile").onclick=()=>{const g=currentRoom?.game||{};if(g.turnUid!==uid)return;
+ if(g.phase==="draw"&&!$("takeDiscard").disabled){takeDiscard();return}
+ if(g.phase==="discard"){
+   if(selected>=0){throwSelected();return}
+   $("gameHint").textContent="اختر الورقة اللي تبا ترميها أول.";
+ }
+};$("throwCard").onclick=throwSelected;$("sortSuit").onclick=()=>applySmartArrange(true);$("sortRank").onclick=()=>sortHand("rank");$("revealJoker").onclick=revealRoundJoker;
 window.addEventListener("resize",()=>fitHandToPhone());
 window.addEventListener("orientationchange",()=>setTimeout(fitHandToPhone,120));
 $("declareHand").onclick=declareHandNow;
