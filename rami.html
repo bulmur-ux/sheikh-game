@@ -301,6 +301,22 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 /* Stage 19 — easy throw interaction */
 .myCard.selected{transform:translateY(-9px)!important;outline:3px solid #ffd85f!important;outline-offset:1px!important;z-index:50!important}
 .handRow{margin-bottom:2px!important}
+
+/* Stage 20 — flexible manual rows + clear center draw */
+.handArea{max-height:330px!important}
+.handRow{min-height:78px!important;padding:7px 58px 7px 7px!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:visible!important;scrollbar-width:none}
+.handRow::-webkit-scrollbar{display:none}
+.handRow.rowTarget{outline:3px solid #ffd85f!important;box-shadow:inset 0 0 20px #ffd85f33!important}
+.handRowLabel{right:7px!important;width:46px!important}
+.addRowBtn{width:100%;min-height:32px;border:1px dashed #b98d3b;background:#171b18;color:#f3d986;border-radius:10px;font-weight:900;margin-top:5px}
+.myCard.newDraw{position:fixed!important;left:50%!important;bottom:35%!important;z-index:500!important;width:62px!important;height:90px!important;transform:translateX(-50%)!important;border:3px solid #ffd85f!important;box-shadow:0 0 0 3px #5a421d99,0 12px 28px #000c!important}
+.myCard.newDraw.selected{transform:translateX(-50%) translateY(-10px)!important}
+@media(max-width:430px){
+ .handRow{padding-right:52px!important}
+ .myCard{width:44px!important;height:64px!important;flex-basis:44px!important}
+ .myCard.newDraw{width:60px!important;height:88px!important}
+}
+
 </style>
 </head>
 <body><main class="wrap">
@@ -359,6 +375,59 @@ function renderJokerIndicator(g){
 }
 
 let dragFrom=-1,dragOver=-1,dragPointer=null,dragMoved=false,multiSelected=new Set(),lastDiscardTap=-1,lastDiscardTapAt=0;
+
+let manualRows=[];
+function rowsKey(){return `rami_rows_${room||"x"}_${uid||"x"}`}
+function loadManualRows(){
+ try{manualRows=JSON.parse(localStorage.getItem(rowsKey())||"[]");if(!Array.isArray(manualRows))manualRows=[]}catch{manualRows=[]}
+}
+function saveManualRows(){try{localStorage.setItem(rowsKey(),JSON.stringify(manualRows))}catch{}}
+function cardKey(c){return c?`${c.r}|${c.s}|${c.deck??""}|${c.id??""}`:""}
+function syncManualRows(){
+ const pool=myHand.map((c,i)=>({c,i,k:cardKey(c),used:false}));
+ const next=[];
+ for(const row of manualRows){
+   const nr=[];
+   for(const key of (Array.isArray(row)?row:[])){
+     const hit=pool.find(x=>!x.used&&x.k===key);
+     if(hit){hit.used=true;nr.push(hit.i)}
+   }
+   if(nr.length)next.push(nr);
+ }
+ const left=pool.filter(x=>!x.used).map(x=>x.i);
+ if(left.length)next.push(left);
+ manualRows=next.map(row=>row.map(i=>cardKey(myHand[i])));
+ saveManualRows();
+}
+function rowIndexForCard(i){
+ const key=cardKey(myHand[i]);let occurrence=0;
+ for(let x=0;x<=i;x++)if(cardKey(myHand[x])===key)occurrence++;
+ let seen=0;
+ for(let r=0;r<manualRows.length;r++)for(const k of manualRows[r])if(k===key){seen++;if(seen===occurrence)return r}
+ return Math.max(0,manualRows.length-1);
+}
+function moveCardToRow(cardIndex,targetRow,targetPos=999){
+ if(cardIndex<0||!myHand[cardIndex])return;
+ syncManualRows();
+ const key=cardKey(myHand[cardIndex]);
+ let occurrence=0;for(let x=0;x<=cardIndex;x++)if(cardKey(myHand[x])===key)occurrence++;
+ let seen=0,fromR=-1,fromP=-1;
+ outer:for(let r=0;r<manualRows.length;r++)for(let p=0;p<manualRows[r].length;p++)if(manualRows[r][p]===key){seen++;if(seen===occurrence){fromR=r;fromP=p;break outer}}
+ if(fromR<0)return;
+ const [moved]=manualRows[fromR].splice(fromP,1);
+ if(!manualRows[fromR].length){manualRows.splice(fromR,1);if(targetRow>fromR)targetRow--}
+ targetRow=Math.max(0,Math.min(targetRow,manualRows.length-1));
+ targetPos=Math.max(0,Math.min(targetPos,manualRows[targetRow].length));
+ manualRows[targetRow].splice(targetPos,0,moved);
+ // Rebuild hand order from manual rows while preserving duplicate card objects.
+ const available=myHand.map((c,i)=>({c,k:cardKey(c),used:false}));
+ const rebuilt=[];
+ for(const row of manualRows)for(const k of row){const h=available.find(x=>!x.used&&x.k===k);if(h){h.used=true;rebuilt.push(h.c)}}
+ available.filter(x=>!x.used).forEach(x=>rebuilt.push(x.c));
+ myHand=rebuilt;selected=-1;saveManualRows();renderHand();
+ if(room&&currentRoom?.status==="playing")set(ref(db,`ramiRooms/${room}/privateHands/${uid}`),myHand).catch(()=>{});
+}
+
 function moveCard(from,to){
  if(from<0||to<0||from===to||from>=myHand.length||to>=myHand.length)return;
  const next=[...myHand],card=next.splice(from,1)[0];next.splice(to,0,card);
@@ -506,7 +575,11 @@ function smartArrange(cards){
 function applySmartArrange(persist=true){
  if(!myHand.length)return;
  const res=smartArrange(myHand),old=[...myHand];
- myHand=res.order.map(x=>x.c);selected=-1;multiSelected.clear();renderHand();
+ myHand=res.order.map(x=>x.c);selected=-1;multiSelected.clear();
+ manualRows=res.groups.map(g=>g.map(x=>cardKey(x.c)));
+ const usedCount=manualRows.flat().length;
+ if(usedCount<myHand.length)manualRows.push(myHand.slice(usedCount).map(cardKey));
+ saveManualRows();renderHand();
  if(persist&&room&&currentRoom?.status==="playing")set(ref(db,`ramiRooms/${room}/privateHands/${uid}`),myHand).catch(()=>{});
 }
 function handAnalysis(){
@@ -633,20 +706,36 @@ function fitHandToPhone(){
  });
 }
 function renderHand(){
- const h=$("myHand"),g=currentRoom?.game||{},jokerRank=g.qualified?.[uid]?(g.jokerRank||null):null,res=smartArrange(myHand);
+ const h=$("myHand"),g=currentRoom?.game||{},jokerRank=g.qualified?.[uid]?(g.jokerRank||null):null;
  const pure=findPureSequence(myHand),pureIdx=new Set((pure||[]).map(x=>x.i));
- [...multiSelected].forEach(i=>{if(i>=myHand.length)multiSelected.delete(i)});
- const used=new Set(),rows=[];
- res.groups.forEach((grp,gi)=>{
-   const idxs=grp.map(x=>myHand.indexOf(x.c)).filter(i=>i>=0);
-   idxs.forEach(i=>used.add(i));
-   rows.push({kind:"meld",gi,idxs,label:grp.type==="run"?"سيريل":"تشابه"});
- });
- const loose=myHand.map((_,i)=>i).filter(i=>!used.has(i));
- if(loose.length)rows.push({kind:"loose",gi:-1,idxs:loose,label:"باقي الورق"});
- if(!rows.length&&myHand.length)rows.push({kind:"loose",gi:-1,idxs:myHand.map((_,i)=>i),label:"ورقي"});
- const cardHTML=(i,row)=>{const c=myHand[i];return `<button type="button" class="myCard ${isRed(c)?'red':''} ${c.r==='JOKER'?'joker':''} ${i===selected?'selected':''} ${multiSelected.has(i)?'multi':''} ${jokerRank&&c.r===jokerRank?'jokerRank':''} ${!jokerRank&&pureIdx.has(i)?'pureReady':''} ${pendingDrawId&&c.id===pendingDrawId?'newDraw':''} ${row.kind==='meld'?'smartGroup'+(row.gi%4):'loose'}" data-card="${i}" aria-label="${esc(cardLabel(c))}">${cardImgHTML(c,"cardImg")}</button>`};
- h.innerHTML=rows.map(row=>`<div class="handRow ${row.kind==='meld'?'meldRow':'looseRow'}"><span class="handRowLabel">${row.label}</span>${row.idxs.map(i=>cardHTML(i,row)).join("")}</div>`).join("");
+ syncManualRows();
+ // If user has never arranged rows, show smart groups as a useful initial layout only.
+ if(manualRows.length<=1){
+   const res=smartArrange(myHand),used=new Set(),rows=[];
+   for(const grp of res.groups){const rr=[];for(const x of grp){const idx=myHand.indexOf(x.c);if(idx>=0&&!used.has(idx)){used.add(idx);rr.push(idx)}}if(rr.length)rows.push(rr)}
+   const loose=myHand.map((_,i)=>i).filter(i=>!used.has(i));if(loose.length)rows.push(loose);
+   if(rows.length>1){manualRows=rows.map(r=>r.map(i=>cardKey(myHand[i])));saveManualRows()}
+ }
+ // Resolve row keys to current card indices, including duplicates.
+ const pool=myHand.map((c,i)=>({c,i,k:cardKey(c),used:false}));
+ const resolved=[];
+ for(const row of manualRows){
+   const rr=[];
+   for(const k of row){const hit=pool.find(x=>!x.used&&x.k===k);if(hit){hit.used=true;rr.push(hit.i)}}
+   if(rr.length)resolved.push(rr);
+ }
+ const leftovers=pool.filter(x=>!x.used).map(x=>x.i);if(leftovers.length)resolved.push(leftovers);
+ const rowHTML=resolved.map((row,ri)=>{
+   const cards=row.map(i=>{
+     const c=myHand[i],isNew=g.phase==='discard'&&g.turnUid===uid&&myHand.length===15&&i===myHand.length-1;
+     return `<button type="button" class="myCard ${isRed(c)?'red':''} ${c.r==='JOKER'?'joker':''} ${i===selected?'selected':''} ${jokerRank&&c.r===jokerRank?'jokerRank':''} ${!jokerRank&&pureIdx.has(i)?'pureReady':''} ${isNew?'newDraw':''}" data-card="${i}" data-row="${ri}" aria-label="${esc(cardLabel(c))}">${cardImgHTML(c,"cardImg")}</button>`;
+   }).join("");
+   const label=ri===resolved.length-1?"باقي":`مجموعة ${ri+1}`;
+   return `<div class="handRow ${ri===resolved.length-1?'looseRow':'meldRow'}" data-rowbox="${ri}"><span class="handRowLabel">${label}</span>${cards}</div>`;
+ }).join("");
+ h.innerHTML=rowHTML+`<button type="button" class="addRowBtn" id="addRowBtn">＋ صف جديد</button>`;
+ $("addRowBtn").onclick=()=>{manualRows.push([]);saveManualRows();renderHand()};
+
  h.querySelectorAll("[data-card]").forEach(b=>{
    const i=Number(b.dataset.card);
    b.onclick=()=>{
@@ -654,36 +743,35 @@ function renderHand(){
      const gg=currentRoom?.game||{};
      if(gg.phase==="discard"&&gg.turnUid===uid){
        const now=Date.now();
-       if(lastDiscardTap===i && now-lastDiscardTapAt<1900){
-         selected=i;lastDiscardTap=-1;lastDiscardTapAt=0;
-         throwSelected();return;
-       }
+       if(lastDiscardTap===i&&now-lastDiscardTapAt<1900){selected=i;lastDiscardTap=-1;lastDiscardTapAt=0;throwSelected();return}
        selected=i;multiSelected.clear();lastDiscardTap=i;lastDiscardTapAt=now;
-       renderHand();
-       $("discardPile").disabled=false;
-       $("discardPile").classList.add("ready");
+       h.querySelectorAll(".myCard.selected").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");
+       $("discardPile").disabled=false;$("discardPile").classList.add("ready");
        $("gameHint").textContent="الورقة محددة — اضغطها مرة ثانية أو اضغط الميدان لرميها.";
        return;
      }
-     selected=-1;multiSelected.has(i)?multiSelected.delete(i):multiSelected.add(i);renderHand();refreshRevealButton();
    };
    b.onpointerdown=e=>{dragFrom=i;dragOver=i;dragPointer=e.pointerId;dragMoved=false;try{b.setPointerCapture(e.pointerId)}catch{}b.classList.add("dragging")};
    b.onpointermove=e=>{
      if(dragPointer!==e.pointerId||dragFrom<0)return;
      const dp=$("discardPile")?.getBoundingClientRect();
-     if(dp&&e.clientX>=dp.left-28&&e.clientX<=dp.right+28&&e.clientY>=dp.top-28&&e.clientY<=dp.bottom+28){$("discardPile").classList.add("dropReady");dragMoved=true;return}
-     $("discardPile")?.classList.remove("dropReady");
-     const j=handIndexAt(e.clientX,e.clientY);if(j>=0&&j!==dragOver){dragOver=j;dragMoved=true;h.querySelectorAll(".dropTarget").forEach(x=>x.classList.remove("dropTarget"));const q=h.querySelector(`[data-card="${j}"]`);if(q)q.classList.add("dropTarget")}
+     if(dp&&e.clientX>=dp.left-24&&e.clientX<=dp.right+24&&e.clientY>=dp.top-24&&e.clientY<=dp.bottom+24){$("discardPile").classList.add("dropReady");dragMoved=true;return}
+     const rowEl=document.elementFromPoint(e.clientX,e.clientY)?.closest?.(".handRow");
+     if(rowEl){dragOver=Number(rowEl.dataset.rowbox);dragMoved=true;h.querySelectorAll(".handRow.rowTarget").forEach(x=>x.classList.remove("rowTarget"));rowEl.classList.add("rowTarget")}
    };
    const finish=e=>{
      if(dragPointer!==e.pointerId)return;
-     const dp=$("discardPile")?.getBoundingClientRect(),toDiscard=dp&&e.clientX>=dp.left-28&&e.clientX<=dp.right+28&&e.clientY>=dp.top-28&&e.clientY<=dp.bottom+28;
-     $("discardPile")?.classList.remove("dropReady");const f=dragFrom,to=dragOver,m=dragMoved;dragFrom=dragOver=-1;dragPointer=null;
-     h.querySelectorAll(".dragging,.dropTarget").forEach(x=>x.classList.remove("dragging","dropTarget"));
-     const gg=currentRoom?.game||{};if(toDiscard&&gg.turnUid===uid&&gg.phase==="discard"){selected=f;throwSelected();return}if(m&&to>=0&&f!==to){multiSelected.clear();moveCard(f,to)}
-   };b.onpointerup=finish;b.onpointercancel=finish;
+     const dp=$("discardPile")?.getBoundingClientRect(),toDiscard=dp&&e.clientX>=dp.left-24&&e.clientX<=dp.right+24&&e.clientY>=dp.top-24&&e.clientY<=dp.bottom+24;
+     $("discardPile")?.classList.remove("dropReady");
+     const f=dragFrom,targetRow=dragOver,m=dragMoved;dragFrom=dragOver=-1;dragPointer=null;
+     h.querySelectorAll(".dragging,.rowTarget").forEach(x=>x.classList.remove("dragging","rowTarget"));
+     const gg=currentRoom?.game||{};
+     if(toDiscard&&gg.turnUid===uid&&gg.phase==="discard"){selected=f;throwSelected();return}
+     if(m&&targetRow>=0){moveCardToRow(f,targetRow,999);return}
+   };
+   b.onpointerup=finish;b.onpointercancel=finish;
  });
- refreshRevealButton();updateHandUX();fitHandToPhone();
+ refreshRevealButton();updateHandUX();
 }
 async function revealRoundJoker(){
  const g=currentRoom?.game||{},pure=findPureSequence(myHand);
@@ -715,7 +803,7 @@ async function takeDiscard(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g
 async function throwSelected(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="discard"||selected<0)return;const hand=[...myHand];if(!hand[selected])return;const [c]=hand.splice(selected,1),order=g.playerOrder||[],i=order.indexOf(uid),next=order[(i+1)%order.length];selected=-1;pendingDrawId=null;const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=c;patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;patch[`ramiRooms/${room}/public/game/turnUid`]=next;patch[`ramiRooms/${room}/public/game/phase`]="draw";patch[`ramiRooms/${room}/public/game/lastDiscardBy`]=uid;await update(ref(db),patch)}
 function sortHand(mode){if(!myHand.length)return;myHand=[...myHand].sort((a,b)=>mode==="suit"?(suitN(a.s)-suitN(b.s)||rankN(a.r)-rankN(b.r)):(rankN(a.r)-rankN(b.r)||suitN(a.s)-suitN(b.s)));selected=-1;multiSelected.clear();renderHand();if(room&&currentRoom?.status==="playing")set(ref(db,`ramiRooms/${room}/privateHands/${uid}`),myHand).catch(()=>{})}
 async function enter(c){
-room=c;localStorage.setItem("rami_room",c);say("");
+room=c;localStorage.setItem("rami_room",c);loadManualRows();say("");
 $("entryBox").style.display="none";$("roomBox").style.display="block";$("roomCode").textContent=c;
 if(unsub)unsub();
 if(handUnsub){handUnsub();handUnsub=null}
