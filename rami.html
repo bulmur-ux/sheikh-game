@@ -195,6 +195,20 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
  .quickActions{bottom:118px!important}
 }
 
+
+/* SIMPLE PLAY — draw > arrange > discard */
+.hand{height:116px!important;align-items:flex-end!important;justify-content:center!important;padding:0 7px 6px!important;overflow:visible!important}
+.myCard{--fanR:0deg!important;--fanY:0px!important;width:58px!important;height:88px!important;flex:0 0 58px!important;margin-left:-17px!important;transform:none!important;transform-origin:center!important;transition:transform .12s ease,margin .12s ease,box-shadow .12s ease!important}
+.myCard:first-child{margin-left:0!important}
+.myCard.selected{transform:translateY(-13px)!important;z-index:60!important;box-shadow:0 0 0 3px #f4ca61,0 8px 15px #0009!important}
+.myCard.multi{transform:none!important}
+.myCard.newDraw{position:relative!important;left:auto!important;bottom:auto!important;margin-left:-10px!important;transform:translateY(-12px)!important;width:60px!important;height:91px!important;flex-basis:60px!important;border:3px solid #f2d16b!important;box-shadow:0 0 0 2px #f2d16b66,0 8px 16px #0009!important;z-index:45!important}
+.myCard.dragging{transform:translateY(-18px) scale(1.04)!important;z-index:100!important}
+.quickActions{bottom:116px!important}
+#sortRank{display:none!important}
+#gameHint{font-size:12px!important;min-height:30px!important}
+@media (orientation:portrait){.table{padding-bottom:178px!important}.hand{height:116px!important}.myCard{width:56px!important;height:86px!important;flex-basis:56px!important;margin-left:-18px!important}.quickActions{bottom:119px!important}}
+@media (orientation:landscape) and (max-height:600px){.hand{height:100px!important}.myCard{width:58px!important;height:88px!important;flex-basis:58px!important;margin-left:-15px!important}.quickActions{bottom:101px!important}}
 </style>
 </head>
 <body><main class="wrap">
@@ -211,7 +225,7 @@ import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.14.
 import{getDatabase,ref,get,set,update,onValue,remove,runTransaction}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomain:"al-sheikh-game.firebaseapp.com",databaseURL:"https://al-sheikh-game-default-rtdb.firebaseio.com",projectId:"al-sheikh-game",storageBucket:"al-sheikh-game.firebasestorage.app",messagingSenderId:"739452149085",appId:"1:739452149085:web:778619aa18fed1c698dcb4"};
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),$=x=>document.getElementById(x);
-let uid="",myName=localStorage.getItem("sheikh_name")||"لاعب",memberNo="",room="",unsub=null,handUnsub=null,currentRoom=null,myHand=[],selected=-1;
+let uid="",myName=localStorage.getItem("sheikh_name")||"لاعب",memberNo="",room="",unsub=null,handUnsub=null,currentRoom=null,myHand=[],selected=-1,pendingDrawId=null;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const say=t=>$("msg").textContent=t||"";
 function makeCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
@@ -228,10 +242,10 @@ async function toggleRole(id){if(!room||currentRoom?.hostId!==uid||currentRoom?.
 function renderLobby(r){const ps=Object.entries(r.players||{}).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)),active=ps.filter(([,p])=>(p.role||"player")==="player").length;$("players").innerHTML=ps.map(([id,p])=>`<div class="person"><div class="personMain"><b>${esc(p.name||"لاعب")}</b><small>${p.memberNo?`عضو ${esc(p.memberNo)}`:"لاعب ريمي"}</small></div><div class="badges">${id===r.hostId?'<span class="badge">👑 صاحب الغرفة</span>':""}<span class="badge ${p.role==='spectator'?'watch':''}">${p.role==='spectator'?'👁 مشاهد':'🎴 لاعب'}</span>${r.hostId===uid&&r.status==='lobby'?`<button class="roleBtn" data-role-id="${id}">${p.role==='spectator'?'إدخاله اللعب':'تحويل لمشاهد'}</button>`:""}</div></div>`).join("");document.querySelectorAll("[data-role-id]").forEach(b=>b.onclick=()=>toggleRole(b.dataset.roleId));$("roomStatus").textContent=`الموجودون ${ps.length}/8 • اللاعبون ${active}/6${r.status==='playing'?' • الجولة بدأت':''}`;$("hostStart").style.display=r.hostId===uid&&r.status==="lobby"?"block":"none";$("startGame").disabled=active<2||active>6;$("startGame").textContent=active>=2&&active<=6?"🎴 ابدأ اللعب":`🎴 ابدأ اللعب (${active}/2)`}
 async function startGame(){if(currentRoom?.hostId!==uid||currentRoom?.status!=="lobby")return;const ids=Object.entries(currentRoom.players||{}).filter(([,p])=>(p.role||"player")==="player").sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).map(([id])=>id);if(ids.length<2||ids.length>6)return $("roomStatus").textContent="اختَر من 2 إلى 6 لاعبين";const deck=makeDeck(),hands={};for(const id of ids){const dealt=deck.splice(0,14);hands[id]=smartArrange(dealt).order.map(x=>x.c)}const discard=deck.shift();const counts={};ids.forEach(id=>counts[id]=14);const patch={};patch[`ramiRooms/${room}/public/status`]="playing";patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:ids[0],phase:"draw",discard,counts,round:1,startedAt:Date.now(),jokerRank:null};patch[`ramiRooms/${room}/public/stock`]=deck;for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];try{await update(ref(db),patch)}catch(e){$("roomStatus").textContent="تعذر بدء الجولة: "+(e?.message||"خطأ")}}
 function showGame(on){$("entryBox").style.display="none";$("roomBox").style.display=on?"none":"block";$("brand").style.display=on?"none":"block";$("rulesBox").style.display=on?"none":"block";$("gameBox").style.display=on?"block":"none"}
-function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.players||{};if(!order.includes(uid)){showGame(false);$("roomStatus").textContent="أنت مشاهد • الجولة شغالة";return}showGame(true);$("gameCode").textContent=`غرفة ${room}`;if(g.phase==="ended"){$("turnText").textContent="انتهت الجولة";const wn=g.winnerUid?(players[g.winnerUid]?.name||"اللاعب"):"تم إنهاء الجولة";showHandResult("🏆 انتهت الجولة",g.winnerUid?`${wn} سوّى هاند صحيح.`:"تم إنهاء الجولة.");$("roundResultMini").textContent=g.winnerUid?`الفائز: ${wn}`:"الجولة انتهت";$("nextRoundBtn").style.display=r.hostId===uid?"block":"none";return}$("turnText").textContent=g.turnUid===uid?(g.phase==="draw"?"دورك • اسحب":"دورك • ارمِ ورقة"):`دور ${players[g.turnUid]?.name||"لاعب"}`;const others=order.filter(id=>id!==uid);$("seats").innerHTML=others.map(id=>`<div class="seat ${id===g.turnUid?'active':''}"><div class="avatar">${esc((players[id]?.name||"؟").slice(0,1))}</div><div class="seatName">${esc(players[id]?.name||"لاعب")}</div><div class="count">🂠 ${g.counts?.[id]??14}</div></div>`).join("");renderDiscard(g.discard);renderJokerIndicator(g);renderHand();const mineTurn=g.turnUid===uid;$("drawStock").disabled=!mineTurn||g.phase!=="draw";$("takeDiscard").disabled=!mineTurn||g.phase!=="draw"||!g.discard;$("throwCard").disabled=!mineTurn||g.phase!=="discard"||selected<0;
-$("stockPile").disabled=$("drawStock").disabled;$("discardPile").disabled=$("takeDiscard").disabled;
+function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.players||{};if(!order.includes(uid)){showGame(false);$("roomStatus").textContent="أنت مشاهد • الجولة شغالة";return}showGame(true);$("gameCode").textContent=`غرفة ${room}`;if(g.phase==="ended"){$("turnText").textContent="انتهت الجولة";const wn=g.winnerUid?(players[g.winnerUid]?.name||"اللاعب"):"تم إنهاء الجولة";showHandResult("🏆 انتهت الجولة",g.winnerUid?`${wn} سوّى هاند صحيح.`:"تم إنهاء الجولة.");$("roundResultMini").textContent=g.winnerUid?`الفائز: ${wn}`:"الجولة انتهت";$("nextRoundBtn").style.display=r.hostId===uid?"block":"none";return}$("turnText").textContent=g.turnUid===uid?(g.phase==="draw"?"دورك • اسحب":"دورك • ارمِ ورقة"):`دور ${players[g.turnUid]?.name||"لاعب"}`;const others=order.filter(id=>id!==uid);$("seats").innerHTML=others.map(id=>`<div class="seat ${id===g.turnUid?'active':''}"><div class="avatar">${esc((players[id]?.name||"؟").slice(0,1))}</div><div class="seatName">${esc(players[id]?.name||"لاعب")}</div><div class="count">🂠 ${g.counts?.[id]??14}</div></div>`).join("");renderDiscard(g.discard);renderJokerIndicator(g);if(g.phase==="draw"||g.turnUid!==uid)pendingDrawId=null;renderHand();const mineTurn=g.turnUid===uid;$("drawStock").disabled=!mineTurn||g.phase!=="draw";$("takeDiscard").disabled=!mineTurn||g.phase!=="draw"||!g.discard;$("throwCard").disabled=!mineTurn||g.phase!=="discard"||selected<0;
+$("stockPile").disabled=$("drawStock").disabled;$("discardPile").disabled=!(mineTurn&&((g.phase==="draw"&&!!g.discard)||(g.phase==="discard"&&selected>=0)));
 $("stockPile").classList.toggle("ready",mineTurn&&g.phase==="draw");$("discardPile").classList.toggle("ready",mineTurn&&g.phase==="draw"&&!!g.discard);
-$("gameHint").textContent=mineTurn?(g.phase==="draw"?"دورك: اضغط السحبة أو الرمية.":"اسحب الورقة الزايدة إلى الرمية، أو اضغطها مرتين."):"انتظر دورك.";
+$("gameHint").textContent=mineTurn?(g.phase==="draw"?"دورك: اسحب من الرزمة أو خذ ورقة الميدان.":"رتّب أوراقك، ثم اختر ورقة واضغط الميدان لرميها."):"انتظر دورك.";
 $("stockPile").closest(".pileWrap")?.classList.toggle("actionable",mineTurn&&g.phase==="draw");
 $("discardPile").closest(".pileWrap")?.classList.toggle("actionable",mineTurn&&g.phase==="draw"&&!!g.discard);
 const tb=$("turnTimerBar");tb.style.transition="none";tb.style.transform="scaleX(1)";requestAnimationFrame(()=>{tb.style.transition="transform 45s linear";tb.style.transform="scaleX(0)"})}
@@ -536,26 +550,22 @@ function renderHand(){
  [...multiSelected].forEach(i=>{if(i>=myHand.length)multiSelected.delete(i)});
  h.innerHTML=myHand.map((c,i)=>{
    const gi=groupMap.has(i)?groupMap.get(i):-1;
-   return `<button type="button" class="myCard ${isRed(c)?'red':''} ${c.r==='JOKER'?'joker':''} ${i===selected?'selected':''} ${multiSelected.has(i)?'multi':''} ${jokerRank&&c.r===jokerRank?'jokerRank':''} ${!jokerRank&&pureIdx.has(i)?'pureReady':''} ${g.phase==='discard'&&g.turnUid===uid&&myHand.length===15&&i===myHand.length-1?'newDraw':''} ${gi>=0?'smartGroup'+(gi%4):'loose'} ${groupStart.has(i)?'groupStart':''}" data-card="${i}" aria-label="${esc(cardLabel(c))}">${cardImgHTML(c,"cardImg")}</button>`;
+   return `<button type="button" class="myCard ${isRed(c)?'red':''} ${c.r==='JOKER'?'joker':''} ${i===selected?'selected':''} ${multiSelected.has(i)?'multi':''} ${jokerRank&&c.r===jokerRank?'jokerRank':''} ${!jokerRank&&pureIdx.has(i)?'pureReady':''} ${pendingDrawId&&c.id===pendingDrawId?'newDraw':''} ${gi>=0?'smartGroup'+(gi%4):'loose'} ${groupStart.has(i)?'groupStart':''}" data-card="${i}" aria-label="${esc(cardLabel(c))}">${cardImgHTML(c,"cardImg")}</button>`;
  }).join("");
- // Gentle fan like mobile rummy games. The temporary 15th drawn card stays centered above the hand.
- const fanCards=[...h.querySelectorAll(".myCard:not(.newDraw)")];
- const fanMid=(fanCards.length-1)/2;
- fanCards.forEach((el,pos)=>{
-   const d=fanMid?((pos-fanMid)/fanMid):0;
-   el.style.setProperty("--fanR",`${(d*5.5).toFixed(2)}deg`);
-   el.style.setProperty("--fanY",`${(Math.abs(d)*7).toFixed(1)}px`);
- });
+ // Straight hand: easier to read and arrange on phone.
  h.querySelectorAll("[data-card]").forEach(b=>{
    const i=Number(b.dataset.card);
    b.onclick=()=>{
      if(dragMoved){dragMoved=false;return}
      const g=currentRoom?.game||{};
      if(g.phase==="discard"&&g.turnUid===uid){
-       const now=Date.now();
-       if(lastDiscardTap===i&&now-lastDiscardTapAt<1800){selected=i;lastDiscardTap=-1;lastDiscardTapAt=0;throwSelected();return}
-       selected=i;multiSelected.clear();lastDiscardTap=i;lastDiscardTapAt=now;renderHand();
-       $("gameHint").textContent="اضغطها مرة ثانية للرمي، أو اسحبها إلى الرمية.";
+       if(selected>=0&&selected!==i){
+         const from=selected;multiSelected.clear();moveCard(from,i);
+         $("gameHint").textContent="تم ترتيب الورقة. اختر الورقة التي تريد رميها ثم اضغط الميدان.";
+         return;
+       }
+       selected=(selected===i?-1:i);multiSelected.clear();renderHand();
+       $("gameHint").textContent=selected>=0?"الورقة محددة: اضغط مكانها بين الأوراق، أو اضغط الميدان لرميها.":"رتّب أوراقك، ثم اختر ورقة وارمها للميدان.";
        return;
      }else{
        selected=-1;multiSelected.has(i)?multiSelected.delete(i):multiSelected.add(i);
@@ -612,9 +622,9 @@ async function revealRoundJoker(){
  }catch(e){$("gameHint").textContent="تعذر كشف الجوكر: "+(e?.message||"خطأ")}
 }
 
-async function drawStock(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw")return;const stock=[...(currentRoom.stock||[])];if(!stock.length)return $("gameHint").textContent="انتهت كومة السحب";const c=stock.shift(),hand=[...myHand,c];const patch={};patch[`ramiRooms/${room}/public/stock`]=stock;patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الكرت اليديد فوق نص اليد — اسحبه لمكانه أو ارمه مباشرة."}
-async function takeDiscard(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||!g.discard)return;const hand=[...myHand,g.discard];const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=null;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الرمية اليديدة فوق نص اليد — اسحبها لمكانها أو ارم غيرها."}
-async function throwSelected(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="discard"||selected<0)return;const hand=[...myHand];if(!hand[selected])return;const [c]=hand.splice(selected,1),order=g.playerOrder||[],i=order.indexOf(uid),next=order[(i+1)%order.length];selected=-1;const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=c;patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;patch[`ramiRooms/${room}/public/game/turnUid`]=next;patch[`ramiRooms/${room}/public/game/phase`]="draw";patch[`ramiRooms/${room}/public/game/lastDiscardBy`]=uid;await update(ref(db),patch)}
+async function drawStock(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw")return;const stock=[...(currentRoom.stock||[])];if(!stock.length)return $("gameHint").textContent="انتهت كومة السحب";const c=stock.shift(),hand=[...myHand,c];pendingDrawId=c.id;const patch={};patch[`ramiRooms/${room}/public/stock`]=stock;patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="رتّب الورقة الجديدة بمكانها، ثم اختر ورقة واضغط الميدان لرميها."}
+async function takeDiscard(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||!g.discard)return;const c=g.discard,hand=[...myHand,c];pendingDrawId=c.id;const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=null;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="رتّب ورقة الميدان بمكانها، ثم اختر ورقة واضغط الميدان لرميها."}
+async function throwSelected(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="discard"||selected<0)return;const hand=[...myHand];if(!hand[selected])return;const [c]=hand.splice(selected,1),order=g.playerOrder||[],i=order.indexOf(uid),next=order[(i+1)%order.length];selected=-1;pendingDrawId=null;const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=c;patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;patch[`ramiRooms/${room}/public/game/turnUid`]=next;patch[`ramiRooms/${room}/public/game/phase`]="draw";patch[`ramiRooms/${room}/public/game/lastDiscardBy`]=uid;await update(ref(db),patch)}
 function sortHand(mode){if(!myHand.length)return;myHand=[...myHand].sort((a,b)=>mode==="suit"?(suitN(a.s)-suitN(b.s)||rankN(a.r)-rankN(b.r)):(rankN(a.r)-rankN(b.r)||suitN(a.s)-suitN(b.s)));selected=-1;multiSelected.clear();renderHand();if(room&&currentRoom?.status==="playing")set(ref(db,`ramiRooms/${room}/privateHands/${uid}`),myHand).catch(()=>{})}
 async function enter(c){
 room=c;localStorage.setItem("rami_room",c);say("");
@@ -635,10 +645,10 @@ handUnsub=onValue(ref(db,`ramiRooms/${c}/privateHands/${uid}`),s=>{
 });
 }
 async function leave(){if(!room)return leaveLocal();const c=room;try{const s=await get(ref(db,`ramiRooms/${c}/public`)),r=s.val()||{};await remove(ref(db,`ramiRooms/${c}/public/players/${uid}`));const left=Object.entries(r.players||{}).filter(([id])=>id!==uid);if(r.hostId===uid){if(left.length)await set(ref(db,`ramiRooms/${c}/public/hostId`),left.sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0][0]);else await remove(ref(db,`ramiRooms/${c}`))}}catch{}leaveLocal()}
-function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();handUnsub=null}room="";currentRoom=null;localStorage.removeItem("rami_room");$("gameBox").style.display="none";$("roomBox").style.display="none";$("entryBox").style.display="block";$("brand").style.display="block";$("rulesBox").style.display="block";say("")}
+function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();handUnsub=null}room="";currentRoom=null;pendingDrawId=null;localStorage.removeItem("rami_room");$("gameBox").style.display="none";$("roomBox").style.display="none";$("entryBox").style.display="block";$("brand").style.display="block";$("rulesBox").style.display="block";say("")}
 $("createRoom").onclick=createRoom;$("showJoin").onclick=()=>{$("joinRow").style.display=$("joinRow").style.display==="none"?"grid":"none";say("")};$("joinRoom").onclick=joinRoom;$("roomInput").onkeydown=e=>{if(e.key==="Enter")joinRoom()};$("copyCode").onclick=async()=>{try{await navigator.clipboard.writeText(room);$("roomStatus").textContent="تم نسخ كود الغرفة ✅"}catch{}};$("leaveRoom").onclick=leave;$("startGame").onclick=startGame;$("exitGame").onclick=()=>showGame(false);$("drawStock").onclick=drawStock;$("takeDiscard").onclick=takeDiscard;
 $("stockPile").onclick=()=>{if(!$("drawStock").disabled)drawStock()};
-$("discardPile").onclick=()=>{if(!$("takeDiscard").disabled)takeDiscard()};$("throwCard").onclick=throwSelected;$("sortSuit").onclick=()=>applySmartArrange(true);$("sortRank").onclick=()=>sortHand("rank");$("revealJoker").onclick=revealRoundJoker;
+$("discardPile").onclick=()=>{const g=currentRoom?.game||{};if(g.turnUid!==uid)return;if(g.phase==="draw"&&!$("takeDiscard").disabled){takeDiscard();return}if(g.phase==="discard"&&selected>=0)throwSelected()};$("throwCard").onclick=throwSelected;$("sortSuit").onclick=()=>applySmartArrange(true);$("sortRank").onclick=()=>sortHand("rank");$("revealJoker").onclick=revealRoundJoker;
 window.addEventListener("resize",()=>fitHandToPhone());
 window.addEventListener("orientationchange",()=>setTimeout(fitHandToPhone,120));
 $("declareHand").onclick=declareHandNow;
