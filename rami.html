@@ -368,24 +368,71 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
  .chatBox{height:82px!important}
 }
 
+
+/* Rami lobby — Check Check room layout */
+.roomBox{padding:12px!important}
+.ccRoomHead{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;border:1px solid #9a6e2d;border-radius:14px;padding:10px;background:#160d09}
+.ccRoomHead small{display:block;color:#bca77f;font-size:10px}.ccRoomHead b{display:block;color:#f5dfaa;font-size:14px}
+.ccCode{text-align:center}.ccCode strong{display:block;color:#f3ca60;font-size:20px;letter-spacing:3px}
+.miniBtn{border:0;border-radius:10px;background:#e4b83f;color:#241407;font-weight:1000;padding:10px}
+.roomBox .players{margin:8px 0!important;gap:5px!important}.roomBox .person{padding:8px 10px!important;min-height:42px!important;border-radius:11px!important}
+.roomBox .status{margin:6px 0!important;padding:7px!important;font-size:12px!important}
+.ramiLobbyTable{height:250px;position:relative;margin:8px 0;border:4px solid #e0b44a;border-radius:24px;background:radial-gradient(circle at center,#991936 0 44%,#651226 45% 70%,#31130f 71%);box-shadow:inset 0 0 25px #0007}
+.lobbyCenter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:#f5d985}.lobbyCenter img{display:block;width:52px;height:76px;object-fit:cover;border:2px solid #d5a53c;border-radius:8px;margin:auto}.lobbyCenter b,.lobbyCenter small{display:block}
+.lobbySeat{position:absolute;text-align:center;color:#f5dfae}.lobbySeat span{display:grid;place-items:center;width:52px;height:52px;margin:auto;border-radius:50%;background:#f5e7ba;color:#5c3414;border:3px solid #d9a63b;font-size:27px}.lobbySeat small{display:block;margin-top:3px;background:#24110d;border:1px solid #b98734;border-radius:10px;padding:2px 7px}
+.topSeat{top:10px;left:50%;transform:translateX(-50%)}.sideSeat{right:12px;top:50%;transform:translateY(-50%)}.leftSeat{right:auto;left:12px}
+.startBig{width:100%;min-height:48px!important;font-size:17px!important;margin:7px 0!important}
+.quickRoomBar{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:7px}.quickBtn{border:1px solid #9d7130;background:#21120d;color:#f4dfad;border-radius:10px;padding:9px 3px;font-weight:900;font-size:11px}.dangerLite{background:#7e2925}
+.roomMajlis{margin-top:8px!important;padding:9px!important;border:1px solid #8c6229!important;border-radius:13px!important;background:#140d09}
+.roomMajlisHead{margin-bottom:5px!important}.voiceMini{display:flex;justify-content:flex-start;margin-bottom:5px}.voiceMini .btn{padding:7px 10px!important;font-size:11px!important}
+.chatBox{height:105px!important}.chatSend{grid-template-columns:1fr 68px!important}
+.rulesOverlay{position:fixed;inset:0;background:#000b;z-index:9999;display:grid;place-items:center;padding:18px}.rulesCard{width:min(520px,94vw);max-height:80vh;overflow:auto;background:#1b0f0b;border:2px solid #d5a33c;border-radius:18px;padding:16px;position:relative}.rulesClose{position:absolute;left:10px;top:10px;border:0;border-radius:50%;width:34px;height:34px;background:#7e2925;color:#fff;font-weight:900}.rulesCard h2{text-align:center;margin:5px 0 15px}
+@media(max-width:430px){.ccRoomHead{grid-template-columns:1fr auto auto}.ramiLobbyTable{height:230px}.quickRoomBar{grid-template-columns:repeat(4,1fr)}.quickBtn{font-size:10px;padding:8px 2px}}
+
 </style>
 </head>
 <body><main class="wrap">
 <div class="top"><a class="back" href="index.html">↩ شيك شيك</a><b>مجلس شيك شيك</b></div>
 <section class="brand" id="brand"><div class="icon">🃏</div><h1>ريمي</h1><p>الهاند الروسي</p></section>
 <section class="panel" id="entryBox"><h2>حيّاك في ريمي</h2><div class="player" id="playerName">اللاعب</div><div class="member" id="memberLine">نفس حسابك في شيك شيك</div><div class="gameBtns"><button class="btn" id="createRoom">إنشاء غرفة</button><button class="btn alt" id="showJoin">دخول غرفة</button></div><div class="joinRow" id="joinRow" style="display:none"><input id="roomInput" maxlength="5" placeholder="كود الغرفة"><button class="btn alt" id="joinRoom">دخول</button></div><div class="msg" id="msg"></div></section>
-<section class="panel roomBox" id="roomBox"><h2>مجلس ريمي</h2><div class="member">كود الغرفة</div><div class="roomCode" id="roomCode">-----</div><div class="players" id="players"></div><div class="status" id="roomStatus">الغرفة جاهزة</div>
-<div class="roomMajlis" id="socialBox" style="display:none">
- <div class="roomMajlisHead"><b>🎙️ مجلس الغرفة</b><span id="voiceState">الصوت غير متصل</span></div>
- <div class="socialTools"><button class="btn green" id="voiceJoin">🎙️ تشغيل المايك</button><button class="btn alt" id="voiceMute" disabled>🔇 كتم المايك</button></div>
- <div class="chatBox" id="chatBox"></div>
- <div class="chatSend"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button class="btn" id="chatSend">إرسال</button></div>
-</div><div class="note" style="text-align:center;margin-top:8px">🔒 أوراق كل لاعب محفوظة في يد خاصة ولا تظهر لبقية اللاعبين أو المشاهدين.</div><div id="hostStart" style="display:none"><button class="btn green" id="startGame" style="width:100%;margin-top:10px">🎴 ابدأ اللعب</button></div><div class="roomActions"><button class="btn alt" id="copyCode">📋 نسخ الكود</button><button class="btn danger" id="leaveRoom">خروج من الغرفة</button></div></section>
-<section class="panel gameBox" id="gameBox"><div class="gameHead"><div class="code" id="gameCode">غرفة -----</div><div><div class="turn" id="turnText">بانتظار الدور</div><div class="turnTimer"><i id="turnTimerBar"></i></div></div><button class="roleBtn" id="exitGame">الغرفة</button></div><div class="table"><div class="seats" id="seats"></div><div class="centerPile"><div class="pileWrap"><button type="button" class="cardBack pileTap" id="stockPile"><img class="pileImg" src="Cards/back.png" alt="السحبة"></button><div>الرزمة</div></div><div class="pileWrap" id="indicatorWrap" style="display:none"><div class="cardFace" id="jokerIndicator">—</div><div>مؤشر الجوكر</div></div><div class="pileWrap"><button type="button" class="cardFace pileTap" id="discardPile">—</button><div>الميدان</div></div></div><div class="jokerSlot" id="jokerSlot">جوكر الجولة: مخفي</div><div id="pendingDock" class="pendingDock" style="display:none"><div class="pendingTitle">الورقة المسحوبة</div><button type="button" id="pendingCard" class="myCard pendingCard"></button><div class="pendingHelp">اسحبها للصف أو اضغطها مرتين للرمي</div></div><div class="handArea" id="handArea"><div class="handStatus" id="handStatus"></div><div class="quickActions"><button class="sortBtn" id="sortSuit">🪄 ترتيب ذكي</button><button class="sortBtn" id="sortRank">ترتيب</button><button class="sortBtn" id="revealJoker" disabled>✨ اكشف الجوكر</button><button class="sortBtn handBtn" id="declareHand">🏆 هاند</button></div><div class="hand" id="myHand"></div></div></div><div class="actions"><button class="btn alt" id="drawStock">اسحب 🂠</button><button class="btn alt" id="takeDiscard">خذ الرمية</button><button class="btn" id="throwCard">ارمِ المختار</button></div><div class="hint" id="gameHint">إذا عندك سيريل صافي يظهر «كشف الجوكر» تلقائيًا.</div></section>
-<section class="panel compactRules" id="rulesBox">
-<button type="button" class="rulesToggle" id="rulesToggle">📖 قواعد ريمي <span>عرض</span></button>
-<div class="rules" id="rulesContent" style="display:none"><div class="rule">👥 الغرفة 8 • اللعب 2–6</div><div class="rule">🂠 14 كرت لكل لاعب</div><div class="rule">🃏 جوكر أسود + أحمر فقط</div><div class="rule">🔗 السيريل: 3 كروت أو أكثر</div><div class="rule">♣️ التشابه: 3 أو 4</div><div class="rule">✨ سيريل صافي لكشف جوكر الجولة</div><div class="rule">✋ الهاند من رمية لاعب فقط</div><div class="rule">🏆 الصحيح −5 • جوكر −10</div></div>
+<section class="panel roomBox" id="roomBox">
+  <div class="ccRoomHead">
+    <div><small>نشأت بواسطة</small><b id="roomHostLabel">صاحب الغرفة</b></div>
+    <div class="ccCode"><small>كود الغرفة</small><strong id="roomCode">-----</strong></div>
+    <button class="miniBtn" id="copyCode">📋 نسخ</button>
+  </div>
+
+  <div class="players" id="players"></div>
+  <div class="status" id="roomStatus">الغرفة جاهزة</div>
+
+  <div class="ramiLobbyTable">
+    <div class="lobbySeat topSeat"><span>👤</span><small>صاحب الغرفة</small></div>
+    <div class="lobbyCenter">
+      <img src="Cards/back.png" alt="الرزمة">
+      <b>ريمي</b><small>14 ورقة</small>
+    </div>
+    <div class="lobbySeat sideSeat"><span>＋</span><small>مقعد لاعب</small></div>
+    <div class="lobbySeat sideSeat leftSeat"><span>＋</span><small>مقعد لاعب</small></div>
+  </div>
+
+  <div id="hostStart" style="display:none"><button class="btn green startBig" id="startGame">🎴 ابدأ اللعب</button></div>
+
+  <div class="quickRoomBar">
+    <button type="button" class="quickBtn" id="rulesToggle">📖 القواعد</button>
+    <button type="button" class="quickBtn" id="chatToggle">💬 الشات</button>
+    <button type="button" class="quickBtn" id="voiceJoin">🎙️ المايك</button>
+    <button type="button" class="quickBtn dangerLite" id="leaveRoom">🚪 خروج</button>
+  </div>
+
+  <div class="roomMajlis" id="socialBox" style="display:none">
+    <div class="roomMajlisHead"><b>💬 شات الغرفة</b><span id="voiceState">الصوت غير متصل</span></div>
+    <div class="voiceMini"><button class="btn alt" id="voiceMute" disabled>🔇 كتم المايك</button></div>
+    <div class="chatBox" id="chatBox"></div>
+    <div class="chatSend"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button class="btn" id="chatSend">إرسال</button></div>
+  </div>
 </section>
+<section class="panel gameBox" id="gameBox"><div class="gameHead"><div class="code" id="gameCode">غرفة -----</div><div><div class="turn" id="turnText">بانتظار الدور</div><div class="turnTimer"><i id="turnTimerBar"></i></div></div><button class="roleBtn" id="exitGame">الغرفة</button></div><div class="table"><div class="seats" id="seats"></div><div class="centerPile"><div class="pileWrap"><button type="button" class="cardBack pileTap" id="stockPile"><img class="pileImg" src="Cards/back.png" alt="السحبة"></button><div>الرزمة</div></div><div class="pileWrap" id="indicatorWrap" style="display:none"><div class="cardFace" id="jokerIndicator">—</div><div>مؤشر الجوكر</div></div><div class="pileWrap"><button type="button" class="cardFace pileTap" id="discardPile">—</button><div>الميدان</div></div></div><div class="jokerSlot" id="jokerSlot">جوكر الجولة: مخفي</div><div id="pendingDock" class="pendingDock" style="display:none"><div class="pendingTitle">الورقة المسحوبة</div><button type="button" id="pendingCard" class="myCard pendingCard"></button><div class="pendingHelp">اسحبها للصف أو اضغطها مرتين للرمي</div></div><div class="handArea" id="handArea"><div class="handStatus" id="handStatus"></div><div class="quickActions"><button class="sortBtn" id="sortSuit">🪄 ترتيب ذكي</button><button class="sortBtn" id="sortRank">ترتيب</button><button class="sortBtn" id="revealJoker" disabled>✨ اكشف الجوكر</button><button class="sortBtn handBtn" id="declareHand">🏆 هاند</button></div><div class="hand" id="myHand"></div></div></div><div class="actions"><button class="btn alt" id="drawStock">اسحب 🂠</button><button class="btn alt" id="takeDiscard">خذ الرمية</button><button class="btn" id="throwCard">ارمِ المختار</button></div><div class="hint" id="gameHint">إذا عندك سيريل صافي يظهر «كشف الجوكر» تلقائيًا.</div></section>
+<div class="rulesOverlay" id="rulesOverlay" style="display:none"><div class="rulesCard"><button type="button" class="rulesClose" id="rulesClose">✕</button><h2>📖 قواعد ريمي</h2><div class="rules" id="rulesContent"><div class="rule">👥 الغرفة 8 • اللعب 2–6</div></div></div>
 </main>
 <div class="handResult" id="handResult"><div class="handResultCard"><h2 id="handResultTitle">🏆 هاند</h2><p id="handResultText"></p><div class="roundResultMini" id="roundResultMini">انتهت الجولة</div><button class="btn" id="nextRoundBtn">🎴 جولة جديدة</button><button class="btn alt" id="closeHandResult">إغلاق</button></div></div><script src="voice.js?v=6.4"></script>
 <div id="voiceAudios" style="display:none"></div>
@@ -1044,7 +1091,7 @@ async function throwSelected(){
 function sortHand(mode){if(!myHand.length)return;myHand=[...myHand].sort((a,b)=>mode==="suit"?(suitN(a.s)-suitN(b.s)||rankN(a.r)-rankN(b.r)):(rankN(a.r)-rankN(b.r)||suitN(a.s)-suitN(b.s)));selected=-1;multiSelected.clear();renderHand();if(room&&currentRoom?.status==="playing")set(ref(db,`ramiRooms/${room}/privateHands/${uid}`),myHand).catch(()=>{})}
 async function enter(c){
 room=c;localStorage.setItem("rami_room",c);loadManualRows();say("");
-$("entryBox").style.display="none";$("roomBox").style.display="block";$("roomCode").textContent=c;$("socialBox").style.display="block";initVoice();watchRamiChat();
+$("entryBox").style.display="none";$("roomBox").style.display="block";$("roomCode").textContent=c;$("socialBox").style.display="none";initVoice();watchRamiChat();
 if(unsub)unsub();
 if(handUnsub){handUnsub();handUnsub=null}
 unsub=onValue(ref(db,`ramiRooms/${c}/public`),s=>{
@@ -1062,7 +1109,11 @@ handUnsub=onValue(ref(db,`ramiRooms/${c}/privateHands/${uid}`),s=>{
 }
 async function leave(){if(!room)return leaveLocal();const c=room;try{const s=await get(ref(db,`ramiRooms/${c}/public`)),r=s.val()||{};await remove(ref(db,`ramiRooms/${c}/public/players/${uid}`));const left=Object.entries(r.players||{}).filter(([id])=>id!==uid);if(r.hostId===uid){if(left.length)await set(ref(db,`ramiRooms/${c}/public/hostId`),left.sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0][0]);else await remove(ref(db,`ramiRooms/${c}`))}}catch{}leaveLocal()}
 function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();handUnsub=null}room="";currentRoom=null;pendingDrawId=null;pendingDraw=null;pendingDrawSource=null;pendingTapAt=0;localStorage.removeItem("rami_room");$("gameBox").style.display="none";$("roomBox").style.display="none";$("socialBox").style.display="none";if(chatUnsub){try{chatUnsub()}catch{}chatUnsub=null}voiceController?.stop?.(true).catch(()=>{});$("entryBox").style.display="block";$("brand").style.display="block";$("rulesBox").style.display="block";say("")}
-$("createRoom").onclick=createRoom;$("voiceJoin").onclick=async()=>{initVoice();if(!voiceController)return voiceToast("تعذر تحميل المايك");if(!voiceActive&&!voiceStarting)await voiceController.start();else if(voiceMuted)await voiceController.toggleMute()};$("voiceMute").onclick=async()=>{if(voiceController?.isActive?.())await voiceController.toggleMute()};$("chatSend").onclick=sendRamiChat;$("chatInput").onkeydown=e=>{if(e.key==="Enter")sendRamiChat()};const rt=$("rulesToggle");if(rt)rt.onclick=()=>{const c=$("rulesContent"),open=c.style.display!=="none";c.style.display=open?"none":"grid";rt.querySelector("span").textContent=open?"عرض":"إخفاء"};$("showJoin").onclick=()=>{$("joinRow").style.display=$("joinRow").style.display==="none"?"grid":"none";say("")};$("joinRoom").onclick=joinRoom;$("roomInput").onkeydown=e=>{if(e.key==="Enter")joinRoom()};$("copyCode").onclick=async()=>{try{await navigator.clipboard.writeText(room);$("roomStatus").textContent="تم نسخ كود الغرفة ✅"}catch{}};$("leaveRoom").onclick=leave;$("startGame").onclick=startGame;$("exitGame").onclick=()=>showGame(false);$("drawStock").onclick=drawStock;$("takeDiscard").onclick=takeDiscard;
+$("createRoom").onclick=createRoom;$("voiceJoin").onclick=async()=>{initVoice();if(!voiceController)return voiceToast("تعذر تحميل المايك");if(!voiceActive&&!voiceStarting)await voiceController.start();else if(voiceMuted)await voiceController.toggleMute()};$("voiceMute").onclick=async()=>{if(voiceController?.isActive?.())await voiceController.toggleMute()};$("chatSend").onclick=sendRamiChat;$("chatInput").onkeydown=e=>{if(e.key==="Enter")sendRamiChat()};
+$("chatToggle").onclick=()=>{const b=$("socialBox");b.style.display=b.style.display==="none"?"block":"none"};
+$("rulesToggle").onclick=()=>{$("rulesOverlay").style.display="grid"};
+$("rulesClose").onclick=()=>{$("rulesOverlay").style.display="none"};
+$("rulesOverlay").onclick=e=>{if(e.target===$("rulesOverlay"))$("rulesOverlay").style.display="none"};$("showJoin").onclick=()=>{$("joinRow").style.display=$("joinRow").style.display==="none"?"grid":"none";say("")};$("joinRoom").onclick=joinRoom;$("roomInput").onkeydown=e=>{if(e.key==="Enter")joinRoom()};$("copyCode").onclick=async()=>{try{await navigator.clipboard.writeText(room);$("roomStatus").textContent="تم نسخ كود الغرفة ✅"}catch{}};$("leaveRoom").onclick=leave;$("startGame").onclick=startGame;$("exitGame").onclick=()=>showGame(false);$("drawStock").onclick=drawStock;$("takeDiscard").onclick=takeDiscard;
 $("stockPile").onclick=()=>{if(!$("drawStock").disabled)drawStock()};
 $("discardPile").onclick=()=>{const g=currentRoom?.game||{};if(g.turnUid!==uid)return;
  if(g.phase==="draw"&&!$("takeDiscard").disabled){takeDiscard();return}
