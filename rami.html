@@ -157,6 +157,44 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 .myCard.pureReady{box-shadow:inset 0 0 0 3px #e8c45a,0 3px 9px #0007}
 #revealJoker.show{display:inline-flex!important;background:linear-gradient(#f4d77a,#b98520)!important;color:#241507!important;font-weight:900}
 #gameHint{min-height:24px}
+
+
+/* Stage 15 — clearer Rami hand: gentle fan, larger readable cards */
+.handArea{overflow:visible}
+.hand{height:128px!important;align-items:flex-end!important;overflow:visible!important;padding:0 10px 5px!important}
+.myCard{
+  --fanR:0deg;--fanY:0px;
+  width:64px!important;height:96px!important;flex:0 0 64px!important;
+  margin-left:-22px;
+  transform:translateY(var(--fanY)) rotate(var(--fanR));
+  transform-origin:50% 115%;
+  box-shadow:0 5px 10px #0008;
+}
+.myCard:first-child{margin-left:0}
+.myCard.selected{transform:translateY(calc(var(--fanY) - 16px)) rotate(var(--fanR)) scale(1.03)!important;z-index:55}
+.myCard.multi{transform:translateY(calc(var(--fanY) - 11px)) rotate(var(--fanR))!important;z-index:45}
+.myCard.dragging{transform:translateY(-24px) scale(1.08)!important;z-index:100!important;opacity:.97}
+.myCard.newDraw{
+  left:50%!important;bottom:96px!important;width:68px!important;height:102px!important;flex-basis:68px!important;
+  transform:translateX(-50%) translateY(-4px)!important;
+  border:3px solid #f2d16b!important;box-shadow:0 0 0 3px #4b351b66,0 12px 24px #000a!important;
+}
+.myCard.newDraw.dragging{transform:translateX(-50%) translateY(-22px) scale(1.08)!important}
+.quickActions{bottom:132px!important}
+#gameHint{font-size:11px!important}
+@media (orientation:portrait){
+ .table{padding-bottom:190px!important}
+ .hand{height:130px!important;padding-left:8px!important;padding-right:8px!important}
+ .myCard{width:62px!important;height:94px!important;flex-basis:62px!important;margin-left:-21px}
+ .quickActions{bottom:138px!important}
+}
+@media (orientation:landscape){
+ .table{min-height:calc(100dvh - 145px)!important;padding-bottom:160px!important}
+ .hand{height:118px!important;max-width:92vw;margin:auto}
+ .myCard{width:66px!important;height:99px!important;flex-basis:66px!important;margin-left:-18px}
+ .quickActions{bottom:118px!important}
+}
+
 </style>
 </head>
 <body><main class="wrap">
@@ -421,7 +459,7 @@ async function newRound(){
 }
 function fitHandToPhone(){
  const h=$("myHand");if(!h||!myHand.length)return;
- const cards=[...h.querySelectorAll(".myCard")];if(!cards.length)return;
+ const cards=[...h.querySelectorAll(".myCard:not(.newDraw)")];if(!cards.length)return;
  cards.forEach((c,i)=>{if(!c.classList.contains("groupStart")||i===0)c.style.marginLeft=""});
  requestAnimationFrame(()=>{
    const available=Math.max(0,h.clientWidth-8),w=cards[0].getBoundingClientRect().width,n=cards.length;
@@ -446,6 +484,14 @@ function renderHand(){
    const gi=groupMap.has(i)?groupMap.get(i):-1;
    return `<button type="button" class="myCard ${isRed(c)?'red':''} ${c.r==='JOKER'?'joker':''} ${i===selected?'selected':''} ${multiSelected.has(i)?'multi':''} ${jokerRank&&c.r===jokerRank?'jokerRank':''} ${!jokerRank&&pureIdx.has(i)?'pureReady':''} ${g.phase==='discard'&&g.turnUid===uid&&myHand.length===15&&i===myHand.length-1?'newDraw':''} ${gi>=0?'smartGroup'+(gi%4):'loose'} ${groupStart.has(i)?'groupStart':''}" data-card="${i}" aria-label="${esc(cardLabel(c))}">${cardImgHTML(c,"cardImg")}</button>`;
  }).join("");
+ // Gentle fan like mobile rummy games. The temporary 15th drawn card stays centered above the hand.
+ const fanCards=[...h.querySelectorAll(".myCard:not(.newDraw)")];
+ const fanMid=(fanCards.length-1)/2;
+ fanCards.forEach((el,pos)=>{
+   const d=fanMid?((pos-fanMid)/fanMid):0;
+   el.style.setProperty("--fanR",`${(d*5.5).toFixed(2)}deg`);
+   el.style.setProperty("--fanY",`${(Math.abs(d)*7).toFixed(1)}px`);
+ });
  h.querySelectorAll("[data-card]").forEach(b=>{
    const i=Number(b.dataset.card);
    b.onclick=()=>{
@@ -512,8 +558,8 @@ async function revealRoundJoker(){
  }catch(e){$("gameHint").textContent="تعذر كشف الجوكر: "+(e?.message||"خطأ")}
 }
 
-async function drawStock(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw")return;const stock=[...(currentRoom.stock||[])];if(!stock.length)return $("gameHint").textContent="انتهت كومة السحب";const c=stock.shift(),hand=[...myHand,c];const patch={};patch[`ramiRooms/${room}/public/stock`]=stock;patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الكرت الجديد آخر اليد — حركه لمكانه أو ارمه مباشرة."}
-async function takeDiscard(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||!g.discard)return;const hand=[...myHand,g.discard];const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=null;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الرمية الجديدة آخر اليد — حركها أو ارم غيرها."}
+async function drawStock(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw")return;const stock=[...(currentRoom.stock||[])];if(!stock.length)return $("gameHint").textContent="انتهت كومة السحب";const c=stock.shift(),hand=[...myHand,c];const patch={};patch[`ramiRooms/${room}/public/stock`]=stock;patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الكرت اليديد فوق نص اليد — اسحبه لمكانه أو ارمه مباشرة."}
+async function takeDiscard(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||!g.discard)return;const hand=[...myHand,g.discard];const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=null;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;await update(ref(db),patch);selected=hand.length-1;$("gameHint").textContent="الرمية اليديدة فوق نص اليد — اسحبها لمكانها أو ارم غيرها."}
 async function throwSelected(){const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="discard"||selected<0)return;const hand=[...myHand];if(!hand[selected])return;const [c]=hand.splice(selected,1),order=g.playerOrder||[],i=order.indexOf(uid),next=order[(i+1)%order.length];selected=-1;const patch={};patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=c;patch[`ramiRooms/${room}/public/game/counts/${uid}`]=hand.length;patch[`ramiRooms/${room}/public/game/turnUid`]=next;patch[`ramiRooms/${room}/public/game/phase`]="draw";patch[`ramiRooms/${room}/public/game/lastDiscardBy`]=uid;await update(ref(db),patch)}
 function sortHand(mode){if(!myHand.length)return;myHand=[...myHand].sort((a,b)=>mode==="suit"?(suitN(a.s)-suitN(b.s)||rankN(a.r)-rankN(b.r)):(rankN(a.r)-rankN(b.r)||suitN(a.s)-suitN(b.s)));selected=-1;multiSelected.clear();renderHand();if(room&&currentRoom?.status==="playing")set(ref(db,`ramiRooms/${room}/privateHands/${uid}`),myHand).catch(()=>{})}
 async function enter(c){
