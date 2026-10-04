@@ -318,28 +318,82 @@ function naturalSet(cards){
  return new Set(cards.map(c=>c.s)).size===cards.length;
 }
 function smartArrange(cards){
- const arr=cards.map((c,i)=>({c,i,used:false,g:-1}));
- let groups=[],gid=0;
- // Prefer longest natural runs first.
- for(const s of ["S","H","D","C"]){
-   const xs=arr.filter(x=>!x.used&&x.c.s===s&&!isPrintedJoker(x.c)).sort((a,b)=>rankSeqValue(a.c.r)-rankSeqValue(b.c.r));
-   let best=[];
-   for(let a=0;a<xs.length;a++)for(let b=a+2;b<xs.length;b++){
-     const q=xs.slice(a,b+1);
-     if(naturalRun(q.map(x=>x.c))&&q.length>best.length)best=q;
+ // Smart rummy arranger: choose the BEST non-overlapping natural melds,
+ // not merely a suit/rank sort. This prevents breaking a useful 3-card set
+ // when a 4/5/6 run (or a longer run) gives a better complete hand layout.
+ const n=cards.length;
+ const candidates=[];
+ const keyOf=idxs=>idxs.slice().sort((a,b)=>a-b).join(",");
+ const seen=new Set();
+ const add=(idxs,type)=>{
+   idxs=[...idxs].sort((a,b)=>a-b);
+   if(idxs.length<3)return;
+   const k=type+":"+keyOf(idxs);if(seen.has(k))return;seen.add(k);
+   candidates.push({idxs,type,len:idxs.length,mask:idxs.reduce((m,i)=>m|(1<<i),0)});
+ };
+ // Every valid same-suit run candidate. Keep all lengths so the solver can
+ // decide whether a card is more valuable in a set or in a run.
+ for(const suit of ["S","H","D","C"]){
+   const ids=[];
+   for(let i=0;i<n;i++)if(cards[i]?.s===suit&&!isPrintedJoker(cards[i]))ids.push(i);
+   // Enumerate subsets (normally tiny per suit with a 14/15 card hand).
+   const lim=1<<ids.length;
+   for(let m=0;m<lim;m++){
+     if(bitCount(m)<3)continue;
+     const q=[];for(let j=0;j<ids.length;j++)if(m&(1<<j))q.push(ids[j]);
+     if(naturalRun(q.map(i=>cards[i])))add(q,"run");
    }
-   if(best.length){best.forEach(x=>{x.used=true;x.g=gid});groups.push(best);gid++}
  }
- // Then natural sets.
- const ranks=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
- for(const r of ranks){
-   const xs=arr.filter(x=>!x.used&&x.c.r===r&&!isPrintedJoker(x.c));
-   const bySuit=[];for(const x of xs)if(!bySuit.some(y=>y.c.s===x.c.s))bySuit.push(x);
-   if(bySuit.length>=3){const q=bySuit.slice(0,4);q.forEach(x=>{x.used=true;x.g=gid});groups.push(q);gid++}
+ // Every valid 3/4-card same-rank set with distinct suits.
+ for(const rank of ["A","2","3","4","5","6","7","8","9","10","J","Q","K"]){
+   const ids=[];for(let i=0;i<n;i++)if(cards[i]?.r===rank&&!isPrintedJoker(cards[i]))ids.push(i);
+   const lim=1<<ids.length;
+   for(let m=0;m<lim;m++){
+     const cnt=bitCount(m);if(cnt<3||cnt>4)continue;
+     const q=[];for(let j=0;j<ids.length;j++)if(m&(1<<j))q.push(ids[j]);
+     if(naturalSet(q.map(i=>cards[i])))add(q,"set");
+   }
  }
- const loose=arr.filter(x=>!x.used).sort((a,b)=>{
-   const ca=isRed(a.c)?1:0,cb=isRed(b.c)?1:0;
-   return ca-cb||rankSeqValue(a.c.r)-rankSeqValue(b.c.r);
+ // Exact set-packing search: maximize cards inside valid melds. Tie-breakers:
+ // prefer longer runs, then fewer loose cards / cleaner larger groups.
+ candidates.sort((a,b)=>b.len-a.len||(a.type==="run"?-1:1));
+ let best={score:-1,runCards:-1,longBonus:-1,groups:[]};
+ function dfs(pos,used,chosen,score,runCards,longBonus){
+   if(pos===candidates.length){
+     if(score>best.score ||
+       (score===best.score&&runCards>best.runCards) ||
+       (score===best.score&&runCards===best.runCards&&longBonus>best.longBonus) ||
+       (score===best.score&&runCards===best.runCards&&longBonus===best.longBonus&&chosen.length<best.groups.length))
+       best={score,runCards,longBonus,groups:chosen.slice()};
+     return;
+   }
+   // Safe pruning on hand size: if all remaining free cards cannot beat best.
+   if(score+(n-bitCount(used))<best.score)return;
+   const c=candidates[pos];
+   if(!(used&c.mask)){
+     chosen.push(c);dfs(pos+1,used|c.mask,chosen,score+c.len,runCards+(c.type==="run"?c.len:0),longBonus+c.len*c.len);chosen.pop();
+   }
+   dfs(pos+1,used,chosen,score,runCards,longBonus);
+ }
+ dfs(0,0,[],0,0,0);
+ // Present runs in suit/rank order, sets by rank. Cards inside each meld are
+ // sorted naturally so 3-4-5-6 is visibly together.
+ const suitOrder={S:0,H:1,D:2,C:3};
+ const groups=best.groups.map(g=>{
+   const xs=g.idxs.map(i=>({c:cards[i],i,used:true,g:-1}));
+   xs.sort((a,b)=>g.type==="run"?(rankSeqValue(a.c.r)-rankSeqValue(b.c.r)):(suitOrder[a.c.s]-suitOrder[b.c.s]));
+   xs.type=g.type;return xs;
+ }).sort((a,b)=>{
+   const ta=a.type==="run"?0:1,tb=b.type==="run"?0:1;if(ta!==tb)return ta-tb;
+   const ac=a[0]?.c,bc=b[0]?.c;
+   return (suitOrder[ac?.s]??9)-(suitOrder[bc?.s]??9)||rankSeqValue(ac?.r)-rankSeqValue(bc?.r);
+ });
+ groups.forEach((g,gi)=>g.forEach(x=>x.g=gi));
+ const used=new Set(groups.flat().map(x=>x.i));
+ const loose=cards.map((c,i)=>({c,i,used:false,g:-1})).filter(x=>!used.has(x.i)).sort((a,b)=>{
+   if(isPrintedJoker(a.c)!==isPrintedJoker(b.c))return isPrintedJoker(a.c)?1:-1;
+   const sa=suitOrder[a.c.s]??9,sb=suitOrder[b.c.s]??9;
+   return sa-sb||rankSeqValue(a.c.r)-rankSeqValue(b.c.r);
  });
  return {order:[...groups.flat(),...loose],groups};
 }
