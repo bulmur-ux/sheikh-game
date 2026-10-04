@@ -29,6 +29,86 @@
  .myCard{width:53px;height:82px;flex-basis:47px;margin-left:-16px}
  .myCard.groupStart{margin-left:3px}
 }
+
+/* Stage 7 — phone-first responsive portrait + landscape */
+.table{width:100%;box-sizing:border-box}
+.handArea{box-sizing:border-box}
+.hand{width:100%;box-sizing:border-box;overflow:visible}
+.myCard{box-sizing:border-box}
+
+/* Portrait: always fit 14–15 cards inside phone width */
+@media (orientation:portrait){
+  .table{min-height:570px;padding-bottom:178px}
+  .handArea{padding-left:5px;padding-right:5px}
+  .hand{height:112px;justify-content:flex-start;padding:0 3px}
+  .myCard{
+    width:clamp(38px,12.4vw,52px);
+    height:clamp(64px,19vw,82px);
+    flex:0 0 clamp(38px,12.4vw,52px);
+    margin-left:calc(clamp(38px,12.4vw,52px) * -0.43);
+  }
+  .myCard:first-child{margin-left:0}
+  .myCard.groupStart{margin-left:2px}
+  .myCard .r{font-size:clamp(14px,4.3vw,18px)}
+  .myCard .s{font-size:clamp(17px,5.2vw,22px)}
+}
+
+/* Landscape: dedicated game-table layout, not stretched portrait */
+@media (orientation:landscape) and (max-height:600px){
+  body{overflow-x:hidden}
+  .wrap{max-width:none;width:100%;padding:4px 8px 8px}
+  .topbar{padding:3px 4px 5px}
+  .topbar .brand{font-size:13px}
+  .topbar .back{padding:6px 10px;font-size:11px}
+  .gameBox{border-radius:16px}
+  .gameHead{height:34px;padding:4px 10px}
+  .gameHead .turn{font-size:12px}
+  .turnTimer{height:4px;width:76px}
+  .table{
+    min-height:calc(100vh - 86px);
+    height:calc(100vh - 86px);
+    padding:5px 8px 116px;
+    border-width:4px;
+  }
+  .seats{position:absolute;top:5px;left:10px;right:10px;min-height:74px;gap:5px}
+  .seat{width:78px;flex-basis:78px;padding:3px;border-radius:11px}
+  .seat .avatar{width:27px;height:27px;font-size:11px}
+  .seat .name{font-size:9px}
+  .seat .count{font-size:8px}
+  .centerPile{
+    position:absolute;top:76px;left:50%;transform:translateX(-50%);
+    margin:0;gap:10px;z-index:4;
+  }
+  .pileWrap{font-size:9px}
+  .cardBack,.cardFace{width:55px;height:74px;border-radius:8px;font-size:17px}
+  .jokerSlot{
+    position:absolute;top:156px;left:50%;transform:translateX(-50%);
+    margin:0;white-space:nowrap;font-size:11px;
+  }
+  .handArea{
+    bottom:0;padding:2px 8px 6px;
+    background:linear-gradient(transparent,#0b1713 18%);
+  }
+  .handStatus{display:none}
+  .quickActions{position:absolute;bottom:101px;left:50%;transform:translateX(-50%);margin:0;z-index:8}
+  .quickActions .sortBtn{padding:5px 9px;font-size:9px}
+  .hand{
+    height:98px;justify-content:center;padding:0 6px;
+  }
+  .myCard{
+    width:58px;height:88px;flex:0 0 58px;
+    margin-left:-18px;
+  }
+  .myCard:first-child{margin-left:0}
+  .myCard.groupStart{margin-left:5px}
+  .myCard .r{font-size:18px}
+  .myCard .s{font-size:23px}
+  .hint{
+    position:absolute;right:10px;bottom:102px;
+    border:0;background:transparent;padding:3px 7px;
+    font-size:9px;max-width:210px;z-index:7;
+  }
+}
 </style>
 </head>
 <body><main class="wrap">
@@ -175,6 +255,24 @@ function updateHandUX(){
  const canHand=g.turnUid===uid&&g.phase==="discard"&&myHand.length===15&&a.loose<=1&&!!g.jokerRank;
  dh.classList.toggle("show",canHand);dh.disabled=!canHand;
 }
+
+function fitHandToPhone(){
+ const h=$("myHand");if(!h||!myHand.length)return;
+ const cards=[...h.querySelectorAll(".myCard")];if(!cards.length)return;
+ cards.forEach((c,i)=>{if(!c.classList.contains("groupStart")||i===0)c.style.marginLeft=""});
+ requestAnimationFrame(()=>{
+   const available=Math.max(0,h.clientWidth-8),w=cards[0].getBoundingClientRect().width,n=cards.length;
+   if(n<=1)return;
+   const natural=n*w;
+   if(natural<=available){cards.forEach((c,i)=>{if(i)c.style.marginLeft="2px"});return}
+   const overlap=Math.max(8,Math.min(w*.58,(natural-available)/(n-1)));
+   cards.forEach((c,i)=>{
+     if(!i)return;
+     const gap=c.classList.contains("groupStart")?Math.max(2,Math.min(7,w*.1)):0;
+     c.style.marginLeft=`${-overlap+gap}px`;
+   });
+ });
+}
 function renderHand(){
  const h=$("myHand"),jokerRank=currentRoom?.game?.jokerRank||null,res=smartArrange(myHand);
  const groupMap=new Map(),groupStart=new Set();
@@ -223,7 +321,7 @@ function renderHand(){
    };
    b.onpointerup=finish;b.onpointercancel=finish;
  });
- refreshRevealButton();updateHandUX();
+ refreshRevealButton();updateHandUX();fitHandToPhone();
 }
 async function revealRoundJoker(){
  const g=currentRoom?.game||{};
@@ -271,6 +369,8 @@ function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();han
 $("createRoom").onclick=createRoom;$("showJoin").onclick=()=>{$("joinRow").style.display=$("joinRow").style.display==="none"?"grid":"none";say("")};$("joinRoom").onclick=joinRoom;$("roomInput").onkeydown=e=>{if(e.key==="Enter")joinRoom()};$("copyCode").onclick=async()=>{try{await navigator.clipboard.writeText(room);$("roomStatus").textContent="تم نسخ كود الغرفة ✅"}catch{}};$("leaveRoom").onclick=leave;$("startGame").onclick=startGame;$("exitGame").onclick=()=>showGame(false);$("drawStock").onclick=drawStock;$("takeDiscard").onclick=takeDiscard;
 $("stockPile").onclick=()=>{if(!$("drawStock").disabled)drawStock()};
 $("discardPile").onclick=()=>{if(!$("takeDiscard").disabled)takeDiscard()};$("throwCard").onclick=throwSelected;$("sortSuit").onclick=()=>applySmartArrange(true);$("sortRank").onclick=()=>sortHand("rank");$("revealJoker").onclick=revealRoundJoker;
+window.addEventListener("resize",()=>fitHandToPhone());
+window.addEventListener("orientationchange",()=>setTimeout(fitHandToPhone,120));
 $("declareHand").onclick=()=>{
  const a=handAnalysis(),g=currentRoom?.game||{};
  if(!(g.turnUid===uid&&g.phase==="discard"))return;
