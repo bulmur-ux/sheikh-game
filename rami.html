@@ -372,7 +372,8 @@ function showGame(on){$("entryBox").style.display="none";$("roomBox").style.disp
 function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.players||{};if(!order.includes(uid)){showGame(false);$("roomStatus").textContent="أنت مشاهد • الجولة شغالة";return}showGame(true);$("gameCode").textContent=`غرفة ${room}`;if(g.phase==="ended"){
  $("turnText").textContent="انتهت الجولة";const wn=g.winnerUid?(players[g.winnerUid]?.name||"اللاعب"):"تم إنهاء الجولة";
  showHandResult("🏆 انتهت الجولة",g.winnerUid?`${wn} سوّى هاند صحيح.`:"تم إنهاء الجولة.");
- publishMyReveal().then(()=>{if(r.hostId===uid)setTimeout(computeRoundScores,250)}).catch(()=>{});
+ publishMyReveal().catch(()=>{});
+ if(r.hostId===uid&&!g.scoresReady)computeRoundScores();
  renderRoundScores(r);
  $("nextRoundBtn").style.display=(r.hostId===uid&&g.scoresReady)?"block":"none";
  return
@@ -401,7 +402,7 @@ function renderJokerIndicator(g){
 }
 
 let dragFrom=-1,dragOver=-1,dragPointer=null,dragMoved=false,multiSelected=new Set(),lastDiscardTap=-1,lastDiscardTapAt=0;
-let pendingDraw=null,pendingDrawSource=null,pendingTapAt=0,turnDrawSource=null,turnFeederUid=null;
+let pendingDraw=null,pendingDrawSource=null,pendingTapAt=0,turnDrawSource=null,turnFeederUid=null,scoringBusy=false;
 
 let manualRows=[];
 function rowsKey(){return `rami_rows_${room||"x"}_${uid||"x"}`}
@@ -719,41 +720,69 @@ function resultCardsHTML(cards,loose=[]){
 }
 async function publishMyReveal(){
  const g=currentRoom?.game||{};if(g.phase!=="ended"||!uid||!room)return;
- const path=`ramiRooms/${room}/public/game/revealedHands/${uid}`;
- const snap=await get(ref(db,path));if(!snap.exists())await set(ref(db,path),myHand);
+ // Every player may publish his own hand, but scoring does not depend on waiting for this.
+ await set(ref(db,`ramiRooms/${room}/public/game/revealedHands/${uid}`),myHand).catch(()=>{});
 }
 async function computeRoundScores(){
- const r=currentRoom,g=r?.game||{};if(!r||g.phase!=="ended"||r.hostId!==uid||g.scoresReady)return;
- const ids=g.playerOrder||[],revealed=g.revealedHands||{};
- if(ids.some(id=>!Array.isArray(revealed[id])))return;
- const totals={...(g.totals||{})},roundScores={},details={};
- for(const id of ids){
-   const cards=revealed[id]||[];
-   if(id===g.winnerUid){roundScores[id]=-5;details[id]={base:-5,feed:0,loose:[]}}
-   else{
-     const x=scoreOneHand(cards,!!g.qualified?.[id],g.jokerRank||null);
-     const feed=(id===g.feederUid)?10:0;
-     roundScores[id]=x.base+feed;details[id]={base:x.base,feed,loose:x.loose};
+ const r=currentRoom,g=r?.game||{};
+ if(!r||g.phase!=="ended"||r.hostId!==uid||g.scoresReady||scoringBusy)return;
+ scoringBusy=true;
+ try{
+   const ids=g.playerOrder||[];
+   // Host is allowed to read all private hands. This avoids the old endless
+   // "waiting for players to reveal" state.
+   const hs=await get(ref(db,`ramiRooms/${room}/privateHands`));
+   const privateHands=hs.val()||{},revealed={...(g.revealedHands||{})};
+   for(const id of ids){
+     if(Array.isArray(privateHands[id]))revealed[id]=privateHands[id];
+     else if(!Array.isArray(revealed[id]))revealed[id]=[];
    }
-   totals[id]=(totals[id]||0)+roundScores[id];
- }
- const patch={};
- patch[`ramiRooms/${room}/public/game/roundScores`]=roundScores;
- patch[`ramiRooms/${room}/public/game/scoreDetails`]=details;
- patch[`ramiRooms/${room}/public/game/totals`]=totals;
- patch[`ramiRooms/${room}/public/game/scoresReady`]=true;
- await update(ref(db),patch);
+
+   const totals={...(g.totals||{})},roundScores={},details={};
+   for(const id of ids){
+     const cards=revealed[id]||[];
+     if(id===g.winnerUid){
+       roundScores[id]=-5;
+       details[id]={base:-5,feed:0,loose:[]};
+     }else if(!g.qualified?.[id]){
+       const feed=(id===g.feederUid)?10:0;
+       roundScores[id]=80+feed;
+       details[id]={base:80,feed,loose:cards.map((_,i)=>i)};
+     }else{
+       const x=scoreOneHand(cards,true,g.jokerRank||null);
+       const feed=(id===g.feederUid)?10:0;
+       roundScores[id]=x.base+feed;
+       details[id]={base:x.base,feed,loose:x.loose};
+     }
+     totals[id]=(totals[id]||0)+roundScores[id];
+   }
+
+   const eliminated={};
+   for(const id of ids)if((totals[id]||0)>220)eliminated[id]=true;
+
+   const patch={};
+   patch[`ramiRooms/${room}/public/game/revealedHands`]=revealed;
+   patch[`ramiRooms/${room}/public/game/roundScores`]=roundScores;
+   patch[`ramiRooms/${room}/public/game/scoreDetails`]=details;
+   patch[`ramiRooms/${room}/public/game/totals`]=totals;
+   patch[`ramiRooms/${room}/public/game/eliminated`]=eliminated;
+   patch[`ramiRooms/${room}/public/game/scoresReady`]=true;
+   await update(ref(db),patch);
+ }catch(e){
+   console.error("score error",e);
+   $("roundResultMini").innerHTML=`<div>تعذر حساب الجولة. اضغط إغلاق ثم افتح النتيجة مرة ثانية.</div>`;
+ }finally{scoringBusy=false}
 }
 function renderRoundScores(r){
  const g=r?.game||{},ids=g.playerOrder||[],players=r?.players||{},revealed=g.revealedHands||{};
  if(!g.scoresReady){
-   $("roundResultMini").innerHTML=`<div>جاري كشف أوراق اللاعبين وحساب الجولة…</div>`;
+   $("roundResultMini").innerHTML=`<div>جاري حساب الجولة…</div>`;
    return;
  }
  $("roundResultMini").innerHTML=ids.map(id=>{
    const d=g.scoreDetails?.[id]||{},sc=g.roundScores?.[id]??0,total=g.totals?.[id]??sc,cards=revealed[id]||[];
-   const feed=d.feed?` + ${d.feed} تغذية`:"";
-   return `<div class="scorePlayer"><div class="scoreHead"><span>${esc(players[id]?.name||"لاعب")}${id===g.winnerUid?" 🏆":""}</span><span>${sc>0?"+":""}${sc}</span></div>${resultCardsHTML(cards,d.loose||[])}<div class="scoreLine">الجولة: ${d.base??sc}${feed} &nbsp; | &nbsp; الكلي: ${total}</div></div>`;
+   const feed=d.feed?` + ${d.feed} تغذية`:"",out=g.eliminated?.[id]?" • خرج فوق 220":"";
+   return `<div class="scorePlayer"><div class="scoreHead"><span>${esc(players[id]?.name||"لاعب")}${id===g.winnerUid?" 🏆":""}</span><span>${sc>0?"+":""}${sc}</span></div>${resultCardsHTML(cards,d.loose||[])}<div class="scoreLine">الجولة: ${d.base??sc}${feed} &nbsp; | &nbsp; الكلي: ${total}${out}</div></div>`;
  }).join("");
 }
 function showHandResult(title,text){$('handResultTitle').textContent=title;$('handResultText').textContent=text;$('handResult').classList.add('show')}
@@ -791,13 +820,19 @@ async function declareHandNow(){
 async function newRound(){
  if(currentRoom?.hostId!==uid)return $('gameHint').textContent='صاحب الغرفة يبدأ الجولة الجديدة.';
  if(!currentRoom?.game?.scoresReady)return $('gameHint').textContent='انتظر اكتمال حسبة الجولة.';
- const old=currentRoom?.game||{},ids=old.playerOrder||[];if(ids.length<2)return;
+ const old=currentRoom?.game||{},allIds=old.playerOrder||[],ids=allIds.filter(id=>(old.totals?.[id]||0)<=220);
+ if(ids.length<2){
+   const winner=ids[0]||allIds.slice().sort((a,b)=>(old.totals?.[a]||0)-(old.totals?.[b]||0))[0];
+   await update(ref(db),{[`ramiRooms/${room}/public/status`]:'finished',[`ramiRooms/${room}/public/game/matchWinnerUid`]:winner});
+   $('gameHint').textContent='انتهت المباراة.';
+   return;
+ }
  const deck=makeDeck(),hands={},counts={};for(const id of ids){const dealt=deck.splice(0,14);hands[id]=smartArrange(dealt).order.map(x=>x.c);counts[id]=14}
  const discard=deck.shift(),round=(old.round||1)+1,starter=ids[round%ids.length];const patch={};
  patch[`ramiRooms/${room}/public/status`]='playing';
  patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:starter,phase:'draw',discard,counts,round,startedAt:Date.now(),jokerRank:null,qualified:{},totals:{...(old.totals||{})}};
  patch[`ramiRooms/${room}/public/stock`]=deck;
- for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];
+ for(const id of allIds)patch[`ramiRooms/${room}/privateHands/${id}`]=ids.includes(id)?hands[id]:null;
  await update(ref(db),patch);$('handResult').classList.remove('show');
 }
 function fitHandToPhone(){
