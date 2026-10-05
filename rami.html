@@ -353,6 +353,12 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 #rulesBox .rules{gap:5px!important}
 #rulesBox .rule{padding:8px 5px!important;font-size:11px!important}
 @media(max-width:430px){#roomBox{padding:11px!important}#roomBox h2{font-size:22px!important}#roomBox .roomCode{font-size:27px!important}#rulesBox .rules{grid-template-columns:1fr 1fr!important}}
+
+/* FINAL STABLE LAYOUT — room + table + hand */
+.roomComms{background:rgba(18,9,7,.95)!important}.roomComms h2{font-size:20px}.commsTools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.commsTools .btn{min-height:42px;padding:8px 5px;font-size:11px}.voiceState{text-align:center;color:#e9d29f;font-size:11px;margin:8px 0}.chatBox{height:150px;overflow:auto;background:#08090b;border:1px solid #75552a;border-radius:13px;padding:9px;text-align:right}.chatBox p{margin:0 0 7px;font-size:12px;line-height:1.45}.chatBox b{color:#f2cb67}.chatSend{display:grid;grid-template-columns:1fr 76px;gap:7px;margin-top:8px}.chatSend input{min-width:0;border:1px solid #9b7333;border-radius:12px;padding:11px;background:#fff;color:#1d1713}.chatSend .btn{padding:8px}
+#roomBox{background:rgba(18,9,7,.95)!important;border:1.5px solid #b9852e!important;box-shadow:0 10px 28px #0007!important}#roomBox .roomCode{background:#130b08;border:1px solid #8d6228;border-radius:14px;padding:10px;margin:8px 0 10px!important}#roomBox .person{background:#241510!important;color:#fff!important;border:1px solid #5d3c22!important}#roomBox .person small{color:#d8c39d!important;opacity:1!important}#roomBox .status{background:#180f0b!important}
+.pendingDock{display:none!important}.table{min-height:610px!important;padding-bottom:270px!important}.handArea{max-height:270px!important;padding:42px 7px 7px!important}.hand{min-height:150px!important;gap:5px!important}.handRow{min-height:68px!important;padding:4px 52px 4px 5px!important;overflow-x:hidden!important;gap:0!important}.handRowLabel{right:5px!important;width:42px!important}.handRow .myCard{width:48px!important;height:70px!important;flex:0 0 48px!important;margin-left:-10px!important}.handRow .myCard:first-of-type{margin-left:0!important}.handRow .myCard.newDraw{border:3px solid #ffd85f!important;transform:translateY(-7px)!important}.addRowBtn{min-height:28px!important;margin-top:2px!important}.quickActions{top:5px!important}.centerPile{margin-top:12px!important}.pileTap.ready{box-shadow:0 0 0 3px #ffd85f,0 6px 18px #0009!important}.pileWrap.actionable{transform:translateY(-2px)}
+@media(max-width:430px){.commsTools{grid-template-columns:1fr 1fr}.commsTools #voiceLeave{grid-column:1/-1}.table{min-height:600px!important;padding-bottom:265px!important}.handArea{max-height:265px!important}.handRow .myCard{width:46px!important;height:67px!important;flex-basis:46px!important;margin-left:-11px!important}}
 </style>
 </head>
 <body><main class="wrap">
@@ -361,15 +367,1087 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 <section class="panel" id="entryBox"><h2>حيّاك في ريمي</h2><div class="player" id="playerName">اللاعب</div><div class="member" id="memberLine">نفس حسابك في شيك شيك</div><div class="gameBtns"><button class="btn" id="createRoom">إنشاء غرفة</button><button class="btn alt" id="showJoin">دخول غرفة</button></div><div class="joinRow" id="joinRow" style="display:none"><input id="roomInput" maxlength="5" placeholder="كود الغرفة"><button class="btn alt" id="joinRoom">دخول</button></div><div class="msg" id="msg"></div></section>
 <section class="panel roomBox" id="roomBox"><h2>🎴 غرفة ريمي</h2><div class="member">كود الغرفة</div><div class="roomCode" id="roomCode">-----</div><div class="players" id="players"></div><div class="status" id="roomStatus">الغرفة جاهزة</div><div class="note" style="text-align:center;margin-top:8px">🔒 أوراق كل لاعب محفوظة في يد خاصة ولا تظهر لبقية اللاعبين أو المشاهدين.</div><div id="hostStart" style="display:none"><button class="btn green" id="startGame" style="width:100%;margin-top:10px">🎴 ابدأ اللعب</button></div><div class="roomActions"><button class="btn alt" id="copyCode">📋 نسخ الكود</button><button class="btn danger" id="leaveRoom">خروج من الغرفة</button></div></section>
 <section class="panel gameBox" id="gameBox"><div class="gameHead"><div class="code" id="gameCode">غرفة -----</div><div><div class="turn" id="turnText">بانتظار الدور</div><div class="turnTimer"><i id="turnTimerBar"></i></div></div><button class="roleBtn" id="exitGame">الغرفة</button></div><div class="table"><div class="seats" id="seats"></div><div class="centerPile"><div class="pileWrap"><button type="button" class="cardBack pileTap" id="stockPile"><img class="pileImg" src="Cards/back.png" alt="السحبة"></button><div>الرزمة</div></div><div class="pileWrap" id="indicatorWrap" style="display:none"><div class="cardFace" id="jokerIndicator">—</div><div>مؤشر الجوكر</div></div><div class="pileWrap"><button type="button" class="cardFace pileTap" id="discardPile">—</button><div>الميدان</div></div></div><div class="jokerSlot" id="jokerSlot">جوكر الجولة: مخفي</div><div id="pendingDock" class="pendingDock" style="display:none"><div class="pendingTitle">الورقة المسحوبة</div><button type="button" id="pendingCard" class="myCard pendingCard"></button><div class="pendingHelp">اسحبها للصف أو اضغطها مرتين للرمي</div></div><div class="handArea" id="handArea"><div class="handStatus" id="handStatus"></div><div class="quickActions"><button class="sortBtn" id="sortSuit">🪄 ترتيب ذكي</button><button class="sortBtn" id="sortRank">ترتيب</button><button class="sortBtn" id="revealJoker" disabled>✨ اكشف الجوكر</button><button class="sortBtn handBtn" id="declareHand">🏆 هاند</button></div><div class="hand" id="myHand"></div></div></div><div class="actions"><button class="btn alt" id="drawStock">اسحب 🂠</button><button class="btn alt" id="takeDiscard">خذ الرمية</button><button class="btn" id="throwCard">ارمِ المختار</button></div><div class="hint" id="gameHint">إذا عندك سيريل صافي يظهر «كشف الجوكر» تلقائيًا.</div></section>
+<section class="panel roomComms" id="roomComms" style="display:none"><h2>💬 مجلس الغرفة</h2><div class="commsTools"><button class="btn green" id="voiceJoin">🎙️ تشغيل المايك</button><button class="btn alt" id="voiceMute" disabled>🔇 كتم المايك</button><button class="btn danger" id="voiceLeave" disabled>إنهاء الصوت</button></div><div class="voiceState" id="voiceState">● الصوت غير متصل</div><div class="chatBox" id="chatBox"></div><div class="chatSend"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button class="btn" id="sendChat">إرسال</button></div></section>
 <section class="panel" id="rulesBox"><h2>القواعد المثبتة</h2><div class="rules"><div class="rule">👥 الغرفة 8 • اللعب 2–6</div><div class="rule">🂠 14 كرت لكل لاعب</div><div class="rule">🃏 جوكر أسود + أحمر فقط</div><div class="rule">🔗 السيريل: 3 كروت أو أكثر</div><div class="rule">♣️ التشابه: 3 أو 4</div><div class="rule">✨ سيريل صافي لكشف جوكر الجولة</div><div class="rule">✋ الهاند من رمية لاعب فقط</div><div class="rule">🏆 الصحيح −5 • جوكر −10</div></div></section>
 </main>
-<div class="handResult" id="handResult"><div class="handResultCard"><h2 id="handResultTitle">🏆 هاند</h2><p id="handResultText"></p><div class="roundResultMini" id="roundResultMini">انتهت الجولة</div><button class="btn" id="nextRoundBtn">🎴 جولة جديدة</button><button class="btn alt" id="closeHandResult">إغلاق</button></div></div><script type="module">
+<div class="handResult" id="handResult"><div class="handResultCard"><h2 id="handResultTitle">🏆 هاند</h2><p id="handResultText"></p><div class="roundResultMini" id="roundResultMini">انتهت الجولة</div><button class="btn" id="nextRoundBtn">🎴 جولة جديدة</button><button class="btn alt" id="closeHandResult">إغلاق</button></div></div><script>
+// ============================================================
+// شيك شيك - نظام الصوت المستقل
+// Stable Voice + Firebase Signaling + Diagnostics
+// FIX: reliable Offer/Answer retry without touching admin permissions
+// ============================================================
+
+(function () {
+  "use strict";
+
+  function createVoiceController(o) {
+    const {
+      db, ref, get, set, update, push, remove,
+      getRoomCode, getUid, getName, getCurrentRoom,
+      toast, sleep, releaseWebAudio, stopRadio,
+      onStateChange, onUiRefresh
+    } = o;
+
+    let voiceActive = false;
+    let voiceStarting = false;
+    let voiceMuted = false;
+    let localVoiceStream = null;
+    let voiceSyncBusy = false;
+    let voiceSessionId = "";
+    let voiceSyncTimer = null;
+
+    const voicePeers = new Map();
+    const reconnectTimers = new Map();
+    let audioUnlockInstalled = false;
+
+    // التشخيص مؤقت - بعد استقرار الصوت يمكن تحويله إلى false
+    const VOICE_DEBUG = false;
+
+    const voiceDebug = {
+      users: 0,
+      expected: 0,
+      connected: 0,
+      lastAction: "جاهز",
+      lastError: "",
+      peers: {}
+    };
+
+    function debugLog(message, data) {
+      if (!VOICE_DEBUG) return;
+      try {
+        console.log("%c[VOICE]", "color:#00d084;font-weight:bold", message, data || "");
+      } catch {}
+      voiceDebug.lastAction = String(message || "");
+      updateDebugBox();
+    }
+
+    function debugError(message, error) {
+      const raw = String(error?.message || error || "");
+      try { console.warn("[VOICE ERROR]", message, error); } catch {}
+      voiceDebug.lastError = `${message}: ${raw}`;
+      updateDebugBox();
+    }
+
+    function setPeerDebug(uid, patch) {
+      if (!VOICE_DEBUG) return;
+      if (!voiceDebug.peers[uid]) {
+        voiceDebug.peers[uid] = {
+          connection: "-",
+          ice: "-",
+          signaling: "-",
+          stage: "انتظار"
+        };
+      }
+      Object.assign(voiceDebug.peers[uid], patch || {});
+      updateDebugBox();
+    }
+
+    function getDebugBox() {
+      if (!VOICE_DEBUG) return null;
+      let box = document.getElementById("voiceDebugBox");
+      if (box) return box;
+
+      box = document.createElement("div");
+      box.id = "voiceDebugBox";
+      box.dir = "rtl";
+      box.style.cssText = `
+        position:fixed;
+        left:8px;
+        bottom:8px;
+        z-index:999999;
+        width:min(92vw,360px);
+        max-height:42vh;
+        overflow:auto;
+        padding:10px;
+        border-radius:12px;
+        background:rgba(0,0,0,.88);
+        color:#fff;
+        border:1px solid rgba(255,255,255,.25);
+        font-family:Arial,sans-serif;
+        font-size:12px;
+        line-height:1.65;
+        text-align:right;
+        direction:rtl;
+      `;
+      document.body.appendChild(box);
+      return box;
+    }
+
+    function updateDebugBox() {
+      if (!VOICE_DEBUG) return;
+      const box = getDebugBox();
+      if (!box) return;
+
+      const peerLines = Object.entries(voiceDebug.peers).map(([uid, p]) => {
+        const shortUid = String(uid).slice(0, 8);
+        return `
+          <div style="margin-top:6px;padding-top:6px;border-top:1px solid #444;">
+            👤 ${shortUid}<br>
+            المرحلة: ${p.stage || "-"}<br>
+            WebRTC: ${p.connection || "-"}<br>
+            ICE: ${p.ice || "-"}<br>
+            Signal: ${p.signaling || "-"}
+          </div>
+        `;
+      }).join("");
+
+      box.innerHTML = `
+        <div style="font-weight:bold;color:#ffd54a;margin-bottom:4px;">
+          🛠 تشخيص الصوت المؤقت
+        </div>
+        الصوت: ${voiceActive ? "شغال" : "متوقف"} ${voiceMuted ? "🔇" : "🎙️"}<br>
+        الموجودون بالصوت: ${voiceDebug.users}<br>
+        المطلوب الاتصال بهم: ${voiceDebug.expected}<br>
+        المتصل فعلياً: ${voiceRemoteCount()} / ${voiceDebug.expected}<br>
+        آخر خطوة: ${voiceDebug.lastAction || "-"}<br>
+        ${voiceDebug.lastError
+          ? `<span style="color:#ff8080">آخر خطأ: ${voiceDebug.lastError}</span><br>`
+          : ""}
+        ${peerLines}
+      `;
+    }
+
+    function safeToast(message) {
+      try { toast?.(message); } catch {}
+    }
+
+    function wait(ms) {
+      if (sleep) return sleep(ms);
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function publishState() {
+      try {
+        onStateChange?.({
+          active: voiceActive,
+          starting: voiceStarting,
+          muted: voiceMuted,
+          remoteCount: voiceRemoteCount()
+        });
+      } catch {}
+
+      try { onUiRefresh?.(); } catch {}
+
+      voiceDebug.connected = voiceRemoteCount();
+      updateDebugBox();
+    }
+
+    function pairIdFor(a, b) {
+      return [String(a), String(b)].sort().join("__");
+    }
+
+    function voiceRemoteCount() {
+      let n = 0;
+      for (const pc of voicePeers.values()) {
+        if (
+          pc &&
+          (
+            pc.connectionState === "connected" ||
+            pc.iceConnectionState === "connected" ||
+            pc.iceConnectionState === "completed"
+          )
+        ) {
+          n++;
+        }
+      }
+      return n;
+    }
+
+    function isActive() { return voiceActive; }
+    function isStarting() { return voiceStarting; }
+    function isMuted() { return voiceMuted; }
+
+    function getAudioBox() {
+      let box = document.getElementById("voiceAudios");
+      if (!box) {
+        box = document.createElement("div");
+        box.id = "voiceAudios";
+        box.style.cssText =
+          "position:fixed;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;";
+        document.body.appendChild(box);
+      }
+      return box;
+    }
+
+    function unlockRemoteAudios() {
+      const box = document.getElementById("voiceAudios");
+      if (!box) return;
+      box.querySelectorAll("audio").forEach(audio => {
+        try {
+          audio.muted = false;
+          audio.volume = 1;
+          const p = audio.play();
+          if (p?.catch) p.catch(() => {});
+        } catch {}
+      });
+    }
+
+    function installAudioUnlock() {
+      if (audioUnlockInstalled) return;
+      audioUnlockInstalled = true;
+      const unlock = () => unlockRemoteAudios();
+      document.addEventListener("touchstart", unlock, { passive: true });
+      document.addEventListener("pointerdown", unlock, { passive: true });
+      document.addEventListener("click", unlock, { passive: true });
+    }
+
+    installAudioUnlock();
+
+    async function readVoiceUsers() {
+      try {
+        const roomCode = getRoomCode?.();
+        if (!roomCode) return {};
+        const snap = await get(ref(db, `ramiRooms/${roomCode}/public/voiceUsers`));
+        const users = snap.val() || {};
+        debugLog("تم تحديث مستخدمي الصوت");
+        return users;
+      } catch (e) {
+        debugError("قراءة voiceUsers", e);
+        try { return getCurrentRoom?.()?.voiceUsers || {}; }
+        catch { return {}; }
+      }
+    }
+
+    async function readSignal(pair) {
+      try {
+        const snap = await get(
+          ref(db, `ramiRooms/${getRoomCode()}/public/voiceSignals/${pair}`)
+        );
+        return snap.val() || {};
+      } catch (e) {
+        debugError("قراءة Signal", e);
+        return {};
+      }
+    }
+
+    async function clearMyVoiceSignals() {
+      try {
+        const uid = getUid?.();
+        const roomCode = getRoomCode?.();
+        if (!uid || !roomCode) return;
+
+        const voiceUsers = await readVoiceUsers();
+        const users = Object.keys(voiceUsers).filter(id => id !== uid);
+
+        for (const otherUid of users) {
+          // فقط الـ initiator يحذف Signal الخاص بالزوج حتى لا نمسح Offer للطرف الآخر.
+          if (String(uid) < String(otherUid)) {
+            try {
+              await remove(
+                ref(db, `ramiRooms/${roomCode}/public/voiceSignals/${pairIdFor(uid, otherUid)}`)
+              );
+            } catch {}
+          }
+        }
+        debugLog("تم تنظيف الإشارات القديمة");
+      } catch (e) {
+        debugError("تنظيف الإشارات", e);
+      }
+    }
+
+    function stopLocalTracks() {
+      if (!localVoiceStream) return;
+      try {
+        localVoiceStream.getTracks().forEach(track => {
+          try { track.stop(); } catch {}
+        });
+      } catch {}
+      localVoiceStream = null;
+    }
+
+    function closePeer(otherUid) {
+      const timer = reconnectTimers.get(otherUid);
+      if (timer) {
+        clearTimeout(timer);
+        reconnectTimers.delete(otherUid);
+      }
+
+      const pc = voicePeers.get(otherUid);
+      if (pc) {
+        try {
+          pc.ontrack = null;
+          pc.onicecandidate = null;
+          pc.onconnectionstatechange = null;
+          pc.oniceconnectionstatechange = null;
+          pc.close();
+        } catch {}
+      }
+
+      voicePeers.delete(otherUid);
+
+      const audio = document.getElementById("voice_" + otherUid);
+      if (audio) {
+        try {
+          audio.pause();
+          audio.srcObject = null;
+          audio.remove();
+        } catch {}
+      }
+
+      setPeerDebug(otherUid, {
+        stage: "مغلق",
+        connection: "closed"
+      });
+    }
+
+    function closeAllPeers() {
+      Array.from(voicePeers.keys()).forEach(id => closePeer(id));
+    }
+
+    function scheduleReconnect(otherUid, delay = 2500) {
+      if (!voiceActive || reconnectTimers.has(otherUid)) return;
+
+      setPeerDebug(otherUid, { stage: "إعادة الاتصال..." });
+
+      const timer = setTimeout(() => {
+        reconnectTimers.delete(otherUid);
+        if (!voiceActive) return;
+
+        closePeer(otherUid);
+
+        setTimeout(() => {
+          if (voiceActive) sync();
+        }, 150);
+      }, delay);
+
+      reconnectTimers.set(otherUid, timer);
+    }
+
+    async function start() {
+      if (voiceActive || voiceStarting) {
+        safeToast(voiceActive ? "المايك شغال بالفعل" : "جاري فتح المايك...");
+        return;
+      }
+
+      const uid = getUid?.();
+      const roomCode = getRoomCode?.();
+
+      if (!uid || !roomCode) {
+        safeToast("تعذر تحديد الغرفة");
+        return;
+      }
+
+      voiceStarting = true;
+      publishState();
+      debugLog("بدء تشغيل المايك");
+
+      try {
+        if (!window.isSecureContext) throw new Error("المايك يحتاج HTTPS");
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("المتصفح لا يدعم المايك");
+        }
+
+        try { stopRadio?.(false); } catch {}
+        try { await releaseWebAudio?.(); } catch {}
+
+        await wait(200);
+        debugLog("طلب صلاحية المايك");
+
+        localVoiceStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          },
+          video: false
+        });
+
+        const tracks = localVoiceStream.getAudioTracks();
+        if (!tracks.length) throw new Error("لم يتم العثور على مايك");
+
+        tracks.forEach(track => track.enabled = true);
+        debugLog("تم تشغيل المايك");
+
+        voiceSessionId =
+          String(uid) + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+
+        voiceActive = true;
+        voiceStarting = false;
+        voiceMuted = false;
+
+        closeAllPeers();
+        await clearMyVoiceSignals();
+
+        await update(
+          ref(db, `ramiRooms/${roomCode}/public/voiceUsers/${uid}`),
+          {
+            name: getName?.() || "مستخدم",
+            active: true,
+            muted: false,
+            session: voiceSessionId,
+            ts: Date.now()
+          }
+        );
+
+        debugLog("تم تسجيل المستخدم في قناة الصوت");
+        publishState();
+
+        clearInterval(voiceSyncTimer);
+        voiceSyncTimer = setInterval(() => {
+          if (voiceActive) sync();
+        }, 1200);
+
+        setTimeout(sync, 100);
+        setTimeout(sync, 600);
+        setTimeout(sync, 1500);
+        setTimeout(sync, 3000);
+
+        safeToast("🎙️ المايك مفتوح — جاري الربط...");
+      } catch (e) {
+        debugError("تشغيل المايك", e);
+
+        voiceStarting = false;
+        voiceActive = false;
+        voiceMuted = false;
+        voiceSessionId = "";
+
+        stopLocalTracks();
+        closeAllPeers();
+        publishState();
+
+        let msg = "تعذر تشغيل المايك";
+        if (
+          e?.name === "NotAllowedError" ||
+          e?.name === "PermissionDeniedError"
+        ) {
+          msg = "اسمح للمايك من إعدادات Safari";
+        }
+        safeToast(msg);
+      }
+    }
+
+    async function toggleMute() {
+      if (!voiceActive || !localVoiceStream) {
+        safeToast("شغل الصوت أولاً");
+        return;
+      }
+
+      voiceMuted = !voiceMuted;
+      localVoiceStream.getAudioTracks().forEach(track => {
+        track.enabled = !voiceMuted;
+      });
+
+      try {
+        await update(
+          ref(db, `ramiRooms/${getRoomCode()}/public/voiceUsers/${getUid()}`),
+          {
+            muted: voiceMuted,
+            active: true,
+            ts: Date.now()
+          }
+        );
+      } catch (e) {
+        debugError("تحديث الكتم", e);
+      }
+
+      publishState();
+      safeToast(
+        voiceMuted
+          ? "🔇 تم كتم مايكك — ما زلت تسمع الآخرين"
+          : "🎙️ تم فتح مايكك"
+      );
+    }
+
+    function attachRemoteAudio(otherUid, stream) {
+      const box = getAudioBox();
+      let audio = document.getElementById("voice_" + otherUid);
+
+      if (!audio) {
+        audio = document.createElement("audio");
+        audio.id = "voice_" + otherUid;
+        audio.autoplay = true;
+        audio.playsInline = true;
+        audio.setAttribute("playsinline", "");
+        audio.setAttribute("webkit-playsinline", "");
+        box.appendChild(audio);
+      }
+
+      audio.srcObject = stream;
+      audio.muted = false;
+      audio.volume = 1;
+
+      debugLog("وصل صوت الطرف الآخر");
+      setPeerDebug(otherUid, { stage: "تم استقبال الصوت" });
+
+      try {
+        const p = audio.play();
+        if (p?.catch) {
+          p.catch(e => {
+            debugError("Safari منع تشغيل الصوت", e);
+            safeToast("🔊 اضغط على الشاشة مرة لتفعيل الصوت");
+          });
+        }
+      } catch {}
+    }
+
+    async function makePeer(otherUid) {
+      if (!otherUid || otherUid === getUid() || !localVoiceStream) return null;
+
+      const old = voicePeers.get(otherUid);
+      if (
+        old &&
+        old.connectionState !== "closed" &&
+        old.connectionState !== "failed"
+      ) {
+        return old;
+      }
+
+      if (old) closePeer(otherUid);
+
+      const uid = getUid();
+      const roomCode = getRoomCode();
+
+      debugLog("إنشاء WebRTC Peer");
+      setPeerDebug(otherUid, { stage: "إنشاء Peer" });
+
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          {
+            urls: [
+              "stun:stun.l.google.com:19302",
+              "stun:stun1.l.google.com:19302",
+              "stun:stun.cloudflare.com:3478"
+            ]
+          },
+          {
+            urls: [
+              "turn:openrelay.metered.ca:80",
+              "turn:openrelay.metered.ca:443",
+              "turn:openrelay.metered.ca:443?transport=tcp"
+            ],
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          }
+        ],
+        iceCandidatePoolSize: 6,
+        bundlePolicy: "max-bundle",
+        rtcpMuxPolicy: "require"
+      });
+
+      pc._addedRemoteIce = new Set();
+      pc._remoteUid = otherUid;
+      pc._createdAt = Date.now();
+
+      voicePeers.set(otherUid, pc);
+
+      for (const track of localVoiceStream.getAudioTracks()) {
+        try {
+          pc.addTrack(track, localVoiceStream);
+        } catch (e) {
+          debugError("إضافة المايك إلى Peer", e);
+        }
+      }
+
+      pc.ontrack = event => {
+        let stream = event.streams?.[0];
+        if (!stream) {
+          stream = new MediaStream();
+          try { stream.addTrack(event.track); } catch {}
+        }
+        attachRemoteAudio(otherUid, stream);
+      };
+
+      pc.onicecandidate = async event => {
+        if (!event.candidate) {
+          setPeerDebug(otherUid, { stage: "اكتمل جمع ICE" });
+          return;
+        }
+
+        try {
+          const candidate = event.candidate;
+          let type = candidate.type || "";
+
+          if (!type && candidate.candidate) {
+            const m = candidate.candidate.match(/ typ ([a-z]+)/i);
+            type = m?.[1] || "";
+          }
+
+          setPeerDebug(otherUid, {
+            stage: type === "relay" ? "TURN relay جاهز" : `ICE ${type || "candidate"}`
+          });
+
+          const pair = pairIdFor(uid, otherUid);
+
+          await set(
+            push(
+              ref(
+                db,
+                `ramiRooms/${roomCode}/public/voiceSignals/${pair}/candidates/${uid}`
+              )
+            ),
+            candidate.toJSON()
+          );
+        } catch (e) {
+          debugError("إرسال ICE", e);
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        setPeerDebug(otherUid, {
+          connection: pc.connectionState,
+          signaling: pc.signalingState
+        });
+
+        publishState();
+
+        if (pc.connectionState === "connected") {
+          debugLog("WebRTC متصل");
+          setPeerDebug(otherUid, { stage: "✅ متصل" });
+          unlockRemoteAudios();
+          return;
+        }
+
+        if (pc.connectionState === "failed") {
+          debugLog("WebRTC فشل — إعادة محاولة");
+          scheduleReconnect(otherUid, 1000);
+          return;
+        }
+
+        if (pc.connectionState === "disconnected") {
+          debugLog("انقطاع مؤقت — انتظار قبل إعادة الربط");
+          scheduleReconnect(otherUid, 5000);
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        setPeerDebug(otherUid, {
+          ice: pc.iceConnectionState,
+          signaling: pc.signalingState
+        });
+
+        publishState();
+
+        if (
+          pc.iceConnectionState === "connected" ||
+          pc.iceConnectionState === "completed"
+        ) {
+          setPeerDebug(otherUid, { stage: "✅ ICE متصل" });
+          unlockRemoteAudios();
+        }
+
+        if (pc.iceConnectionState === "failed") {
+          debugLog("ICE failed");
+          scheduleReconnect(otherUid, 1000);
+        }
+
+        if (pc.iceConnectionState === "disconnected") {
+          scheduleReconnect(otherUid, 5000);
+        }
+      };
+
+      return pc;
+    }
+
+    async function addRemoteIce(pc, pair, otherUid) {
+      if (!pc || !pc.remoteDescription) return;
+
+      try {
+        const snap = await get(
+          ref(
+            db,
+            `ramiRooms/${getRoomCode()}/public/voiceSignals/${pair}/candidates/${otherUid}`
+          )
+        );
+
+        const all = snap.val() || {};
+
+        for (const [key, candidate] of Object.entries(all)) {
+          if (pc._addedRemoteIce?.has(key)) continue;
+
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            pc._addedRemoteIce?.add(key);
+          } catch (e) {
+            debugError("إضافة Remote ICE", e);
+          }
+        }
+      } catch (e) {
+        debugError("قراءة Remote ICE", e);
+      }
+    }
+
+    // ========================================================
+    // SYNC - إصلاح انتظار Offer
+    // ========================================================
+
+    async function sync() {
+      if (!voiceActive || !localVoiceStream || voiceSyncBusy) return;
+
+      const uid = getUid?.();
+      const roomCode = getRoomCode?.();
+      if (!uid || !roomCode) return;
+
+      voiceSyncBusy = true;
+
+      try {
+        const voiceUsers = await readVoiceUsers();
+
+        const users = Object.keys(voiceUsers).filter(otherUid => (
+          otherUid !== uid &&
+          voiceUsers[otherUid]?.active === true
+        ));
+
+        voiceDebug.users = Object.keys(voiceUsers)
+          .filter(id => voiceUsers[id]?.active === true)
+          .length;
+
+        voiceDebug.expected = users.length;
+        updateDebugBox();
+
+        for (const otherUid of Array.from(voicePeers.keys())) {
+          if (!users.includes(otherUid)) {
+            closePeer(otherUid);
+            delete voiceDebug.peers[otherUid];
+          }
+        }
+
+        for (const otherUid of users) {
+          try {
+            let pc = await makePeer(otherUid);
+            if (!pc) continue;
+
+            const pair = pairIdFor(uid, otherUid);
+            const initiator = String(uid) < String(otherUid);
+            let signal = await readSignal(pair);
+            const remoteSession = voiceUsers[otherUid]?.session || "";
+            const now = Date.now();
+
+            // ------------------------------------------------
+            // INITIATOR
+            // ------------------------------------------------
+            if (initiator) {
+              let offer = signal?.offer || null;
+
+              const offerIsMine = offer?.from === uid;
+              const offerForCurrentSession = offer?.session === voiceSessionId;
+              const offerIsOld =
+                offer?.ts && (now - Number(offer.ts) > 20000);
+
+              const needNewOffer =
+                !offer?.sdp ||
+                !offerIsMine ||
+                !offerForCurrentSession ||
+                offerIsOld;
+
+              if (needNewOffer && pc.signalingState === "stable") {
+                debugLog(`إنشاء Offer جديد للطرف ${String(otherUid).slice(0, 8)}`);
+                setPeerDebug(otherUid, { stage: "إنشاء Offer جديد" });
+
+                // تنظيف إشارة هذا الزوج فقط.
+                try {
+                  await remove(
+                    ref(db, `ramiRooms/${roomCode}/public/voiceSignals/${pair}`)
+                  );
+                } catch {}
+
+                // Peer نظيف حتى لا تبقى Session أو ICE قديمة.
+                closePeer(otherUid);
+                pc = await makePeer(otherUid);
+                if (!pc) continue;
+
+                pc._addedRemoteIce = new Set();
+
+                const newOffer = await pc.createOffer({
+                  offerToReceiveAudio: true,
+                  iceRestart: true
+                });
+
+                await pc.setLocalDescription(newOffer);
+
+                await set(
+                  ref(
+                    db,
+                    `ramiRooms/${roomCode}/public/voiceSignals/${pair}/offer`
+                  ),
+                  {
+                    type: pc.localDescription.type,
+                    sdp: pc.localDescription.sdp,
+                    from: uid,
+                    to: otherUid,
+                    session: voiceSessionId,
+                    remoteSession: remoteSession,
+                    ts: Date.now()
+                  }
+                );
+
+                pc._offerAt = Date.now();
+                pc._offerSession = voiceSessionId;
+
+                setPeerDebug(otherUid, { stage: "📤 Offer مرسل" });
+                debugLog(`Offer مرسل إلى ${String(otherUid).slice(0, 8)}`);
+
+                signal = await readSignal(pair);
+              }
+
+              const answerSnap = await get(
+                ref(
+                  db,
+                  `ramiRooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                )
+              );
+
+              const answer = answerSnap.val();
+
+              if (
+                answer?.sdp &&
+                answer.session === voiceSessionId &&
+                !pc.currentRemoteDescription
+              ) {
+                debugLog(`Answer وصل من ${String(otherUid).slice(0, 8)}`);
+                setPeerDebug(otherUid, { stage: "📥 Answer وصل" });
+
+                await pc.setRemoteDescription(
+                  new RTCSessionDescription({
+                    type: answer.type,
+                    sdp: answer.sdp
+                  })
+                );
+
+                pc._answerAt = Date.now();
+              }
+
+              await addRemoteIce(pc, pair, otherUid);
+
+              if (
+                pc._offerAt &&
+                !pc.currentRemoteDescription &&
+                Date.now() - pc._offerAt > 10000
+              ) {
+                setPeerDebug(otherUid, {
+                  stage: "⚠️ لا يوجد Answer — إعادة المحاولة"
+                });
+
+                debugLog(`لا يوجد Answer من ${String(otherUid).slice(0, 8)}`);
+
+                try {
+                  await remove(
+                    ref(db, `ramiRooms/${roomCode}/public/voiceSignals/${pair}`)
+                  );
+                } catch {}
+
+                closePeer(otherUid);
+                continue;
+              }
+
+            // ------------------------------------------------
+            // ANSWERER
+            // ------------------------------------------------
+            } else {
+              let offer = signal?.offer || null;
+
+              if (!offer?.sdp) {
+                const offerSnap = await get(
+                  ref(
+                    db,
+                    `ramiRooms/${roomCode}/public/voiceSignals/${pair}/offer`
+                  )
+                );
+                offer = offerSnap.val();
+              }
+
+              if (!offer?.sdp) {
+                setPeerDebug(otherUid, { stage: "⏳ بانتظار Offer" });
+                continue;
+              }
+
+              if (offer.from && offer.from !== otherUid) {
+                setPeerDebug(otherUid, { stage: "⚠️ Offer غير صالح" });
+                continue;
+              }
+
+              const incomingSession = offer.session || "";
+
+              if (
+                pc._offerSession &&
+                pc._offerSession !== incomingSession
+              ) {
+                debugLog(`Session جديدة من ${String(otherUid).slice(0, 8)}`);
+                closePeer(otherUid);
+                pc = await makePeer(otherUid);
+                if (!pc) continue;
+              }
+
+              if (
+                !pc.currentRemoteDescription &&
+                pc.signalingState === "stable"
+              ) {
+                debugLog(`Offer وصل من ${String(otherUid).slice(0, 8)}`);
+                setPeerDebug(otherUid, { stage: "📥 Offer وصل" });
+
+                await pc.setRemoteDescription(
+                  new RTCSessionDescription({
+                    type: offer.type,
+                    sdp: offer.sdp
+                  })
+                );
+
+                pc._offerSession = incomingSession;
+
+                await addRemoteIce(pc, pair, otherUid);
+
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+
+                await set(
+                  ref(
+                    db,
+                    `ramiRooms/${roomCode}/public/voiceSignals/${pair}/answer`
+                  ),
+                  {
+                    type: pc.localDescription.type,
+                    sdp: pc.localDescription.sdp,
+                    from: uid,
+                    to: otherUid,
+                    session: incomingSession,
+                    ts: Date.now()
+                  }
+                );
+
+                setPeerDebug(otherUid, { stage: "📤 Answer مرسل" });
+                debugLog(`Answer مرسل إلى ${String(otherUid).slice(0, 8)}`);
+              }
+
+              await addRemoteIce(pc, pair, otherUid);
+            }
+
+            setPeerDebug(otherUid, {
+              connection: pc.connectionState || "-",
+              ice: pc.iceConnectionState || "-",
+              signaling: pc.signalingState || "-"
+            });
+
+          } catch (peerError) {
+            debugError(`Peer ${otherUid}`, peerError);
+            setPeerDebug(otherUid, { stage: "❌ خطأ — إعادة المحاولة" });
+            scheduleReconnect(otherUid, 1500);
+          }
+        }
+
+      } catch (e) {
+        debugError("Voice Sync", e);
+      } finally {
+        voiceSyncBusy = false;
+        publishState();
+      }
+    }
+
+    async function reconnect() {
+      if (!voiceActive) return;
+
+      debugLog("إعادة ربط يدوي");
+
+      voiceSessionId =
+        String(getUid()) + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+
+      try {
+        await update(
+          ref(
+            db,
+            `ramiRooms/${getRoomCode()}/public/voiceUsers/${getUid()}`
+          ),
+          {
+            session: voiceSessionId,
+            active: true,
+            muted: voiceMuted,
+            ts: Date.now()
+          }
+        );
+      } catch {}
+
+      closeAllPeers();
+
+      setTimeout(() => {
+        if (voiceActive) sync();
+      }, 200);
+    }
+
+    async function stop(removeState = true) {
+      const was = voiceActive || voiceStarting;
+
+      voiceActive = false;
+      voiceStarting = false;
+      voiceMuted = false;
+
+      clearInterval(voiceSyncTimer);
+      voiceSyncTimer = null;
+
+      for (const timer of reconnectTimers.values()) {
+        clearTimeout(timer);
+      }
+      reconnectTimers.clear();
+
+      stopLocalTracks();
+      closeAllPeers();
+
+      const box = document.getElementById("voiceAudios");
+      if (box) {
+        try { box.innerHTML = ""; } catch {}
+      }
+
+      const roomCode = getRoomCode?.();
+      const uid = getUid?.();
+
+      if (removeState && roomCode && uid) {
+        try {
+          await remove(
+            ref(db, `ramiRooms/${roomCode}/public/voiceUsers/${uid}`)
+          );
+        } catch {}
+
+        try { await clearMyVoiceSignals(); } catch {}
+      }
+
+      voiceSessionId = "";
+
+      voiceDebug.users = 0;
+      voiceDebug.expected = 0;
+      voiceDebug.connected = 0;
+      voiceDebug.peers = {};
+      voiceDebug.lastAction = "الصوت متوقف";
+
+      publishState();
+
+      if (was && removeState) {
+        safeToast("تم إيقاف الصوت المباشر");
+      }
+    }
+
+    window.addEventListener("pagehide", () => {
+      try {
+        stopLocalTracks();
+        closeAllPeers();
+      } catch {}
+    });
+
+    // نفس واجهة الدوال السابقة حتى لا تتأثر استدعاءات index أو الإدارة.
+    return {
+      start,
+      stop,
+      toggleMute,
+      sync,
+      reconnect,
+      remoteCount: voiceRemoteCount,
+      isActive,
+      isStarting,
+      isMuted
+    };
+  }
+
+  window.SheikhVoice = {
+    createVoiceController
+  };
+
+})();
+
+</script>
+<script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import{getDatabase,ref,get,set,update,onValue,remove,runTransaction}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+import{getDatabase,ref,get,set,update,onValue,remove,runTransaction,push}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 const firebaseConfig={apiKey:"AIzaSyDIvMvlYDRINh8QHDiQMJfb1gv_mOsAsC8",authDomain:"al-sheikh-game.firebaseapp.com",databaseURL:"https://al-sheikh-game-default-rtdb.firebaseio.com",projectId:"al-sheikh-game",storageBucket:"al-sheikh-game.firebasestorage.app",messagingSenderId:"739452149085",appId:"1:739452149085:web:778619aa18fed1c698dcb4"};
 const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),$=x=>document.getElementById(x);
 let uid="",myName=localStorage.getItem("sheikh_name")||"لاعب",memberNo="",room="",unsub=null,handUnsub=null,currentRoom=null,myHand=[],selected=-1,pendingDrawId=null;
+let voiceController=null,voiceActive=false,voiceStarting=false,voiceMuted=false;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const say=t=>$("msg").textContent=t||"";
 function makeCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
@@ -394,11 +1472,11 @@ function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.play
  $("nextRoundBtn").style.display=(r.hostId===uid&&g.scoresReady)?"block":"none";
  return
 }$("turnText").textContent=g.turnUid===uid?(g.phase==="draw"?"دورك • اسحب":"دورك • ارمِ ورقة"):`دور ${players[g.turnUid]?.name||"لاعب"}`;const others=order.filter(id=>id!==uid);$("seats").innerHTML=others.map(id=>`<div class="seat ${id===g.turnUid?'active':''}"><div class="avatar">${esc((players[id]?.name||"؟").slice(0,1))}</div><div class="seatName">${esc(players[id]?.name||"لاعب")}</div><div class="count">🂠 ${g.counts?.[id]??14}</div></div>`).join("");renderDiscard(g.discard);renderJokerIndicator(g);if(g.phase==="draw"||g.turnUid!==uid)pendingDrawId=null;renderHand();const mineTurn=g.turnUid===uid;$("drawStock").disabled=!mineTurn||g.phase!=="draw";$("takeDiscard").disabled=!mineTurn||g.phase!=="draw"||!g.discard;$("throwCard").disabled=!mineTurn||g.phase!=="discard"||selected<0;
-$("stockPile").disabled=$("drawStock").disabled;$("discardPile").disabled=!(mineTurn&&((g.phase==="draw"&&!!g.discard)||(g.phase==="discard"&&selected>=0)));
-$("stockPile").classList.toggle("ready",mineTurn&&g.phase==="draw");$("discardPile").classList.toggle("ready",mineTurn&&g.phase==="draw"&&!!g.discard);
+$("stockPile").disabled=$("drawStock").disabled;$("discardPile").disabled=!(mineTurn&&((g.phase==="draw"&&!!g.discard)||g.phase==="discard"));
+$("stockPile").classList.toggle("ready",mineTurn&&g.phase==="draw");$("discardPile").classList.toggle("ready",mineTurn&&((g.phase==="draw"&&!!g.discard)||g.phase==="discard"));
 $("gameHint").textContent=mineTurn?(g.phase==="draw"?"دورك: اسحب من الرزمة أو خذ ورقة الميدان.":"رتّب أوراقك، ثم اختر ورقة واضغط الميدان لرميها."):"انتظر دورك.";
 $("stockPile").closest(".pileWrap")?.classList.toggle("actionable",mineTurn&&g.phase==="draw");
-$("discardPile").closest(".pileWrap")?.classList.toggle("actionable",mineTurn&&g.phase==="draw"&&!!g.discard);
+$("discardPile").closest(".pileWrap")?.classList.toggle("actionable",mineTurn&&((g.phase==="draw"&&!!g.discard)||g.phase==="discard"));
 const tb=$("turnTimerBar");tb.style.transition="none";tb.style.transform="scaleX(1)";requestAnimationFrame(()=>{tb.style.transition="transform 45s linear";tb.style.transform="scaleX(0)"})}
 function renderDiscard(c){const e=$("discardPile");e.className="cardFace pileTap"+(isRed(c)?" red":"")+(c?.r==="JOKER"?" jokerFace":"");e.innerHTML=cardImgHTML(c)}
 function renderJokerIndicator(g){
@@ -875,7 +1953,7 @@ function renderHand(){
  const leftovers=pool.filter(x=>!x.used).map(x=>x.i);if(leftovers.length)resolved.push(leftovers);
  const rowHTML=resolved.map((row,ri)=>{
    const cards=row.map(i=>{
-     const c=myHand[i],isNew=false;
+     const c=myHand[i],isNew=!!pendingDrawId&&cardKey(c)===pendingDrawId;
      return `<button type="button" class="myCard ${isRed(c)?'red':''} ${c.r==='JOKER'?'joker':''} ${i===selected?'selected':''} ${jokerRank&&c.r===jokerRank?'jokerRank':''} ${!jokerRank&&pureIdx.has(i)?'pureReady':''} ${isNew?'newDraw':''}" data-card="${i}" data-row="${ri}" aria-label="${esc(cardLabel(c))}">${cardImgHTML(c,"cardImg")}</button>`;
    }).join("");
    const label=ri===resolved.length-1?"باقي":`مجموعة ${ri+1}`;
@@ -890,12 +1968,10 @@ function renderHand(){
      if(dragMoved){dragMoved=false;return}
      const gg=currentRoom?.game||{};
      if(gg.phase==="discard"&&gg.turnUid===uid){
-       const now=Date.now();
-       if(lastDiscardTap===i&&now-lastDiscardTapAt<1900){selected=i;lastDiscardTap=-1;lastDiscardTapAt=0;throwSelected();return}
-       selected=i;multiSelected.clear();lastDiscardTap=i;lastDiscardTapAt=now;
+       selected=i;multiSelected.clear();
        h.querySelectorAll(".myCard.selected").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");
        $("discardPile").disabled=false;$("discardPile").classList.add("ready");
-       $("gameHint").textContent="الورقة محددة — اضغطها مرة ثانية أو اضغط الميدان لرميها.";
+       $("gameHint").textContent="الورقة محددة — اضغط الميدان لرميها.";
        return;
      }
    };
@@ -947,41 +2023,38 @@ async function revealRoundJoker(){
 }
 
 async function drawStock(){
- const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||pendingDraw)return;const stock=[...(currentRoom.stock||[])];if(!stock.length)return $("gameHint").textContent="انتهت كومة السحب";
- pendingDraw=stock.shift();pendingDrawSource="stock";turnDrawSource="stock";turnFeederUid=null;pendingTapAt=0;const patch={};patch[`ramiRooms/${room}/public/stock`]=stock;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=15;
- patch[`ramiRooms/${room}/public/game/lastDrawSource`]="stock";
- patch[`ramiRooms/${room}/public/game/lastDrawBy`]=uid;
- patch[`ramiRooms/${room}/public/game/lastFeederUid`]=null;
- await update(ref(db),patch);selected=-1;renderPending();$("gameHint").textContent="الورقة المسحوبة فوق الصفوف — اسحبها للصف أو اضغطها مرتين للرمي.";
+ const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw")return;const stock=[...(currentRoom.stock||[])];if(!stock.length)return $("gameHint").textContent="انتهت كومة السحب";
+ const c=stock.shift();myHand=[...myHand,c];pendingDrawId=cardKey(c);syncManualRows();if(!manualRows.length)manualRows=[[]];manualRows[manualRows.length-1].push(cardKey(c));saveManualRows();selected=-1;
+ const patch={};patch[`ramiRooms/${room}/public/stock`]=stock;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=15;patch[`ramiRooms/${room}/public/game/lastDrawSource`]="stock";patch[`ramiRooms/${room}/public/game/lastDrawBy`]=uid;patch[`ramiRooms/${room}/public/game/lastFeederUid`]=null;patch[`ramiRooms/${room}/privateHands/${uid}`]=myHand;
+ await update(ref(db),patch);renderHand();$("gameHint").textContent="رتّب الورقة إذا تبا، اختر ورقة، ثم اضغط الميدان.";
 }
 async function takeDiscard(){
- const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||!g.discard||pendingDraw)return;pendingDraw=g.discard;pendingDrawSource="discard";turnDrawSource="discard";turnFeederUid=g.lastDiscardBy||null;pendingTapAt=0;const patch={};patch[`ramiRooms/${room}/public/game/discard`]=null;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=15;
- patch[`ramiRooms/${room}/public/game/lastDrawSource`]="discard";
- patch[`ramiRooms/${room}/public/game/lastDrawBy`]=uid;
- patch[`ramiRooms/${room}/public/game/lastFeederUid`]=g.lastDiscardBy||null;
- await update(ref(db),patch);selected=-1;renderPending();$("gameHint").textContent="ورقة الميدان فوق الصفوف — اسحبها للصف أو اضغطها مرتين للرمي.";
+ const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="draw"||!g.discard)return;const c=g.discard;myHand=[...myHand,c];pendingDrawId=cardKey(c);syncManualRows();if(!manualRows.length)manualRows=[[]];manualRows[manualRows.length-1].push(cardKey(c));saveManualRows();selected=-1;
+ const patch={};patch[`ramiRooms/${room}/public/game/discard`]=null;patch[`ramiRooms/${room}/public/game/phase`]="discard";patch[`ramiRooms/${room}/public/game/counts/${uid}`]=15;patch[`ramiRooms/${room}/public/game/lastDrawSource`]="discard";patch[`ramiRooms/${room}/public/game/lastDrawBy`]=uid;patch[`ramiRooms/${room}/public/game/lastFeederUid`]=g.lastDiscardBy||null;patch[`ramiRooms/${room}/privateHands/${uid}`]=myHand;
+ await update(ref(db),patch);renderHand();$("gameHint").textContent="رتّب الورقة إذا تبا، اختر ورقة، ثم اضغط الميدان.";
 }
 async function throwSelected(){
- const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="discard"||selected<0)return;
- let hand=[...myHand];if(!hand[selected])return;syncManualRows();
- if(pendingDraw){hand.push(pendingDraw);if(!manualRows.length)manualRows=[[]];manualRows[manualRows.length-1].push(cardKey(pendingDraw));pendingDraw=null;pendingDrawSource=null;pendingTapAt=0}
- const [c]=hand.splice(selected,1),thrownKey=cardKey(c);let removed=false;
- manualRows=manualRows.map(row=>row.filter(k=>{if(!removed&&k===thrownKey){removed=true;return false}return true}));
- myHand=hand;saveManualRows();selected=-1;renderPending();
- const order=g.playerOrder||[],i=order.indexOf(uid),next=order[(i+1)%order.length],patch={};
+ const g=currentRoom?.game;if(!g||g.turnUid!==uid||g.phase!=="discard"||selected<0)return;let hand=[...myHand];if(!hand[selected])return;syncManualRows();
+ const [c]=hand.splice(selected,1),thrownKey=cardKey(c);let removed=false;manualRows=manualRows.map(row=>row.filter(k=>{if(!removed&&k===thrownKey){removed=true;return false}return true})).filter(row=>row.length);if(!manualRows.length)manualRows=[[]];
+ myHand=hand;saveManualRows();selected=-1;pendingDrawId=null;const order=g.playerOrder||[],i=order.indexOf(uid),next=order[(i+1)%order.length],patch={};
  patch[`ramiRooms/${room}/privateHands/${uid}`]=hand;patch[`ramiRooms/${room}/public/game/discard`]=c;patch[`ramiRooms/${room}/public/game/counts/${uid}`]=14;patch[`ramiRooms/${room}/public/game/turnUid`]=next;patch[`ramiRooms/${room}/public/game/phase`]="draw";patch[`ramiRooms/${room}/public/game/lastDiscardBy`]=uid;await update(ref(db),patch);
 }
 
 function sortHand(mode){if(!myHand.length)return;myHand=[...myHand].sort((a,b)=>mode==="suit"?(suitN(a.s)-suitN(b.s)||rankN(a.r)-rankN(b.r)):(rankN(a.r)-rankN(b.r)||suitN(a.s)-suitN(b.s)));selected=-1;multiSelected.clear();renderHand();if(room&&currentRoom?.status==="playing")set(ref(db,`ramiRooms/${room}/privateHands/${uid}`),myHand).catch(()=>{})}
+function renderChat(){const box=$("chatBox");if(!box)return;const msgs=Object.values(currentRoom?.chat||{}).sort((a,b)=>(a.ts||0)-(b.ts||0)).slice(-80);box.innerHTML=msgs.map(m=>`<p><b>${esc(m.name||"لاعب")}:</b> ${esc(m.text||"")}</p>`).join("");box.scrollTop=box.scrollHeight}
+async function sendChat(){const inp=$("chatInput"),text=(inp?.value||"").trim().slice(0,120);if(!text||!room)return;try{await set(push(ref(db,`ramiRooms/${room}/public/chat`)),{uid,name:myName,text,ts:Date.now()});inp.value=""}catch{$("gameHint").textContent="تعذر إرسال الرسالة"}}
+function updateVoiceUi(){const st=$("voiceState"),j=$("voiceJoin"),m=$("voiceMute"),l=$("voiceLeave");const n=voiceController?.remoteCount?.()||0;if(st)st.textContent=voiceStarting?"● جاري تجهيز الصوت...":voiceActive?(voiceMuted?`🔊 استماع • متصل ${n}`:`🎙️ المايك مفتوح • متصل ${n}`):"● الصوت غير متصل";if(j)j.textContent=voiceActive?(voiceMuted?"🎙️ فتح المايك":"🎙️ المايك شغال"):"🎙️ تشغيل المايك";if(m){m.disabled=!voiceActive;m.textContent=voiceMuted?"🎙️ فتح المايك":"🔇 كتم المايك"}if(l)l.disabled=!voiceActive}
+function setupVoice(){if(voiceController||!window.SheikhVoice)return;voiceController=window.SheikhVoice.createVoiceController({db,ref,get,set,update,push,remove,getRoomCode:()=>room,getUid:()=>uid,getName:()=>myName,getCurrentRoom:()=>currentRoom,toast:t=>{const e=$("gameHint");if(e)e.textContent=t},sleep:ms=>new Promise(r=>setTimeout(r,ms)),releaseWebAudio:async()=>{},stopRadio:()=>{},onStateChange:s=>{voiceActive=!!s.active;voiceStarting=!!s.starting;voiceMuted=!!s.muted;updateVoiceUi()},onUiRefresh:updateVoiceUi})}
+
 async function enter(c){
 room=c;localStorage.setItem("rami_room",c);loadManualRows();say("");
-$("entryBox").style.display="none";$("roomBox").style.display="block";$("roomCode").textContent=c;
+$("entryBox").style.display="none";$("roomBox").style.display="block";$("roomComms").style.display="block";$("roomCode").textContent=c;
 if(unsub)unsub();
 if(handUnsub){handUnsub();handUnsub=null}
 unsub=onValue(ref(db,`ramiRooms/${c}/public`),s=>{
  if(!s.exists())return leaveLocal();
  currentRoom=s.val()||{};
- renderLobby(currentRoom);
+ renderLobby(currentRoom);renderChat();updateVoiceUi();if(voiceActive)voiceController?.sync?.();
  if(currentRoom.status==="playing")renderGame(currentRoom);else showGame(false)
 });
 handUnsub=onValue(ref(db,`ramiRooms/${c}/privateHands/${uid}`),s=>{
@@ -992,7 +2065,7 @@ handUnsub=onValue(ref(db,`ramiRooms/${c}/privateHands/${uid}`),s=>{
 });
 }
 async function leave(){if(!room)return leaveLocal();const c=room;try{const s=await get(ref(db,`ramiRooms/${c}/public`)),r=s.val()||{};await remove(ref(db,`ramiRooms/${c}/public/players/${uid}`));const left=Object.entries(r.players||{}).filter(([id])=>id!==uid);if(r.hostId===uid){if(left.length)await set(ref(db,`ramiRooms/${c}/public/hostId`),left.sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0][0]);else await remove(ref(db,`ramiRooms/${c}`))}}catch{}leaveLocal()}
-function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();handUnsub=null}room="";currentRoom=null;pendingDrawId=null;pendingDraw=null;pendingDrawSource=null;pendingTapAt=0;localStorage.removeItem("rami_room");$("gameBox").style.display="none";$("roomBox").style.display="none";$("entryBox").style.display="block";$("brand").style.display="block";$("rulesBox").style.display="block";say("")}
+function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();handUnsub=null}room="";currentRoom=null;pendingDrawId=null;pendingDraw=null;pendingDrawSource=null;pendingTapAt=0;localStorage.removeItem("rami_room");$("gameBox").style.display="none";$("roomBox").style.display="none";$("roomComms").style.display="none";$("entryBox").style.display="block";$("brand").style.display="block";$("rulesBox").style.display="block";say("")}
 $("createRoom").onclick=createRoom;$("showJoin").onclick=()=>{$("joinRow").style.display=$("joinRow").style.display==="none"?"grid":"none";say("")};$("joinRoom").onclick=joinRoom;$("roomInput").onkeydown=e=>{if(e.key==="Enter")joinRoom()};$("copyCode").onclick=async()=>{try{await navigator.clipboard.writeText(room);$("roomStatus").textContent="تم نسخ كود الغرفة ✅"}catch{}};$("leaveRoom").onclick=leave;$("startGame").onclick=startGame;$("exitGame").onclick=()=>showGame(false);$("drawStock").onclick=drawStock;$("takeDiscard").onclick=takeDiscard;
 $("stockPile").onclick=()=>{if(!$("drawStock").disabled)drawStock()};
 $("discardPile").onclick=()=>{const g=currentRoom?.game||{};if(g.turnUid!==uid)return;
@@ -1004,8 +2077,9 @@ $("discardPile").onclick=()=>{const g=currentRoom?.game||{};if(g.turnUid!==uid)r
 };$("throwCard").onclick=throwSelected;$("sortSuit").onclick=()=>applySmartArrange(true);$("sortRank").onclick=()=>sortHand("rank");$("revealJoker").onclick=revealRoundJoker;
 window.addEventListener("resize",()=>fitHandToPhone());
 window.addEventListener("orientationchange",()=>setTimeout(fitHandToPhone,120));
+$("sendChat").onclick=sendChat;$("chatInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();sendChat()}};$("voiceJoin").onclick=()=>{setupVoice();voiceActive?voiceController?.toggleMute?.():voiceController?.start?.()};$("voiceMute").onclick=()=>voiceController?.toggleMute?.();$("voiceLeave").onclick=()=>voiceController?.stop?.(true);
 $("declareHand").onclick=declareHandNow;
 $("nextRoundBtn").onclick=newRound;
 $("closeHandResult").onclick=()=>$("handResult").classList.remove("show");
-onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return location.href="index.html";uid=u.uid;await profile();const saved=localStorage.getItem("rami_room");if(saved)try{const s=await get(ref(db,`ramiRooms/${saved}/public`));if(s.exists()&&s.val()?.players?.[uid])await enter(saved);else localStorage.removeItem("rami_room")}catch{}});
+onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return location.href="index.html";uid=u.uid;await profile();setupVoice();const saved=localStorage.getItem("rami_room");if(saved)try{const s=await get(ref(db,`ramiRooms/${saved}/public`));if(s.exists()&&s.val()?.players?.[uid])await enter(saved);else localStorage.removeItem("rami_room")}catch{}});
 </script></body></html>
