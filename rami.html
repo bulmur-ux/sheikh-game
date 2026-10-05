@@ -360,6 +360,12 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 .gameRoundBadge{font-size:10px;color:#f4cf72;margin-top:2px;text-align:center}
 @media(max-width:600px){.ramiRoomTop{align-items:flex-start;flex-direction:column}.ramiCodeLine{width:100%;justify-content:center}.ramiPeopleGrid{grid-template-columns:1fr}.ramiSetupGrid{grid-template-columns:1fr 1fr}.ramiLobbySeat{width:96px}.ramiLobbyAvatar{width:52px;height:52px}}
 
+/* FINAL CHECK-CHECK ALIGNMENT */
+.roomBox{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;max-width:760px!important}
+.ramiRoomTop{background:rgba(18,10,8,.94);border:1px solid #9d6d27;border-radius:16px;padding:10px 12px;margin-bottom:8px}
+.ramiTicker{border:1px solid #8e6326!important;border-radius:10px!important;margin:0 0 8px!important;background:#21120e!important}
+.ramiSetupCard,.ramiHostCard,.ramiPresentCard,#socialBox,#rulesBox{border:1px solid #9d6d27!important;background:rgba(18,10,8,.95)!important;border-radius:16px!important}
+#socialBox .chatBox{display:block!important}#socialBox .chatSend{display:grid!important}
 </style>
 </head>
 <body><main class="wrap">
@@ -377,7 +383,7 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
   <div id="roomStatus" style="display:none">الغرفة جاهزة</div>
   <div id="hostStart" style="display:none"><button id="startGame">ابدأ اللعب</button></div>
 
-  <div class="ramiTicker" id="ramiTicker">بانتظار اللاعبين</div>
+  <div class="ramiTicker" id="ramiTicker">بانتظار اللاعبين</div><div id="ramiScoreStrip" style="display:flex;gap:6px;overflow:auto;margin:0 0 8px"></div>
 
   <div class="ramiLobbyTable">
     <div class="ramiLobbySeat seat0" id="ramiSeat0"></div>
@@ -444,7 +450,7 @@ function renderLobby(r){const ps=Object.entries(r.players||{}).sort((a,b)=>(a[1]
  const activePlayers=ps.filter(([,p])=>(p.role||"player")==="player");
  const seat=(x)=>x?`<div class="ramiLobbyAvatar">${esc((x[1].name||"؟").slice(0,1))}</div><div class="ramiLobbyName">${esc(x[1].name||"لاعب")}${x[0]===r.hostId?" 👑":""}</div><div class="ramiLobbyState">مختار للطاولة</div>`:`<div class="ramiLobbyAvatar">+</div><div class="ramiLobbyName">مقعد لاعب</div>`;
  for(let i=0;i<4;i++)$("ramiSeat"+i).innerHTML=seat(activePlayers[i]);
- $("ramiTicker").textContent=ps.length?ps.map(([id,p])=>`${p.name||"لاعب"}${id===r.hostId?" 👑":""}${p.role==="spectator"?" 👁":""}`).join("  •  "):"بانتظار اللاعبين";
+ $("ramiTicker").textContent=ps.length?ps.map(([id,p])=>`${p.name||"لاعب"}${id===r.hostId?" 👑":""}${p.role==="spectator"?" 👁":""}`).join("  •  "):"بانتظار اللاعبين";const totals=r.game?.totals||{};$("ramiScoreStrip").innerHTML=ps.filter(([,p])=>(p.role||"player")==="player").map(([id,p])=>`<div style="min-width:96px;flex:1;background:#1d100d;border:1px solid #745022;border-radius:10px;padding:6px;text-align:center"><b style="display:block;font-size:10px">${esc(p.name||"لاعب")}${id===r.hostId?" 👑":""}</b><span style="font-size:11px;color:#f4cf72">${totals[id]||0} نقطة</span></div>`).join("");
  const hp=(r.players||{})[r.hostId];
  $("ramiHost").innerHTML=hp?`<div class="ramiPerson"><div class="ramiLobbyAvatar">${esc((hp.name||"؟").slice(0,1))}</div><div class="ramiPersonText"><b>${esc(hp.name||"المضيف")}</b><small>${r.hostId===uid?"أنت المضيف":"صاحب الغرفة"} • عند خروجه تنتقل للأقدم تلقائياً</small></div></div>`:"";
  $("ramiPresentCount").textContent=`${ps.length}/8`;
@@ -453,7 +459,7 @@ function renderLobby(r){const ps=Object.entries(r.players||{}).sort((a,b)=>(a[1]
  $("ramiPlayerCount").value=String(Math.max(2,Math.min(6,active)));
  $("ramiStart").disabled=!(r.hostId===uid&&r.status==="lobby"&&active>=2&&active<=6);
 }
-async function startGame(){if(currentRoom?.hostId!==uid||currentRoom?.status!=="lobby")return;const ids=Object.entries(currentRoom.players||{}).filter(([,p])=>(p.role||"player")==="player").sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).map(([id])=>id);if(ids.length<2||ids.length>6)return $("roomStatus").textContent="اختَر من 2 إلى 6 لاعبين";const deck=makeDeck(),hands={};for(const id of ids){const dealt=deck.splice(0,14);hands[id]=smartArrange(dealt).order.map(x=>x.c)}const discard=deck.shift();const counts={};ids.forEach(id=>counts[id]=14);const patch={};patch[`ramiRooms/${room}/public/status`]="playing";patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:ids[0],phase:"draw",discard,counts,round:1,startedAt:Date.now(),jokerRank:null};patch[`ramiRooms/${room}/public/stock`]=deck;for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];try{await update(ref(db),patch)}catch(e){$("roomStatus").textContent="تعذر بدء الجولة: "+(e?.message||"خطأ")}}
+async function startGame(){if(currentRoom?.hostId!==uid||currentRoom?.status!=="lobby")return;const ids=Object.entries(currentRoom.players||{}).filter(([,p])=>(p.role||"player")==="player").sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).map(([id])=>id);if(ids.length<2||ids.length>6)return $("roomStatus").textContent="اختَر من 2 إلى 6 لاعبين";const deck=makeDeck(),hands={};for(const id of ids){const dealt=deck.splice(0,14);hands[id]=smartArrange(dealt).order.map(x=>x.c)}const discard=deck.shift();const counts={};ids.forEach(id=>counts[id]=14);const patch={};patch[`ramiRooms/${room}/public/status`]="playing";patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:ids[0],phase:"draw",discard,counts,round:1,startedAt:Date.now(),jokerRank:null,qualified:{},totals:{},scoreLimit:220};patch[`ramiRooms/${room}/public/stock`]=deck;for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];try{await update(ref(db),patch)}catch(e){$("roomStatus").textContent="تعذر بدء الجولة: "+(e?.message||"خطأ")}}
 function showGame(on){$("entryBox").style.display="none";$("roomBox").style.display=on?"none":"block";$("brand").style.display="none";$("rulesBox").style.display=on?"none":"block";$("socialBox").style.display=on?"none":"block";$("gameBox").style.display=on?"block":"none"}
 function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.players||{};if(!order.includes(uid)){showGame(false);$("roomStatus").textContent="أنت مشاهد • الجولة شغالة";return}showGame(true);$("gameCode").textContent=`غرفة ${room}`;$("gameRoundBadge").textContent=`الجولة ${g.round||1}`;if(g.phase==="ended"){
  $("turnText").textContent="انتهت الجولة";const wn=g.winnerUid?(players[g.winnerUid]?.name||"اللاعب"):"تم إنهاء الجولة";
@@ -930,7 +936,7 @@ async function newRound(){
    return;
  }
  const deck=makeDeck(),hands={},counts={};for(const id of ids){const dealt=deck.splice(0,14);hands[id]=smartArrange(dealt).order.map(x=>x.c);counts[id]=14}
- const discard=deck.shift(),round=(old.round||1)+1,starter=ids[round%ids.length];const patch={};
+ const discard=deck.shift(),round=(old.round||1)+1,starter=ids[(round-1)%ids.length];const patch={};
  patch[`ramiRooms/${room}/public/status`]='playing';
  patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:starter,phase:'draw',discard,counts,round,startedAt:Date.now(),jokerRank:null,qualified:{},totals:{...(old.totals||{})}};
  patch[`ramiRooms/${room}/public/stock`]=deck;
@@ -1130,5 +1136,5 @@ window.addEventListener("orientationchange",()=>setTimeout(fitHandToPhone,120));
 $("declareHand").onclick=declareHandNow;
 $("nextRoundBtn").onclick=newRound;
 $("closeHandResult").onclick=()=>$("handResult").classList.remove("show");
-onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return location.href="index.html";uid=u.uid;await profile();const qp=new URLSearchParams(location.search),action=qp.get("action"),qcode=(qp.get("code")||"").trim().toUpperCase();if(action==="create"&&!localStorage.getItem("rami_room")){history.replaceState(null,"","rami.html");await createRoom();return}if(action==="join"&&!localStorage.getItem("rami_room")){if(qcode){$("roomInput").value=qcode;history.replaceState(null,"","rami.html");await joinRoom();return}else{$("joinRow").style.display="grid"}}const saved=localStorage.getItem("rami_room");if(saved)try{const s=await get(ref(db,`ramiRooms/${saved}/public`));if(s.exists()&&s.val()?.players?.[uid])await enter(saved);else localStorage.removeItem("rami_room")}catch{}});
+onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return location.href="index.html";uid=u.uid;await profile();const q=new URLSearchParams(location.search),action=q.get("action"),code=(q.get("code")||"").trim().toUpperCase(),saved=localStorage.getItem("rami_room");if(saved)try{const ss=await get(ref(db,`ramiRooms/${saved}/public`));if(ss.exists()&&ss.val()?.players?.[uid]){await enter(saved);history.replaceState(null,"","rami.html");return}else localStorage.removeItem("rami_room")}catch{}if(action==="create"){await createRoom();history.replaceState(null,"","rami.html");return}if(action==="join"&&code){$("roomInput").value=code;await joinRoom();history.replaceState(null,"","rami.html");return}location.href="index.html"});
 </script></body></html>
