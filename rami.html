@@ -360,12 +360,12 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
 .gameRoundBadge{font-size:10px;color:#f4cf72;margin-top:2px;text-align:center}
 @media(max-width:600px){.ramiRoomTop{align-items:flex-start;flex-direction:column}.ramiCodeLine{width:100%;justify-content:center}.ramiPeopleGrid{grid-template-columns:1fr}.ramiSetupGrid{grid-template-columns:1fr 1fr}.ramiLobbySeat{width:96px}.ramiLobbyAvatar{width:52px;height:52px}}
 
-/* FINAL CHECK-CHECK ALIGNMENT */
-.roomBox{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;max-width:760px!important}
-.ramiRoomTop{background:rgba(18,10,8,.94);border:1px solid #9d6d27;border-radius:16px;padding:10px 12px;margin-bottom:8px}
-.ramiTicker{border:1px solid #8e6326!important;border-radius:10px!important;margin:0 0 8px!important;background:#21120e!important}
-.ramiSetupCard,.ramiHostCard,.ramiPresentCard,#socialBox,#rulesBox{border:1px solid #9d6d27!important;background:rgba(18,10,8,.95)!important;border-radius:16px!important}
-#socialBox .chatBox{display:block!important}#socialBox .chatSend{display:grid!important}
+/* Check Check aligned Rami room */
+.roomBox{max-width:760px!important;margin:0 auto 12px!important}
+.ramiSetupGrid{grid-template-columns:1fr 1fr!important;gap:10px!important}
+.ramiSetupGrid select,.ramiStaticSetting{min-height:54px!important;font-size:14px!important}
+.ramiSetupCard,.ramiHostCard,.ramiPresentCard,#socialBox,#rulesBox{border:1.5px solid #b9852e!important;border-radius:18px!important;padding:14px!important;background:rgba(24,11,8,.96)!important}
+#socialBox h2{text-align:right!important;font-size:23px!important}#socialBox .socialTools{grid-template-columns:repeat(2,1fr)!important}#socialBox .chatBox{height:240px!important}#rulesBox .rules{grid-template-columns:1fr 1fr!important}
 </style>
 </head>
 <body><main class="wrap">
@@ -383,7 +383,7 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
   <div id="roomStatus" style="display:none">الغرفة جاهزة</div>
   <div id="hostStart" style="display:none"><button id="startGame">ابدأ اللعب</button></div>
 
-  <div class="ramiTicker" id="ramiTicker">بانتظار اللاعبين</div><div id="ramiScoreStrip" style="display:flex;gap:6px;overflow:auto;margin:0 0 8px"></div>
+  <div class="ramiTicker" id="ramiTicker">بانتظار اللاعبين</div>
 
   <div class="ramiLobbyTable">
     <div class="ramiLobbySeat seat0" id="ramiSeat0"></div>
@@ -396,25 +396,25 @@ border:2px solid #ffe69a!important;font-size:12px!important;padding:7px 14px!imp
     </div>
   </div>
 
-  <section class="ramiSetupCard">
-    <h3>👑 إعداد المباراة</h3>
-    <div class="ramiSetupGrid">
-      <label>عدد اللاعبين<select id="ramiPlayerCount"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
-      <label>نظام الجولات<div class="ramiStaticSetting">حتى يتجاوز اللاعب 220</div></label>
-    </div>
-    <div class="ramiSetupActions">
-      <button class="btn green" id="ramiStart">▶ ابدأ المباراة</button>
-      <button class="btn alt" id="ramiRules">📖 القواعد</button>
-    </div>
-  </section>
-
-  <section class="ramiHostCard"><h3>👑 المضيف</h3><div id="ramiHost"></div></section>
-  <section class="ramiPresentCard"><h3>👥 المتواجدون في الغرفة <span id="ramiPresentCount">0/8</span></h3><div class="ramiPeopleGrid" id="ramiPresent"></div></section>
+  <section class="ramiSetupCard hostSetupV2"><h3>👑 إعداد المباراة</h3><div class="ramiSetupGrid">
+<label>عدد اللاعبين<select id="ramiPlayerCount"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+<label>القانون<select id="ramiRuleMode"><option>الهاند الروسي</option></select></label>
+<label>الجولات<select id="ramiRoundMode"><option>مفتوحة</option></select></label>
+<label>حد الخروج<select id="ramiScoreLimit"><option value="220">220</option></select></label></div>
+<div class="ramiStaticSetting" style="margin-top:8px">إذا تجاوز اللاعب 220 يخرج من المباراة ويكمل الباقون.</div>
+<div class="ramiSetupActions"><button class="btn green" id="ramiStart">▶ ابدأ المباراة</button><button class="btn alt" id="ramiRules">📖 القواعد</button></div></section>
+<section class="ramiHostCard roomHostCard"><h3>👑 المضيف</h3><div id="ramiHost"></div></section>
+  <section class="ramiPresentCard roomPresentCard"><h3>👥 المتواجدون في الغرفة <span id="ramiPresentCount">0/8</span></h3><div class="ramiPeopleGrid" id="ramiPresent"></div></section>
 
   <div class="roomActions"><button class="btn danger" id="leaveRoom">🚪 خروج / انسحاب</button></div>
 </section>
 <section class="panel gameBox" id="gameBox"><div class="gameHead"><div class="code" id="gameCode">غرفة -----</div><div><div class="turn" id="turnText">بانتظار الدور</div><div class="gameRoundBadge" id="gameRoundBadge">الجولة 1</div><div class="turnTimer"><i id="turnTimerBar"></i></div></div><button class="roleBtn" id="exitGame">الغرفة</button></div><div class="table"><div class="seats" id="seats"></div><div class="centerPile"><div class="pileWrap"><button type="button" class="cardBack pileTap" id="stockPile"><img class="pileImg" src="Cards/back.png" alt="السحبة"></button><div>الرزمة</div></div><div class="pileWrap" id="indicatorWrap" style="display:none"><div class="cardFace" id="jokerIndicator">—</div><div>مؤشر الجوكر</div></div><div class="pileWrap"><button type="button" class="cardFace pileTap" id="discardPile">—</button><div>الميدان</div></div></div><div class="jokerSlot" id="jokerSlot">جوكر الجولة: مخفي</div><div id="pendingDock" class="pendingDock" style="display:none"><div class="pendingTitle">الورقة المسحوبة</div><button type="button" id="pendingCard" class="myCard pendingCard"></button><div class="pendingHelp">اسحبها للصف أو اضغطها مرتين للرمي</div></div><div class="handArea" id="handArea"><div class="handStatus" id="handStatus"></div><div class="quickActions"><button class="sortBtn" id="sortSuit">🪄 ترتيب ذكي</button><button class="sortBtn" id="sortRank">ترتيب</button><button class="sortBtn" id="revealJoker" disabled>✨ اكشف الجوكر</button><button class="sortBtn handBtn" id="declareHand">🏆 هاند</button></div><div class="hand" id="myHand"></div></div></div><div class="actions"><button class="btn alt" id="drawStock">اسحب 🂠</button><button class="btn alt" id="takeDiscard">خذ الرمية</button><button class="btn" id="throwCard">ارمِ المختار</button></div><div class="hint" id="gameHint">إذا عندك سيريل صافي يظهر «كشف الجوكر» تلقائيًا.</div></section>
-<section class="panel socialBox" id="socialBox" style="display:none"><h2>مجلس الغرفة</h2><div class="socialTools"><button class="btn green" id="voiceJoin">🎙️ تشغيل المايك</button><button class="btn alt" id="voiceMute" disabled>🔇 كتم المايك</button></div><div id="voiceState">الصوت غير متصل</div><div class="chatBox" id="chatBox"></div><div class="chatSend"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button class="btn" id="chatSend">إرسال</button></div></section><div id="voiceAudios" style="display:none"></div>
+<section class="panel socialBox" id="socialBox" style="display:none"><h2>💬 الشات والصوت</h2>
+<div class="socialTools"><button class="btn green" id="voiceJoin">🎙️ المايك</button><button class="btn alt" id="voiceMute" disabled>🔇 الصوت</button><button class="btn alt" id="ramiEffects">😂 التأثيرات</button><button class="btn alt" id="ramiRadio">📻 الإذاعة</button><button class="btn alt" id="ramiHideChat">إخفاء الشات</button><button class="btn danger" id="ramiLeaveMirror">🚪 خروج / انسحاب</button></div>
+<div id="voiceState">● الصوت غير متصل</div><div id="ramiChatInner"><h3>شات الغرفة</h3>
+<div class="socialTools"><button class="btn alt" id="ramiVoiceTest">🔊 اختبار الصوت</button><button class="btn alt" id="ramiGameFxMute">🔇 كتم مؤثرات اللعبة</button></div>
+<div class="chatBox" id="chatBox"></div><div id="ramiQuickChat" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn alt" data-q="جاهز">جاهز</button><button class="btn alt" data-q="دورك">دورك</button><button class="btn alt" data-q="اكبس">اكبس</button><button class="btn alt" data-q="شيك">شيك</button><button class="btn alt" data-q="ابدأ">ابدأ</button></div>
+<div class="chatSend"><input id="chatInput" maxlength="120" placeholder="اكتب رسالة..."><button class="btn" id="chatSend">إرسال</button></div></div></section><div id="voiceAudios" style="display:none"></div>
 <section class="panel" id="rulesBox"><h2>القواعد المثبتة</h2><div class="rules"><div class="rule">👥 الغرفة 8 • اللعب 2–6</div><div class="rule">🂠 14 كرت لكل لاعب</div><div class="rule">🃏 جوكر أسود + أحمر فقط</div><div class="rule">🔗 السيريل: 3 كروت أو أكثر</div><div class="rule">♣️ التشابه: 3 أو 4</div><div class="rule">✨ سيريل صافي لكشف جوكر الجولة</div><div class="rule">✋ الهاند من رمية لاعب فقط</div><div class="rule">🏆 الصحيح −5 • جوكر −10</div></div></section>
 </main>
 <div class="handResult" id="handResult"><div class="handResultCard"><h2 id="handResultTitle">🏆 هاند</h2><p id="handResultText"></p><div class="roundResultMini" id="roundResultMini">انتهت الجولة</div><button class="btn" id="nextRoundBtn">🎴 جولة جديدة</button><button class="btn alt" id="closeHandResult">إغلاق</button></div></div><script src="voice.js?v=6.4"></script>
@@ -450,7 +450,7 @@ function renderLobby(r){const ps=Object.entries(r.players||{}).sort((a,b)=>(a[1]
  const activePlayers=ps.filter(([,p])=>(p.role||"player")==="player");
  const seat=(x)=>x?`<div class="ramiLobbyAvatar">${esc((x[1].name||"؟").slice(0,1))}</div><div class="ramiLobbyName">${esc(x[1].name||"لاعب")}${x[0]===r.hostId?" 👑":""}</div><div class="ramiLobbyState">مختار للطاولة</div>`:`<div class="ramiLobbyAvatar">+</div><div class="ramiLobbyName">مقعد لاعب</div>`;
  for(let i=0;i<4;i++)$("ramiSeat"+i).innerHTML=seat(activePlayers[i]);
- $("ramiTicker").textContent=ps.length?ps.map(([id,p])=>`${p.name||"لاعب"}${id===r.hostId?" 👑":""}${p.role==="spectator"?" 👁":""}`).join("  •  "):"بانتظار اللاعبين";const totals=r.game?.totals||{};$("ramiScoreStrip").innerHTML=ps.filter(([,p])=>(p.role||"player")==="player").map(([id,p])=>`<div style="min-width:96px;flex:1;background:#1d100d;border:1px solid #745022;border-radius:10px;padding:6px;text-align:center"><b style="display:block;font-size:10px">${esc(p.name||"لاعب")}${id===r.hostId?" 👑":""}</b><span style="font-size:11px;color:#f4cf72">${totals[id]||0} نقطة</span></div>`).join("");
+ $("ramiTicker").textContent=ps.length?ps.map(([id,p])=>`${p.name||"لاعب"}${id===r.hostId?" 👑":""}${p.role==="spectator"?" 👁":""}`).join("  •  "):"بانتظار اللاعبين";
  const hp=(r.players||{})[r.hostId];
  $("ramiHost").innerHTML=hp?`<div class="ramiPerson"><div class="ramiLobbyAvatar">${esc((hp.name||"؟").slice(0,1))}</div><div class="ramiPersonText"><b>${esc(hp.name||"المضيف")}</b><small>${r.hostId===uid?"أنت المضيف":"صاحب الغرفة"} • عند خروجه تنتقل للأقدم تلقائياً</small></div></div>`:"";
  $("ramiPresentCount").textContent=`${ps.length}/8`;
@@ -459,7 +459,7 @@ function renderLobby(r){const ps=Object.entries(r.players||{}).sort((a,b)=>(a[1]
  $("ramiPlayerCount").value=String(Math.max(2,Math.min(6,active)));
  $("ramiStart").disabled=!(r.hostId===uid&&r.status==="lobby"&&active>=2&&active<=6);
 }
-async function startGame(){if(currentRoom?.hostId!==uid||currentRoom?.status!=="lobby")return;const ids=Object.entries(currentRoom.players||{}).filter(([,p])=>(p.role||"player")==="player").sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).map(([id])=>id);if(ids.length<2||ids.length>6)return $("roomStatus").textContent="اختَر من 2 إلى 6 لاعبين";const deck=makeDeck(),hands={};for(const id of ids){const dealt=deck.splice(0,14);hands[id]=smartArrange(dealt).order.map(x=>x.c)}const discard=deck.shift();const counts={};ids.forEach(id=>counts[id]=14);const patch={};patch[`ramiRooms/${room}/public/status`]="playing";patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:ids[0],phase:"draw",discard,counts,round:1,startedAt:Date.now(),jokerRank:null,qualified:{},totals:{},scoreLimit:220};patch[`ramiRooms/${room}/public/stock`]=deck;for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];try{await update(ref(db),patch)}catch(e){$("roomStatus").textContent="تعذر بدء الجولة: "+(e?.message||"خطأ")}}
+async function startGame(){if(currentRoom?.hostId!==uid||currentRoom?.status!=="lobby")return;const ids=Object.entries(currentRoom.players||{}).filter(([,p])=>(p.role||"player")==="player").sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).map(([id])=>id);if(ids.length<2||ids.length>6)return $("roomStatus").textContent="اختَر من 2 إلى 6 لاعبين";const deck=makeDeck(),hands={};for(const id of ids){const dealt=deck.splice(0,14);hands[id]=smartArrange(dealt).order.map(x=>x.c)}const discard=deck.shift();const counts={};ids.forEach(id=>counts[id]=14);const patch={};patch[`ramiRooms/${room}/public/status`]="playing";patch[`ramiRooms/${room}/public/game`]={playerOrder:ids,turnUid:ids[0],phase:"draw",discard,counts,round:1,startedAt:Date.now(),jokerRank:null};patch[`ramiRooms/${room}/public/stock`]=deck;for(const id of ids)patch[`ramiRooms/${room}/privateHands/${id}`]=hands[id];try{await update(ref(db),patch)}catch(e){$("roomStatus").textContent="تعذر بدء الجولة: "+(e?.message||"خطأ")}}
 function showGame(on){$("entryBox").style.display="none";$("roomBox").style.display=on?"none":"block";$("brand").style.display="none";$("rulesBox").style.display=on?"none":"block";$("socialBox").style.display=on?"none":"block";$("gameBox").style.display=on?"block":"none"}
 function renderGame(r){const g=r.game||{},order=g.playerOrder||[],players=r.players||{};if(!order.includes(uid)){showGame(false);$("roomStatus").textContent="أنت مشاهد • الجولة شغالة";return}showGame(true);$("gameCode").textContent=`غرفة ${room}`;$("gameRoundBadge").textContent=`الجولة ${g.round||1}`;if(g.phase==="ended"){
  $("turnText").textContent="انتهت الجولة";const wn=g.winnerUid?(players[g.winnerUid]?.name||"اللاعب"):"تم إنهاء الجولة";
@@ -1119,6 +1119,7 @@ handUnsub=onValue(ref(db,`ramiRooms/${c}/privateHands/${uid}`),s=>{
 }
 async function leave(){if(!room)return leaveLocal();const c=room;try{const s=await get(ref(db,`ramiRooms/${c}/public`)),r=s.val()||{};await remove(ref(db,`ramiRooms/${c}/public/players/${uid}`));const left=Object.entries(r.players||{}).filter(([id])=>id!==uid);if(r.hostId===uid){if(left.length)await set(ref(db,`ramiRooms/${c}/public/hostId`),left.sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0))[0][0]);else await remove(ref(db,`ramiRooms/${c}`))}}catch{}leaveLocal()}
 function leaveLocal(){if(unsub){unsub();unsub=null}if(handUnsub){handUnsub();handUnsub=null}room="";currentRoom=null;pendingDrawId=null;pendingDraw=null;pendingDrawSource=null;pendingTapAt=0;localStorage.removeItem("rami_room");$("gameBox").style.display="none";$("roomBox").style.display="none";$("socialBox").style.display="none";if(chatUnsub){try{chatUnsub()}catch{}chatUnsub=null}voiceController?.stop?.(true).catch(()=>{});$("entryBox").style.display="none";$("brand").style.display="none";$("rulesBox").style.display="none";say("");location.href="index.html"}
+$("ramiLeaveMirror").onclick=()=>$("leaveRoom").click();$("ramiHideChat").onclick=()=>{const x=$("ramiChatInner"),h=x.style.display!=="none";x.style.display=h?"none":"block";$("ramiHideChat").textContent=h?"إظهار الشات":"إخفاء الشات"};$("ramiEffects").onclick=()=>say("التأثيرات");$("ramiRadio").onclick=()=>say("الإذاعة");$("ramiVoiceTest").onclick=()=>say("اختبار الصوت");$("ramiGameFxMute").onclick=()=>say("مؤثرات اللعبة");document.querySelectorAll("#ramiQuickChat [data-q]").forEach(b=>b.onclick=()=>{$("chatInput").value=b.dataset.q;$("chatSend").click()});
 $("ramiStart").onclick=()=>$("startGame").click();
 $("ramiRules").onclick=()=>$("rulesBox").scrollIntoView({behavior:"smooth",block:"start"});
 $("ramiPlayerCount").onchange=()=>{$("roomStatus").textContent="اختيار اللاعبين يتم من قائمة المتواجدين تحت الطاولة."};
@@ -1136,5 +1137,5 @@ window.addEventListener("orientationchange",()=>setTimeout(fitHandToPhone,120));
 $("declareHand").onclick=declareHandNow;
 $("nextRoundBtn").onclick=newRound;
 $("closeHandResult").onclick=()=>$("handResult").classList.remove("show");
-onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return location.href="index.html";uid=u.uid;await profile();const q=new URLSearchParams(location.search),action=q.get("action"),code=(q.get("code")||"").trim().toUpperCase(),saved=localStorage.getItem("rami_room");if(saved)try{const ss=await get(ref(db,`ramiRooms/${saved}/public`));if(ss.exists()&&ss.val()?.players?.[uid]){await enter(saved);history.replaceState(null,"","rami.html");return}else localStorage.removeItem("rami_room")}catch{}if(action==="create"){await createRoom();history.replaceState(null,"","rami.html");return}if(action==="join"&&code){$("roomInput").value=code;await joinRoom();history.replaceState(null,"","rami.html");return}location.href="index.html"});
+onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return location.href="index.html";uid=u.uid;await profile();const qp=new URLSearchParams(location.search),action=qp.get("action"),qcode=(qp.get("code")||"").trim().toUpperCase();if(action==="create"&&!localStorage.getItem("rami_room")){history.replaceState(null,"","rami.html");await createRoom();return}if(action==="join"&&!localStorage.getItem("rami_room")){if(qcode){$("roomInput").value=qcode;history.replaceState(null,"","rami.html");await joinRoom();return}else{$("joinRow").style.display="grid"}}const saved=localStorage.getItem("rami_room");if(saved)try{const s=await get(ref(db,`ramiRooms/${saved}/public`));if(s.exists()&&s.val()?.players?.[uid])await enter(saved);else localStorage.removeItem("rami_room")}catch{}});
 </script></body></html>
